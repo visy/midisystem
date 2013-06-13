@@ -1,0 +1,1 @@
+gcc midifile.c midiutil.c main.c -o midisys.exe -m32 -g c:\mingw\lib\bass.lib -lglew32 -lfreeglut -lglu32 -lSOIL -lopengl32 -DSUPERVERBOSE && midisys
