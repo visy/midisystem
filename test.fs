@@ -31,7 +31,7 @@ void main()
 
 	vec4 finaleffu = outcolor*vec4(-1.0*0.2,1.0*0.4,-1.0*0.4+cos(time*0.000001)*0.3,1.0)+outcolor*0.5-0.4*cos(gl_FragCoord.x*(0.01+atan(time*0.1*gl_FragCoord.x))+gl_FragCoord.y*(0.1+atan(time*0.02)));
 
-	vec3 texcolor = texture2D(texture0, vec2((gl_FragCoord.x/width)+sin(time*0.02)*0.01, (gl_FragCoord.y/height)+cos(time*0.01)*0.01));
+	vec4 texcolor = texture2D(texture0, vec2((gl_FragCoord.x/width)+sin(time*0.02)*0.01, (gl_FragCoord.y/height)+cos(time*0.01)*0.01));
 
 	outcolor = vec4(texcolor.r,finaleffu.g/texcolor.r*0.2,finaleffu.b-texcolor.r*0.1,finaleffu.a*(sin(time*0.00001)*texcolor.r*1.0));
 
