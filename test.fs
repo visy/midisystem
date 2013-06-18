@@ -33,7 +33,7 @@ void main()
 
 	vec4 texcolor = texture2D(texture0, vec2((gl_FragCoord.x/width)+sin(time*0.02)*0.01, (gl_FragCoord.y/height)+cos(time*0.01)*0.01));
 
-	outcolor = vec4(texcolor.r,finaleffu.g/texcolor.r*0.2,finaleffu.b-texcolor.r*0.1,finaleffu.a*(sin(time*0.00001)*texcolor.r*1.0));
+	outcolor = vec4(texcolor.r,finaleffu.g/texcolor.r*0.2,finaleffu.b-texcolor.r*0.1,finaleffu.a*(sin(time*0.00001)*texcolor.r*0.3));
 
 	outcolor.b *= texcolor.g*0.3;
 

@@ -1,8 +1,10 @@
-// MIDISYS-ENGINE for windows
+// MIDISYS-ENGINE
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
+
 #ifndef  __APPLE__
 #include <malloc.h>
 #endif
@@ -17,13 +19,17 @@
 
 #include "bass.h"
 
+#include "ggets.h"
+#include "ggets.c"
+
 // shaders
 
-GLuint test_shaderProg;
+GLuint eye_shaderProg;
+GLuint eye_post_shaderProg;
 GLuint fsquad_shaderProg;
 GLuint redcircle_shaderProg;
 
-// fbo crap
+// fbo
 
 GLuint fb;
 GLuint fb_tex;
@@ -32,33 +38,70 @@ GLuint depth_rb = 0;
 // textures
 
 int grayeye_tex = -1;
+int room_tex[3] = {-1};
+int majictext1_tex = -1;
 
-// midi sync
+// texture switchers
 
-MIDI_MSG timeline[1000000];
-int timeline_length = 0;
-int frame = 0;
+int room_texnum = 0;
 
-float millis = 0;
-DWORD music_channel = 0;
-
-// gfx system
+// misc. gfx system
 
 static GLfloat g_nearPlane = 1;
 static GLfloat g_farPlane = 1000;
 static int g_Width = 600;
 static int g_Height = 600;
 
-// effect pointers && logic
+void InitFBO();
 
-typedef void (*SceneRenderCallback)();
+int frame = 0;
+
+// effect pointers && logic
 
 void EyeScene();
 void RedCircleScene();
 
-SceneRenderCallback scene_render[] = {&EyeScene, &RedCircleScene};
+typedef void (*SceneRenderCallback)();
+SceneRenderCallback scene_render[] = {
+										&EyeScene, 
+										&RedCircleScene
+									 };
 
 int current_scene = 0;
+
+// midi sync
+
+MIDI_MSG timeline[64][100000];
+char timeline_trackname[64][512];
+int timeline_trackindex[64] = { 0 };
+int timeline_tracklength[64] = { -1 };
+int timeline_trackcount = 0;
+
+// midi track number of mapping data
+int mapping_tracknum[1000];
+// midi to shader param map from mapping.txt
+int mapping_paramnum[1000];
+// track to map from
+char mapping_trackname[1000][512];
+// map type: 0 == trig (noteon / off), 1 == param (modwheel / cc value)
+int mapping_type[1000];
+// number of active mappings from midi to shader param
+int mapping_count = 0;
+
+// current shader param values 
+int scene_shader_params[16] = {-1};
+int scene_shader_param_type[16] = {-1};
+
+// audio
+
+float millis = 0;
+float scene_start_millis = 0;
+
+int music_started = -1;
+
+DWORD music_channel = 0;
+
+///////////////////////////////////////////////////// HELPER FUNCTIONS
 
 void BassError(const char *text) 
 {
@@ -80,8 +123,8 @@ void InitAudio(const char *pFilename)
 
 	int success = 0;
 
-	if ((chan=BASS_StreamCreateFile(FALSE,pFilename,0,0,BASS_SAMPLE_LOOP))
-		|| (chan=BASS_StreamCreateURL(pFilename,0,BASS_SAMPLE_LOOP,0,0))) {
+	if ((chan=BASS_StreamCreateFile(FALSE,pFilename,0,0,BASS_STREAM_PRESCAN))
+		|| (chan=BASS_StreamCreateURL(pFilename,0,BASS_STREAM_PRESCAN,0,0))) {
 		pos=BASS_ChannelGetLength(chan,BASS_POS_BYTE);
 		if (BASS_StreamGetFilePosition(chan,BASS_FILEPOS_DOWNLOAD)!=-1) {
 			// streaming from the internet
@@ -92,7 +135,7 @@ void InitAudio(const char *pFilename)
 			}
 			else
 			{
-				printf("\tstreaming internet file\n",pos);
+				printf("\tstreaming internet file\n");
 				success = 1;
 			}
 		} else
@@ -105,7 +148,6 @@ void InitAudio(const char *pFilename)
 	if (success == 1)
 	{
 		music_channel = chan;
-		BASS_ChannelPlay(chan,FALSE);
 	}
 	else
 	{
@@ -113,8 +155,6 @@ void InitAudio(const char *pFilename)
 		exit(1);
 	}
 }
-
-
 
 void HexList(BYTE *pData, int iNumBytes)
 {
@@ -180,9 +220,7 @@ void PrintShaderLog(GLuint obj)
  
 	if (infologLength > 0)
 	{
-
 		printf("%s\n",infoLog);
-		exit(1);
 	}
 }
 
@@ -320,10 +358,11 @@ void LoadMIDIEventList(const char *pFilename)
 	int ev;
 
 	int timeline_index = 0;
+	int track_index = 0;
+	MIDI_MSG msg;
 
 	if (mf)
 	{
-		MIDI_MSG msg;
 		int i, iNum;
 		unsigned int j;
 
@@ -344,20 +383,85 @@ void LoadMIDIEventList(const char *pFilename)
 				if (msg.bImpliedMsg) { ev = msg.iImpliedMsg; }
 				else { ev = msg.iType; }
 
-				timeline[timeline_index] = msg;
-				timeline_index++;
+				memcpy(&timeline[track_index][timeline_index], &msg, sizeof(MIDI_MSG));
+
+				if (ev == msgMetaEvent && msg.MsgData.MetaEvent.iType == metaTrackName) 
+				{
+					strncpy(timeline_trackname[track_index], msg.MsgData.MetaEvent.Data.Text.pData, 8);
+					timeline_trackname[track_index][8] == '\0';
+					printf("track #%d, name = \"%s\"\n", track_index, timeline_trackname[track_index]);
+				}
+
 				#ifdef SUPERVERBOSE 
 				DebugPrintEvent(ev,msg); 
 				#endif
+
+				timeline_index++;
+
 			}
+			printf("track length: %d\n", timeline_index);
+			timeline_tracklength[track_index] = timeline_index;
+			track_index++;
+			timeline_index = 0;
 		}
 
+		timeline_trackcount = track_index;
 		midiReadFreeMessage(&msg);
 		midiFileClose(mf);
 	}
 
-	timeline_length = timeline_index+1;
-	printf("--- MIDISYS ENGINE: LoadMIDIEventList() timeline length: %d\n", timeline_length);
+	//timeline_length = timeline_index+1;
+	printf("--- MIDISYS ENGINE: LoadMIDIEventList() success\n");
+}
+
+void ParseMIDITimeline(const char* mappingFile)
+{
+	printf("--- MIDISYS ENGINE: ParseMIDITimeline(\"%s\")\n", mappingFile);
+	int cnt;
+	char *line;
+
+	FILE *mapfile;
+
+	if ((mapfile = fopen(mappingFile, "r"))) 
+	{
+		cnt = 0;
+		while (0 == fggets(&line, mapfile)) {
+			char* token = strtok(line, ",");
+			int paramnum = atoi(token);
+			mapping_paramnum[cnt] = paramnum;
+
+			token = strtok(NULL, ",");
+			sprintf(mapping_trackname[cnt],"%s",token);
+
+			token = strtok(NULL, ",");
+			if (strcmp("param",token) == 0) mapping_type[cnt] = 1;
+			else mapping_type[cnt] = 0;
+
+//			token = strtok(NULL, ",");
+//			sprintf(englines[cnt],"%s",token);
+
+			int i = 0;
+			int found = -1;
+			for (i = 0; i < timeline_trackcount; i++)
+			{
+				if (strcmp(timeline_trackname[i], mapping_trackname[cnt]) == 0) 
+				{
+					printf("MIDI track #%d (\"%s\") maps to shader param %d, type: %s\n", i, mapping_trackname[cnt], mapping_paramnum[cnt], mapping_type[cnt] == 0 ? "trig" : "param");
+					mapping_tracknum[cnt] = i;
+					cnt++;
+					found = 1;
+				}
+				if (found == 1) break;
+			}	
+		}
+		mapping_count = cnt;
+	}
+	else
+	{
+		printf("ParseMIDITimeline error: MIDI mapping file \"%s\" cannot be opened\n", mappingFile);
+		exit(1);
+	}
+	printf("--- MIDISYS ENGINE: ParseMIDITimeline() success\n");
 }
 
 ///////////////////////////////////////////////////////////////// EFFECTS
@@ -366,36 +470,85 @@ void LoadMIDIEventList(const char *pFilename)
 ///////////////////////////////////////////////////////////////// EFFECTS
 ///////////////////////////////////////////////////////////////// EFFECTS
 
+int beatmode = -1;
+
 void EyeScene()
 {
-	float mymillis = ((millis-23080)*100);
+	int i, j;
+
+	float mymillis = ((millis-scene_start_millis)*100);
 	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fb); // fbo
+
+	glClearColor((float)(scene_shader_params[1]/127)*0.7,(float)(scene_shader_params[1]/127)*0.4,(float)(scene_shader_params[1]/127)*0.8,0.9-0.005*(float)(scene_shader_params[1]/127));
+
+	if (scene_shader_params[0] == 65 && scene_shader_param_type[0] == 0)
+	{
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		beatmode = -beatmode;
+	}
+
+	// render fbo copy to fbo
+	glEnable(GL_BLEND);
+	glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+	glBlendFunc(GL_ONE_MINUS_SRC_ALPHA, GL_DST_COLOR);
+
+	glUseProgram(eye_post_shaderProg);
+
+//	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	GLint widthLoc3 = glGetUniformLocation(eye_post_shaderProg, "width");
+	GLint heightLoc3 = glGetUniformLocation(eye_post_shaderProg, "height");
+	GLint timeLoc3 = glGetUniformLocation(eye_post_shaderProg, "time");
+
+	glUniform1f(widthLoc3, g_Width);
+	glUniform1f(heightLoc3, g_Height);
+	glUniform1f(timeLoc3, mymillis/100);
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, fb_tex);
+
+	GLint location3 = glGetUniformLocation(eye_post_shaderProg, "texture0");
+	glUniform1i(location3, 0);
+
+	glLoadIdentity();
+
+	glTranslatef(-1.2, -1.0, -1.0+cos(mymillis*0.00001)*0.1);
+
+	i=0;
+	j=0;
+	glBegin(GL_QUADS);
+	glVertex2f(i, j);
+	glVertex2f(i + 100, j);
+	glVertex2f(i + 100, j + 100);
+	glVertex2f(i, j + 100);
+	glEnd();
+
+	// render eye
 
 	glEnable(GL_BLEND);
 	glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_DST_ALPHA);
 
-	glUseProgram(test_shaderProg);
+	glUseProgram(eye_shaderProg);
 
 	GLfloat waveTime = 1+atan(mymillis*0.0001)*0.1,
 			waveWidth = cos(mymillis*0.000001)*1000+atan(mymillis*0.00001)*2.0,
 			waveHeight = sin(mymillis*0.0001)*100*atan(mymillis*0.00001)*2.0,
 			waveFreq = 0.0001+cos(mymillis*0.000003)*1000.1;
-	GLint waveTimeLoc = glGetUniformLocation(test_shaderProg, "waveTime");
-	GLint waveWidthLoc = glGetUniformLocation(test_shaderProg, "waveWidth");
-	GLint waveHeightLoc = glGetUniformLocation(test_shaderProg, "waveHeight");
+	GLint waveTimeLoc = glGetUniformLocation(eye_shaderProg, "waveTime");
+	GLint waveWidthLoc = glGetUniformLocation(eye_shaderProg, "waveWidth");
+	GLint waveHeightLoc = glGetUniformLocation(eye_shaderProg, "waveHeight");
 
-	GLint widthLoc = glGetUniformLocation(test_shaderProg, "width");
-	GLint heightLoc = glGetUniformLocation(test_shaderProg, "height");
+	GLint widthLoc = glGetUniformLocation(eye_shaderProg, "width");
+	GLint heightLoc = glGetUniformLocation(eye_shaderProg, "height");
 
-	GLint timeLoc = glGetUniformLocation(test_shaderProg, "time");
+	GLint timeLoc = glGetUniformLocation(eye_shaderProg, "time");
 
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, grayeye_tex);
 
 	GLuint location;
-	location = glGetUniformLocation(test_shaderProg, "texture0");
-
+	location = glGetUniformLocation(eye_shaderProg, "texture0");
 	glUniform1i(location, 0);
 
 	glLoadIdentity();
@@ -413,7 +566,6 @@ void EyeScene()
 
 	glUniform1f(timeLoc, mymillis/100);
 
-	int i, j;
 
 	int zoom = 0;
 
@@ -437,17 +589,19 @@ void EyeScene()
 	glEnd();
 	}
 
+	// eye postprocess to screen
+
 	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0); // default
 
-	glUseProgram(fsquad_shaderProg);
+	glUseProgram(eye_post_shaderProg);
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	glDisable(GL_BLEND);
 
-	GLint widthLoc2 = glGetUniformLocation(fsquad_shaderProg, "width");
-	GLint heightLoc2 = glGetUniformLocation(fsquad_shaderProg, "height");
-	GLint timeLoc2 = glGetUniformLocation(test_shaderProg, "time");
+	GLint widthLoc2 = glGetUniformLocation(eye_post_shaderProg, "width");
+	GLint heightLoc2 = glGetUniformLocation(eye_post_shaderProg, "height");
+	GLint timeLoc2 = glGetUniformLocation(eye_post_shaderProg, "time");
 
 	glUniform1f(widthLoc2, g_Width);
 	glUniform1f(heightLoc2, g_Height);
@@ -456,8 +610,19 @@ void EyeScene()
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, fb_tex);
 
-	GLint location2 = glGetUniformLocation(fsquad_shaderProg, "texture0");
+	if (scene_shader_params[0] != -1 && scene_shader_param_type[0] == 0)
+	{
+		room_texnum = (int)(rand() % 3);
+	}
+
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, room_tex[room_texnum]);
+
+	GLint location2 = glGetUniformLocation(eye_post_shaderProg, "texture0");
 	glUniform1i(location2, 0);
+
+	GLint location4 = glGetUniformLocation(eye_post_shaderProg, "texture1");
+	glUniform1i(location4, 1);
 
 	glLoadIdentity();
 
@@ -471,12 +636,53 @@ void EyeScene()
 	glVertex2f(i + 100, j + 100);
 	glVertex2f(i, j + 100);
 	glEnd();
+
+	// text overlay
+
+	if (beatmode == 1)
+	{
+		glUseProgram(fsquad_shaderProg);
+
+		glEnable(GL_BLEND);
+		glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, beatmode == 1 ? GL_SUBTRACT : GL_ADD);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_DST_COLOR);
+
+		GLint widthLoc5 = glGetUniformLocation(fsquad_shaderProg, "width");
+		GLint heightLoc5 = glGetUniformLocation(fsquad_shaderProg, "height");
+		GLint timeLoc5 = glGetUniformLocation(fsquad_shaderProg, "time");
+		GLint alphaLoc5 = glGetUniformLocation(fsquad_shaderProg, "alpha");
+
+		glUniform1f(widthLoc5, g_Width);
+		glUniform1f(heightLoc5, g_Height);
+		glUniform1f(timeLoc5, mymillis/100);
+		glUniform1f(alphaLoc5, cos(mymillis*0.1)*0.1);
+
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, majictext1_tex);
+
+		GLint location5 = glGetUniformLocation(fsquad_shaderProg, "texture0");
+		glUniform1i(location5, 0);
+
+		glLoadIdentity();
+
+		glTranslatef(-1.2, -1.0, -1.0);
+
+		i=0;
+		j=0;
+		glBegin(GL_QUADS);
+		glVertex2f(i, j);
+		glVertex2f(i + 100, j);
+		glVertex2f(i + 100, j + 100);
+		glVertex2f(i, j + 100);
+		glEnd();
+	}
+
 }
 
 void RedCircleScene()
 {
 	glUseProgram(redcircle_shaderProg);
-	float mymillis = millis*300;
+	float mymillis = (millis-scene_start_millis)*300;
 
 	if (frame % 500 == 1) glClear(GL_COLOR_BUFFER_BIT);
 
@@ -525,13 +731,97 @@ void RedCircleScene()
 ///////////////////////////////////////////////////////////////// END EFFECTS
 ///////////////////////////////////////////////////////////////// END EFFECTS
 
+// update sync from midi + mapping data
+
+void UpdateShaderParams()
+{
+	int intmillis = (int)millis+(155520*1.212);
+
+	int i,j = 0;
+
+	for (i=0; i < mapping_count; i++)
+	{
+		int tracknum = mapping_tracknum[i];
+		int trackidx = timeline_trackindex[tracknum];
+		MIDI_MSG currentMsg = timeline[tracknum][trackidx];
+
+		// reset trigs
+		if (scene_shader_param_type[mapping_paramnum[i]] == 0) scene_shader_params[mapping_paramnum[i]] = -1;
+
+		int dw = (int)currentMsg.dwAbsPos;
+		int tarkistus = (int)(dw);
+
+		//if (intmillis+155520 < tarkistus*1.212) break;
+		if (intmillis < tarkistus*1.212) break;
+
+		timeline_trackindex[tracknum]++;
+
+		if (timeline_trackindex[tracknum] >= timeline_tracklength[tracknum]) { timeline_trackindex[tracknum] = 0; printf("track reset\n"); }
+
+		int ev = 0;
+
+		if (currentMsg.bImpliedMsg) { ev = currentMsg.iImpliedMsg; }
+		else { ev = currentMsg.iType; }
+
+		int trigVal = -1;
+		int paramVal = -1;
+
+		switch(mapping_type[i])
+		{
+			// trig
+			case 0:
+			{
+				if (ev == msgNoteOn)
+				{
+					trigVal = currentMsg.MsgData.NoteOn.iNote;
+					printf("noteon track #%d, len %d, pos %d: time: %d -> %d\n", tracknum, timeline_tracklength[tracknum], timeline_trackindex[tracknum], currentMsg.dwAbsPos, trigVal);
+				}
+				else if (ev == msgNoteOff)
+				{
+					trigVal = -1;
+				}
+
+				scene_shader_params[mapping_paramnum[i]] = trigVal;
+				scene_shader_param_type[mapping_paramnum[i]] = 0;
+				//printf("sync: trig #%d to: %d\n", mapping_paramnum[i], trigVal);
+				break;
+			}
+
+			// param:
+			case 1:
+			{
+				if (ev == msgSetParameter)
+				{
+					paramVal = currentMsg.MsgData.NoteParameter.iParam;
+					printf("setparam track #%d, len %d, pos %d: time: %d -> %d\n", tracknum, timeline_tracklength[tracknum], timeline_trackindex[tracknum], currentMsg.dwAbsPos, paramVal);
+				}
+
+				scene_shader_params[mapping_paramnum[i]] = paramVal;
+				scene_shader_param_type[mapping_paramnum[i]] = 1;
+
+				//printf("sync: param #%d to: %d\n", mapping_paramnum[i], trigVal);
+				break;
+			}
+		}
+	}
+
+
+}
+
 ///////////////////////////////////////////////////////////////// MAIN LOGIC
 
 void logic()
-{
+{ 	
+	if (music_started == -1) { BASS_ChannelPlay(music_channel,FALSE); music_started = 1; }
+
 	QWORD bytepos = BASS_ChannelGetPosition(music_channel, BASS_POS_BYTE);
 	double pos = BASS_ChannelBytes2Seconds(music_channel, bytepos);
 	millis = (float)pos*1000;
+
+	//printf("millis:%f\n", millis);
+
+	UpdateShaderParams();
+
 	glutPostRedisplay();
 }
 
@@ -672,7 +962,7 @@ GLuint LoadShader(const char* pFilename)
 	fprintf(stdout,"\tLoadShader(\"%s\") vertex shader source file: \"%s\"\n", pFilename, vsName);
 	#endif
 
-	char *vsSource = File2String(vsName);
+	GLchar *vsSource = File2String(vsName);
 
 	#ifdef SUPERVERBOSE 
 	fprintf(stdout,"\tLoadShader(\"%s\") vertex shader source:\n----------------------------------------------------\n%s\n----------------------------------------------------\n", pFilename, vsSource);
@@ -682,7 +972,7 @@ GLuint LoadShader(const char* pFilename)
 	fprintf(stdout,"\tLoadShader(\"%s\") fragment shader source file: \"%s\"\n", pFilename, fsName);
 	#endif
 
-	char *fsSource = File2String(fsName);
+	GLchar *fsSource = File2String(fsName);
 
 	#ifdef SUPERVERBOSE 
 	fprintf(stdout,"\tLoadShader(\"%s\") fragment shader source:\n----------------------------------------------------\n%s\n----------------------------------------------------\n", pFilename, fsSource);
@@ -697,7 +987,7 @@ GLuint LoadShader(const char* pFilename)
 	#ifdef SUPERVERBOSE 
 	printf("\tLoadShader(): vs glShaderSource\n");
 	#endif
-	glShaderSource(vs, 1, &vsSource, NULL);
+	glShaderSource(vs, 1, (const GLchar**)&vsSource, NULL);
 	#ifdef SUPERVERBOSE 
 	printf("\tLoadShader(): vs glCompileShader\n");
 	#endif
@@ -713,7 +1003,7 @@ GLuint LoadShader(const char* pFilename)
 	#ifdef SUPERVERBOSE 
 	printf("\tLoadShader(): fs glShaderSource\n");
 	#endif
-	glShaderSource(fs, 1, &fsSource, NULL);
+	glShaderSource(fs, 1, (const GLchar**)&fsSource, NULL);
 	#ifdef SUPERVERBOSE 
 	printf("\tLoadShader(): fs glCompileShader\n");
 	#endif
@@ -746,7 +1036,7 @@ GLuint LoadShader(const char* pFilename)
 	#ifdef SUPERVERBOSE 
 	printf("\tLoadShader(): glUseProgram\n");
 	#endif
-	glUseProgram(test_shaderProg);
+	glUseProgram(sp);
 	PrintShaderLog(sp);
 
 	#ifdef SUPERVERBOSE
@@ -796,20 +1086,30 @@ int main(int argc, char* argv[])
 
 	InitGraphics(argc, argv);
 
-	// graphic data files and shaders
+	// load shaders
 
-	test_shaderProg = LoadShader("test");
+	eye_shaderProg = LoadShader("eye");
+	eye_post_shaderProg = LoadShader("eye_post");
 	fsquad_shaderProg = LoadShader("fsquad");
 	redcircle_shaderProg = LoadShader("redcircle");
 
+	// load textures
+
 	grayeye_tex = LoadTexture("grayeye.png");
+
+	room_tex[0] = LoadTexture("room1.png");
+	room_tex[1] = LoadTexture("room2.png");
+	room_tex[2] = LoadTexture("room3.png");
+
+	majictext1_tex = LoadTexture("majictext1.png");
 
 	// init MIDI sync and audio
 
 	LoadMIDIEventList("music.mid");
+	ParseMIDITimeline("mapping.txt");
 	InitAudio("music.mp3");
 
-	// mainloop
+	// start mainloop
 
 	StartMainLoop();
 	return 0;
