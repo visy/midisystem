@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="utf-8" standalone="no" ?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<document xmlns="http://example.org/xmlns/2002/document" xmlns:xlink="http://www.w3.org/1999/xlink">
+
+<svg width="1px" height="1px" version="1.2" baseProfile="tiny" viewBox="0 0 1 1" xmlns="http://www.w3.org/2000/svg">
+
+<style type="text/css">
+	<![CDATA[
+		.DEBUG {
+			fill: none;
+			stroke: red;
+			stroke-width: .01;
+			}
+		.fill {
+			fill: black;
+			stroke: none;
+			stroke-width: 0;
+			}
+		.cutout {
+			fill: white;
+			stroke: none;
+			stroke-width: 0;
+			}
+		.outline {
+			fill: none;
+			stroke: red;
+			stroke-width: .008;
+			}
+		.none {
+			fill: none;
+			stroke: none;
+			stroke-width: 0;
+			}
+	]]>
+</style>
+
+<defs>
+	<polygon id="triangle" points="0,-.5775 .5,.2887 -.5,.2887" />
+	<polygon id="balancedTriangle" points="0,-.5775 .5,.2887 -.5,.2887" />
+</defs>
+<defs>
+	<g id="basePolygon">
+		<use x="0" y="0" xlink:href="#triangle" />
+	</g>
+	<g id="basePolygonB">
+		<!--use x="-.099" y=".367" xlink:href="#triangle" /-->
+		<use x=".5" y=".633" xlink:href="#balancedTriangle" />
+	</g>
+</defs>
+<defs>
+	<g id="basePolygonDirDown" transform="rotate(180 0 0)">
+		<use x="0" y="0" xlink:href="#basePolygon" />
+	</g>
+	<g id="basePolygonDirUp" transform="rotate(0 0 0)">
+		<use x="0" y="0" xlink:href="#basePolygon" />
+	</g>
+	<g id="basePolygonDirLeft" transform="rotate(-90 0 0)">
+		<use x="0" y="0" xlink:href="#basePolygon" />
+	</g>
+	<g id="basePolygonDirRight" transform="rotate(90 0 0)">
+		<use x="0" y="0" xlink:href="#basePolygon" />
+	</g>
+</defs>
+<defs>
+	<g id="bilogony" >
+		<defs>
+			<g id="polygons" >
+				<defs>
+					<g id="polygonBlock" transform="scale(.2 .2)" >
+						<use x="-2.0" y="0.000" xlink:href="#basePolygonDirUp" />
+						<use x="-1.5" y="-0.289" xlink:href="#basePolygonDirDown" />
+						<use x="-1.0" y="0.000" xlink:href="#basePolygonDirUp" />
+						<use x="-0.5" y="-0.289" xlink:href="#basePolygonDirDown" />
+						<use x="0.5" y="-0.289" xlink:href="#basePolygonDirDown" />
+						<use x="1.0" y="0.000" xlink:href="#basePolygonDirUp" />
+					</g>
+				</defs>
+				<g transform="rotate(0)" >
+					<use x="0" y=".231" xlink:href="#polygonBlock" />
+				</g>
+				<g transform="rotate(120)" >
+					<use x="0" y=".231" xlink:href="#polygonBlock" />
+				</g>
+				<g transform="rotate(240)" >
+					<use x="0" y=".231" xlink:href="#polygonBlock" />
+				</g>
+			</g>
+			<use x="0" y="0" xlink:href="#basePolygonDirUp" />
+			<use x="0" y="0.233" xlink:href="polygons" />
+		</defs>
+		<defs>
+			<g id="texts">
+				<defs>
+					<g id="bilotripFontCharT" >
+						<use x="0.5" y="-0.366" xlink:href="#basePolygonDirUp" />
+						<use x="-0.5" y="-0.366" xlink:href="#basePolygonDirUp" />
+						<use x="0" y="0.5" xlink:href="#basePolygonDirUp" />
+					</g>
+					<g id="bilotripFontCharI" >
+						<use x="0" y="-0.666" xlink:href="#basePolygonDirDown" />
+						<use x="0" y="0.466" xlink:href="#basePolygonDirUp" />
+					</g>
+					<g id="bilotripFontCharL" >
+						<use x="0" y="0" xlink:href="#basePolygonDirDown" />
+						<use x="0.29" y="1.066" xlink:href="#basePolygonDirRight" />
+					</g>
+					<g id="bilotripFontCharO" >
+						<use x="0.5" y="-0.633" xlink:href="#basePolygonDirDown" />
+						<use x="-0.5" y="-0.633" xlink:href="#basePolygonDirDown" />
+						<use x="0" y="0.233" xlink:href="#basePolygonDirDown" />
+					</g>
+					<g id="bilotripFontCharBP" >
+						<use x="0.322" y="0.233" xlink:href="#basePolygonDirRight" />
+						<use x="0.322" y="1.233" xlink:href="#basePolygonDirRight" />
+						<use x="-0.5" y="0.688" xlink:href="#basePolygonDirRight" />
+					</g>
+					<g id="bilotripFontCharR" >
+						<use x="0.266" y="0.5" xlink:href="#basePolygonDirLeft" />
+						<use x="-0.3" y="1.1" xlink:href="#basePolygonDirUp" />
+					</g>
+					<g id="bilotripFontCharP" >
+						<use x="0" y="0.133" xlink:href="#basePolygonDirRight" />
+						<use x="-0.3" y="1.2" xlink:href="#basePolygonDirUp" />
+					</g>
+					<g id="text" transform="scale(.05 .05)" class="fill" >
+						<use x="-6" y="0.1" xlink:href="#bilotripFontCharI" />
+						<use x="-4" y="0" xlink:href="#bilotripFontCharL" />
+						<use x="-2" y="0" xlink:href="#bilotripFontCharO" />
+						<use x="2" y="-0.433" xlink:href="#bilotripFontCharT" />
+						<use x="4" y="-0.25" xlink:href="#bilotripFontCharR" />
+						<use x="6" y="0.1" xlink:href="#bilotripFontCharI" />
+						<use x="7.95" y="-0.1" xlink:href="#bilotripFontCharBP" />
+					</g>
+				</defs>
+				<g transform="rotate(0)" >
+					<use x="0" y="0.2" xlink:href="#text" />
+				</g>
+				<g transform="rotate(120)" >
+					<use x="0" y="0.2" xlink:href="#text" />
+				</g>
+				<g transform="rotate(240)" >
+					<use x="0" y="0.2" xlink:href="#text" />
+				</g>			
+			</g>
+		</defs>
+		<defs>
+			<g id="logo">
+				<use x="0" y="0" xlink:href="#polygons" />
+				<use x="0" y="0" xlink:href="#texts" />
+			</g>
+		</defs>
+		
+		<use x="0" y="0" xlink:href="#logo" />
+		<g transform="scale(.25 .25)" >
+			<use x="0" y="0" xlink:href="#logo" />
+		</g>
+		<g transform="scale(.0625 .0625)" >
+			<use x="0" y="0" xlink:href="#logo" />
+		</g>
+		<g transform="scale(.015625 .015625)" >
+			<use x="0" y="0" xlink:href="#logo" />
+		</g>
+	</g>
+</defs>
+
+<g id="image" transform="scale(1)" class="outline" >
+	<use x=".5" y=".633" xlink:href="#bilogony" />
+</g>
+<!--g id="imageB" transform="scale(1)" class="DEBUG" >
+	<use x="0" y="0" xlink:href="#basePolygonB" />
+</g-->
+
+</svg>
+
+</document>
