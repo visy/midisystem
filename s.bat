@@ -1,1 +1,1 @@
-gcc midifile.c midiutil.c main.c -o midisys.exe -m32 -g -Wall -Wno-unused-variable c:\mingw\lib\bass.lib c:\mingw\lib\assimp.lib -lglew32 -lfreeglut -lglu32 -lSOIL -lopengl32 && midisys
+g++ -w -fpermissive midifile.c midiutil.c main.c -o midisys.exe -m32 -g -Wall -Wno-unused-variable c:\mingw\lib\bass.lib libassimp.dll.a -lglew32 -lfreeglut -lglu32 -lSOIL -lopengl32 && midisys

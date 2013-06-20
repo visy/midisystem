@@ -1,23 +1,35 @@
-// MIDISYS-ENGINE
+// MIDISYS-ENGINE for windows and osx
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <fstream>
+#include <map>
 
 #ifndef  __APPLE__
 #include <malloc.h>
 #endif
+
 #include "midifile.h"
 #include "midiutil.h"
 
-#include <GL/glew.h>
-#include <GL/glu.h>
-#include <GL/freeglut.h>
+#ifdef __APPLE__
+	#include "glew.h"
+	#include <OpenGL/OpenGL.h>
+	#include <OpenGL/glu.h>
+	#include "freeglut.h"
+#else
+	#include <GL/glew.h>
+	#include <GL/glu.h>
+	#include <GL/freeglut.h>
+#endif
 
-#include <assimp/cimport.h>
-#include <assimp/scene.h>
-#include <assimp/postprocess.h>
+#include "assimp/Importer.hpp"
+#include "assimp/PostProcess.h"
+#include "assimp/Scene.h"
+#include "assimp/DefaultLogger.hpp"
+#include "assimp/LogStream.hpp"
 
 #include "SOIL.h"
 
@@ -32,6 +44,8 @@ int mouseX;
 int mouseY;
 
 // shaders
+
+GLuint projector_shaderProg;
 
 GLuint eye_shaderProg;
 GLuint eye_post_shaderProg;
@@ -50,17 +64,27 @@ int grayeye_tex = -1;
 int room_tex[3] = {-1};
 int majictext1_tex = -1;
 
+int copkiller1_tex = -1;
+
+int scene_tex = -1;
+
 // texture switchers
 
 int room_texnum = 0;
 
 // assimp scene
 
-const struct aiScene* scene = NULL;
+const aiScene* scene = NULL;
 GLuint scene_list = 0;
-struct aiVector3D scene_min, scene_max, scene_center;
+aiVector3D scene_min, scene_max, scene_center;
+
+Assimp::Importer importer;
+
+std::map<std::string, GLuint*> textureIdMap; // map image filenames to textureIds
+GLuint*	textureIds;	// pointer to texture array
 
 static float kujalla_angle = 0.f;
+int beatmode = -1;
 
 // assimp defines
 
@@ -69,7 +93,7 @@ static float kujalla_angle = 0.f;
 
 // misc. gfx system
 
-static GLfloat g_nearPlane = 1;
+static GLfloat g_nearPlane = 0.001;
 static GLfloat g_farPlane = 1000;
 static int g_Width = 600;
 static int g_Height = 600;
@@ -80,28 +104,33 @@ int frame = 0;
 
 // effect pointers && logic && state
 
-int dt = 0;
-int current_scene = 0;
+int current_scene;
 
-void dummy() {}
+void dummy(float dt) {}
 
+void LeadMaskScene();
+void CopScene();
 void EyeScene();
 void RedCircleScene();
 void KolmeDeeScene();
 
-void KolmeDeeLogic();
+void KolmeDeeLogic(float dt);
 
 typedef void (*SceneRenderCallback)();
 SceneRenderCallback scene_render[] = {
-										&KolmeDeeScene,
+										&LeadMaskScene,
+										&CopScene,
 										&EyeScene, 
+										&KolmeDeeScene,
 										&RedCircleScene
 									 };
 
-typedef void (*SceneLogicCallback)();
+typedef void (*SceneLogicCallback)(float);
 SceneLogicCallback scene_logic[] = {
+										&dummy,
+										&dummy,
 										&KolmeDeeLogic,
-										&dummy, 
+										&KolmeDeeLogic,
 										&dummy
 									 };
 
@@ -136,6 +165,29 @@ float scene_start_millis = 0;
 int music_started = -1;
 
 DWORD music_channel = 0;
+
+
+/////////////////////////////////////////////////////////
+//////////////////////// PLAYLIST ////////////////////////
+///////////////////////////////////////////////////////////
+
+int demo_playlist()
+{
+	int sc = current_scene;
+	if (millis >= 0 && millis < (55*60*1000)+922)
+	{
+		current_scene = 0; // lead masks
+	}
+	else if (millis >= ((60*60*1000)+(51*60*1000)+844) && millis < ((120*60*1000)+(29*60*1000)+126))
+	{
+		current_scene = 1;
+	}
+
+	if (sc != current_scene)
+	{
+		scene_start_millis = millis;
+	}
+}
 
 ///////////////////////////////////////////////////// HELPER FUNCTIONS
 
@@ -500,76 +552,436 @@ void ParseMIDITimeline(const char* mappingFile)
 	printf("--- MIDISYS ENGINE: ParseMIDITimeline() success\n");
 }
 
+GLuint LoadTexture(const char* pFilename, int invert)
+{
+	printf("--- MIDISYS ENGINE: LoadTexture(\"%s\")", pFilename);
+	GLuint tex_2d;
+
+	if (strcmp(pFilename,"") == 0) return 99999;
+
+	if (invert == 1) 
+	{
+		tex_2d = SOIL_load_OGL_texture
+		(
+			pFilename,
+			SOIL_LOAD_AUTO,
+			SOIL_CREATE_NEW_ID,
+			SOIL_FLAG_MIPMAPS | SOIL_FLAG_INVERT_Y | SOIL_FLAG_NTSC_SAFE_RGB | SOIL_FLAG_COMPRESS_TO_DXT
+		);
+	}
+	else
+	{
+		tex_2d = SOIL_load_OGL_texture
+		(
+			pFilename,
+			SOIL_LOAD_AUTO,
+			SOIL_CREATE_NEW_ID,
+			SOIL_FLAG_MIPMAPS | SOIL_FLAG_NTSC_SAFE_RGB | SOIL_FLAG_COMPRESS_TO_DXT
+		);
+
+	}
+
+	if(0 == tex_2d)
+	{
+		printf(" error loading texture from file \"%s\"\n", SOIL_last_result());
+		exit(1);
+	}
+
+	printf(" success\n");
+
+	return tex_2d;
+}
+
+GLuint LoadTexture(const char* pFilename)
+{
+	return LoadTexture(pFilename, 1);
+}
+
+int LoadGLTextures(const aiScene* scene) {
+
+	if (scene->HasTextures())
+	{
+		printf("ERROR: support for meshes with embedded textures is not implemented\n");
+		exit(1);
+	}
+
+	/* scan scene's materials for textures */
+	for (unsigned int m=0; m<scene->mNumMaterials; m++)
+	{
+		int texIndex = 0;
+		aiReturn texFound = AI_SUCCESS;
+
+		aiString path;	// filename
+
+		while (texFound == AI_SUCCESS)
+		{
+			texFound = scene->mMaterials[m]->GetTexture(aiTextureType_DIFFUSE, texIndex, &path);
+			GLuint texnum = LoadTexture(path.data, 0);
+			textureIdMap[path.data] = texnum;
+			texIndex++;
+		}
+	}
+	//return success;
+	return true;
+}
+
+
 ///////////////////////////////////////////////////////////////// EFFECTS
 ///////////////////////////////////////////////////////////////// EFFECTS
 ///////////////////////////////////////////////////////////////// EFFECTS
 ///////////////////////////////////////////////////////////////// EFFECTS
 ///////////////////////////////////////////////////////////////// EFFECTS
 
-void KolmeDeeLogic()
+
+// Can't send color down as a pointer to aiColor4D because AI colors are ABGR.
+void Color4f(const aiColor4D *color)
+{
+glColor4f(color->r, color->g, color->b, color->a);
+}
+
+void set_float4(float f[4], float a, float b, float c, float d)
+{
+f[0] = a;
+f[1] = b;
+f[2] = c;
+f[3] = d;
+}
+
+void color4_to_float4(const aiColor4D *c, float f[4])
+{
+f[0] = c->r;
+f[1] = c->g;
+f[2] = c->b;
+f[3] = c->a;
+}
+
+void apply_material(const aiMaterial *mtl)
+{
+	float c[4];
+
+	GLenum fill_mode;
+	int ret1, ret2;
+	aiColor4D diffuse;
+	aiColor4D specular;
+	aiColor4D ambient;
+	aiColor4D emission;
+	float shininess, strength;
+	int two_sided;
+	int wireframe;
+	unsigned int max;	// changed: to unsigned
+
+	int texIndex = 0;
+	aiString texPath;	//contains filename of texture
+
+	if(AI_SUCCESS == mtl->GetTexture(aiTextureType_DIFFUSE, texIndex, &texPath))
+	{
+	//bind texture
+	GLuint texId = textureIdMap.at(texPath.data);
+	if (texId != 99999) glBindTexture(GL_TEXTURE_2D, texId);
+	}
+
+	set_float4(c, 0.8f, 0.8f, 0.8f, 1.0f);
+	if(AI_SUCCESS == aiGetMaterialColor(mtl, AI_MATKEY_COLOR_DIFFUSE, &diffuse))
+	color4_to_float4(&diffuse, c);
+	glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, c);
+
+	set_float4(c, 0.0f, 0.0f, 0.0f, 1.0f);
+	if(AI_SUCCESS == aiGetMaterialColor(mtl, AI_MATKEY_COLOR_SPECULAR, &specular))
+	color4_to_float4(&specular, c);
+	glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, c);
+
+	set_float4(c, 0.2f, 0.2f, 0.2f, 1.0f);
+	if(AI_SUCCESS == aiGetMaterialColor(mtl, AI_MATKEY_COLOR_AMBIENT, &ambient))
+	color4_to_float4(&ambient, c);
+	glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, c);
+
+	set_float4(c, 0.0f, 0.0f, 0.0f, 1.0f);
+	if(AI_SUCCESS == aiGetMaterialColor(mtl, AI_MATKEY_COLOR_EMISSIVE, &emission))
+	color4_to_float4(&emission, c);
+	glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, c);
+
+	max = 1;
+	ret1 = aiGetMaterialFloatArray(mtl, AI_MATKEY_SHININESS, &shininess, &max);
+	max = 1;
+	ret2 = aiGetMaterialFloatArray(mtl, AI_MATKEY_SHININESS_STRENGTH, &strength, &max);
+	if((ret1 == AI_SUCCESS) && (ret2 == AI_SUCCESS))
+	glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, shininess * strength);
+	else {
+	glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, 0.0f);
+	set_float4(c, 0.0f, 0.0f, 0.0f, 0.0f);
+	glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, c);
+	}
+
+	max = 1;
+	if(AI_SUCCESS == aiGetMaterialIntegerArray(mtl, AI_MATKEY_ENABLE_WIREFRAME, &wireframe, &max))
+	fill_mode = wireframe ? GL_LINE : GL_FILL;
+	else
+	fill_mode = GL_FILL;
+	glPolygonMode(GL_FRONT_AND_BACK, fill_mode);
+
+	max = 1;
+	if((AI_SUCCESS == aiGetMaterialIntegerArray(mtl, AI_MATKEY_TWOSIDED, &two_sided, &max)) && two_sided)
+	glEnable(GL_CULL_FACE);
+	else
+	glDisable(GL_CULL_FACE);
+}
+
+
+void recursive_render (const struct aiScene *sc, const struct aiNode* nd, float scale)
+{
+	unsigned int i;
+	unsigned int n=0, t;
+	aiMatrix4x4 m = nd->mTransformation;
+
+	aiMatrix4x4 m2;
+	aiMatrix4x4::Scaling(aiVector3D(scale, scale, scale), m2);
+	m = m * m2;
+
+	// update transform
+	m.Transpose();
+	glPushMatrix();
+	glMultMatrixf((float*)&m);
+
+	// draw all meshes assigned to this node
+	for (; n < nd->mNumMeshes; ++n)
+	{
+	const struct aiMesh* mesh = scene->mMeshes[nd->mMeshes[n]];
+
+	apply_material(sc->mMaterials[mesh->mMaterialIndex]);
+
+
+	if(mesh->mNormals == NULL)
+	{
+	glDisable(GL_LIGHTING);
+	}
+	else
+	{
+	glEnable(GL_LIGHTING);
+	}
+
+	if(mesh->mColors[0] != NULL)
+	{
+	glEnable(GL_COLOR_MATERIAL);
+	}
+	else
+	{
+	glDisable(GL_COLOR_MATERIAL);
+	}
+
+
+
+	for (t = 0; t < mesh->mNumFaces; ++t) {
+	const struct aiFace* face = &mesh->mFaces[t];
+	GLenum face_mode;
+
+	switch(face->mNumIndices)
+	{
+	case 1: face_mode = GL_POINTS; break;
+	case 2: face_mode = GL_LINES; break;
+	case 3: face_mode = GL_TRIANGLES; break;
+	default: face_mode = GL_POLYGON; break;
+	}
+
+	glBegin(face_mode);
+
+	for(i = 0; i < face->mNumIndices; i++)	// go through all vertices in face
+	{
+	int vertexIndex = face->mIndices[i];	// get group index for current index
+	if(mesh->mColors[0] != NULL)
+	Color4f(&mesh->mColors[0][vertexIndex]);
+	if(mesh->mNormals != NULL)
+
+	if(mesh->HasTextureCoords(0))	//HasTextureCoords(texture_coordinates_set)
+	{
+	glTexCoord2f(mesh->mTextureCoords[0][vertexIndex].x, 1 - mesh->mTextureCoords[0][vertexIndex].y); //mTextureCoords[channel][vertex]
+	}
+
+	glNormal3fv(&mesh->mNormals[vertexIndex].x);
+	glVertex3fv(&mesh->mVertices[vertexIndex].x);
+	}
+
+	glEnd();
+
+	}
+
+	}
+
+
+	// draw all children
+	for (n = 0; n < nd->mNumChildren; ++n)
+	{
+	recursive_render(sc, nd->mChildren[n], scale);
+	}
+
+	glPopMatrix();
+}
+
+
+void KolmeDeeLogic(float dt)
 {
 	kujalla_angle += dt*0.01;
 }
 
 void KolmeDeeScene()
 {
+	glEnable(GL_TEXTURE_2D);
+	glShadeModel(GL_SMOOTH);	// Enables Smooth Shading
+	glClearColor(1.0f, 1.0f, 1.0f, 0.0f);
+	glClearDepth(1.0f);	// Depth Buffer Setup
+	glEnable(GL_DEPTH_TEST);	// Enables Depth Testing
+	glDepthFunc(GL_LEQUAL);	// The Type Of Depth Test To Do
+	glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);	// Really Nice Perspective Calculation
+
 	glEnable(GL_LIGHTING);
 	glEnable(GL_LIGHT0); // Uses default lighting parameters
-
-	glEnable(GL_DEPTH_TEST);
-
 	glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE);
 	glEnable(GL_NORMALIZE);
 
-	// XXX docs say all polygons are emitted CCW, but tests show that some aren't.
-	if(getenv("MODEL_IS_BROKEN"))
-	glFrontFace(GL_CW);
+	GLfloat LightAmbient[]= { 0.5f, 0.5f, 0.5f, 1.0f };
+	GLfloat LightDiffuse[]= { 1.0f, 1.0f, 1.0f, 1.0f };
+	GLfloat LightPosition[]= { 0.0f, 0.0f, 15.0f, 1.0f };
 
-	glColorMaterial(GL_FRONT_AND_BACK, GL_DIFFUSE);
+	glLightfv(GL_LIGHT1, GL_AMBIENT, LightAmbient);
+	glLightfv(GL_LIGHT1, GL_DIFFUSE, LightDiffuse);
+	glLightfv(GL_LIGHT1, GL_POSITION, LightPosition);
+	glEnable(GL_LIGHT1);
 
 	float tmp;
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 
-	gluLookAt(0.f,0.f,3.f,0.f,0.f,-5.f,0.f,1.f,0.f);
+	glTranslatef(0.0f, -10.0f, -50.0f);	// Move 40 Units And Into The Screen
 
-	gluLookAt(0., 0., 3.f-((float)mouseX/(g_Width))*10.0f, 
-    	      0, 0, -5.f,
-    	      0, 1, 0); 
+	glRotatef(kujalla_angle, 1.0f, 0.0f, 0.0f);
+	glRotatef(kujalla_angle, 0.0f, 1.0f, 0.0f);
+	glRotatef(kujalla_angle, 0.0f, 0.0f, 1.0f);
 
-	// rotate it around the y axis
-	glRotatef(kujalla_angle,0.f,1.f,0.f);
-
-	// scale the whole asset to fit into our view frustum
-	tmp = scene_max.x-scene_min.x;
-	tmp = aisgl_max(scene_max.y - scene_min.y,tmp);
-	tmp = aisgl_max(scene_max.z - scene_min.z,tmp);
-	tmp = 1.f / tmp;
-	glScalef(tmp, tmp, tmp);
-
-    // center the model
-	glTranslatef( -scene_center.x, -scene_center.y, -scene_center.z );
-
-    // if the display list has not been made yet, create a new one and
-    // fill it with scene contents
-	if(scene_list == 0) {
-		scene_list = glGenLists(1);
-		glNewList(scene_list, GL_COMPILE);
-		// now begin at the root node of the imported data and traverse
-		// the scenegraph by multiplying subsequent local transforms
-		// together on GL's matrix stack.
-		recursive_render(scene, scene->mRootNode);
-		glEndList();
-	}
-
-	glCallList(scene_list);
+	recursive_render(scene, scene->mRootNode, 0.5);
 }
 
 
-int beatmode = -1;
+void LeadMaskScene()
+{
+	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fb); // fbo
+
+	float mymillis = millis;
+	glUseProgram(projector_shaderProg);
+
+	glEnable(GL_BLEND);
+	glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, beatmode == 1 ? GL_SUBTRACT : GL_ADD);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_DST_COLOR);
+
+	GLint widthLoc5 = glGetUniformLocation(projector_shaderProg, "width");
+	GLint heightLoc5 = glGetUniformLocation(projector_shaderProg, "height");
+	GLint timeLoc5 = glGetUniformLocation(projector_shaderProg, "time");
+	GLint alphaLoc5 = glGetUniformLocation(projector_shaderProg, "alpha");
+
+	glUniform1f(widthLoc5, g_Width);
+	glUniform1f(heightLoc5, g_Height);
+	glUniform1f(timeLoc5, mymillis);
+	glUniform1f(alphaLoc5, cos(mymillis*0.001)*0.8);
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, scene_tex);
+
+	GLint location5 = glGetUniformLocation(fsquad_shaderProg, "texture0");
+	glUniform1i(location5, 0);
+
+	glLoadIdentity();
+
+	glTranslatef(-1.2, -1.0, -1.0);
+
+	int i=0;
+	int j=0;
+	glBegin(GL_QUADS);
+	glVertex2f(i, j);
+	glVertex2f(i + 100, j);
+	glVertex2f(i + 100, j + 100);
+	glVertex2f(i, j + 100);
+	glEnd();
+
+	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0); // default
+
+	glUseProgram(fsquad_shaderProg);
+
+	glEnable(GL_BLEND);
+	glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, beatmode == 1 ? GL_SUBTRACT : GL_ADD);
+	glBlendFunc(GL_SRC_COLOR, GL_ONE_MINUS_DST_COLOR);
+
+	GLint widthLoc6 = glGetUniformLocation(fsquad_shaderProg, "width");
+	GLint heightLoc6 = glGetUniformLocation(fsquad_shaderProg, "height");
+	GLint timeLoc6 = glGetUniformLocation(fsquad_shaderProg, "time");
+	GLint alphaLoc6 = glGetUniformLocation(fsquad_shaderProg, "alpha");
+
+	glUniform1f(widthLoc6, g_Width);
+	glUniform1f(heightLoc6, g_Height);
+	glUniform1f(timeLoc6, mymillis/100);
+	glUniform1f(alphaLoc6, cos(mymillis*0.8)*0.8);
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, fb_tex);
+
+	GLint location6 = glGetUniformLocation(fsquad_shaderProg, "texture0");
+	glUniform1i(location6, 0);
+
+	glLoadIdentity();
+
+	glTranslatef(-1.2, -1.0, -1.0);
+
+	i=0;
+	j=0;
+	glBegin(GL_QUADS);
+	glVertex2f(i, j);
+	glVertex2f(i + 100, j);
+	glVertex2f(i + 100, j + 100);
+	glVertex2f(i, j + 100);
+	glEnd();
+
+}
+
+
+void CopScene()
+{
+	float mymillis = millis;
+	glUseProgram(fsquad_shaderProg);
+
+	glEnable(GL_BLEND);
+	glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, beatmode == 1 ? GL_SUBTRACT : GL_ADD);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_DST_COLOR);
+
+	GLint widthLoc5 = glGetUniformLocation(fsquad_shaderProg, "width");
+	GLint heightLoc5 = glGetUniformLocation(fsquad_shaderProg, "height");
+	GLint timeLoc5 = glGetUniformLocation(fsquad_shaderProg, "time");
+	GLint alphaLoc5 = glGetUniformLocation(fsquad_shaderProg, "alpha");
+
+	glUniform1f(widthLoc5, g_Width);
+	glUniform1f(heightLoc5, g_Height);
+	glUniform1f(timeLoc5, mymillis/100);
+	glUniform1f(alphaLoc5, cos(mymillis*0.1)*0.1);
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, copkiller1_tex);
+
+	GLint location5 = glGetUniformLocation(fsquad_shaderProg, "texture0");
+	glUniform1i(location5, 0);
+
+	glLoadIdentity();
+
+	glTranslatef(-1.2, -1.0, -1.0);
+
+	int i=0;
+	int j=0;
+	glBegin(GL_QUADS);
+	glVertex2f(i, j);
+	glVertex2f(i + 100, j);
+	glVertex2f(i + 100, j + 100);
+	glVertex2f(i, j + 100);
+	glEnd();
+
+}
+
 
 void EyeScene()
 {
@@ -611,7 +1023,8 @@ void EyeScene()
 
 	glLoadIdentity();
 
-	glTranslatef(-1.2, -1.0, -1.0+cos(mymillis*0.00001)*0.1);
+	glRotatef(45,0.0,0.0,1.0f);
+	glTranslatef(-1.2, -1.0, 0.0+(tan(mymillis*0.00001)*0.1)*(millis-155520)*0.0001);
 
 	i=0;
 	j=0;
@@ -687,6 +1100,16 @@ void EyeScene()
 		}
 	glEnd();
 	}
+
+	glLoadIdentity();
+
+	glTranslatef(0.0f, -10.0f, -50.0f);	// Move 40 Units And Into The Screen
+
+	glRotatef(kujalla_angle, 1.0f, 0.0f, 0.0f);
+	glRotatef(kujalla_angle, 0.0f, 1.0f, 0.0f);
+	glRotatef(kujalla_angle, 0.0f, 0.0f, 1.0f);
+
+	recursive_render(scene, scene->mRootNode, 0.5);
 
 	// eye postprocess to screen
 
@@ -778,6 +1201,7 @@ void EyeScene()
 
 }
 
+
 void RedCircleScene()
 {
 	glUseProgram(redcircle_shaderProg);
@@ -834,9 +1258,10 @@ void RedCircleScene()
 
 void UpdateShaderParams()
 {
-	int intmillis = (int)millis+(155520*1.212);
+	int intmillis = (int)millis;
 
 	int i,j = 0;
+
 
 	for (i=0; i < mapping_count; i++)
 	{
@@ -848,10 +1273,10 @@ void UpdateShaderParams()
 		if (scene_shader_param_type[mapping_paramnum[i]] == 0) scene_shader_params[mapping_paramnum[i]] = -1;
 
 		int dw = (int)currentMsg.dwAbsPos;
-		int tarkistus = (int)(dw);
+		int tarkistus = (int)(dw)*1.212;
 
 		//if (intmillis+155520 < tarkistus*1.212) break;
-		if (intmillis < tarkistus*1.212) break;
+		if (intmillis < tarkistus) break;
 
 		timeline_trackindex[tracknum]++;
 
@@ -873,7 +1298,7 @@ void UpdateShaderParams()
 				if (ev == msgNoteOn)
 				{
 					trigVal = currentMsg.MsgData.NoteOn.iNote;
-					printf("noteon track #%d, len %d, pos %d: time: %d -> %d\n", tracknum, timeline_tracklength[tracknum], timeline_trackindex[tracknum], currentMsg.dwAbsPos, trigVal);
+					printf("track #%d, len %d, pos %d: dwAbsPos: %d (millis: %d) -> noteon: %d\n", tracknum, timeline_tracklength[tracknum], timeline_trackindex[tracknum], currentMsg.dwAbsPos, intmillis, trigVal);
 				}
 				else if (ev == msgNoteOff)
 				{
@@ -892,7 +1317,7 @@ void UpdateShaderParams()
 				if (ev == msgSetParameter)
 				{
 					paramVal = currentMsg.MsgData.NoteParameter.iParam;
-					printf("setparam track #%d, len %d, pos %d: time: %d -> %d\n", tracknum, timeline_tracklength[tracknum], timeline_trackindex[tracknum], currentMsg.dwAbsPos, paramVal);
+					//printf("setparam track #%d, len %d, pos %d: time: %d -> %d\n", tracknum, timeline_tracklength[tracknum], timeline_trackindex[tracknum], currentMsg.dwAbsPos, paramVal);
 				}
 
 				scene_shader_params[mapping_paramnum[i]] = paramVal;
@@ -906,39 +1331,24 @@ void UpdateShaderParams()
 
 
 }
-
 ///////////////////////////////////////////////////////////////// MAIN LOGIC
+
+double min(double a, double b)
+{
+	if (a<=b) return a;
+	else return b;
+}
 
 void logic()
 { 	
+	if (music_started == -1) { BASS_ChannelPlay(music_channel,FALSE); music_started = 1; }
+
 	QWORD bytepos = BASS_ChannelGetPosition(music_channel, BASS_POS_BYTE);
 	double pos = BASS_ChannelBytes2Seconds(music_channel, bytepos);
 	millis = (float)pos*1000;
 
-	static GLint prev_time = 0;
-	static GLint prev_fps_time = 0;
-	static int frames = 0;
-
-	scene_logic[current_scene]();
-
-	int time = (int)millis;
-	dt = time-prev_time;
-
-	prev_time = time;
-
-	frames += 1;
-	if ((time - prev_fps_time) > 1000) // update every seconds
-    {
-	        int current_fps = frames * 1000 / (time - prev_fps_time);
-	        printf("%d fps\n", current_fps);
-	        frames = 0;
-	        prev_fps_time = time;
-    }
-
-	if (music_started == -1) { BASS_ChannelPlay(music_channel,FALSE); music_started = 1; }
-
-	//printf("millis:%f\n", millis);
-
+	demo_playlist();
+	scene_logic[current_scene](0.0f);
 	UpdateShaderParams();
 
 	glutPostRedisplay();
@@ -975,190 +1385,8 @@ void reshape(GLint width, GLint height)
 	InitFBO();
 }
 
-void get_bounding_box_for_node (const struct aiNode* nd, struct aiVector3D* min, struct aiVector3D* max, struct aiMatrix4x4* trafo )
-{
-	struct aiMatrix4x4 prev;
-	unsigned int n = 0, t;
-
-	prev = *trafo;
-	aiMultiplyMatrix4(trafo,&nd->mTransformation);
-
-	for (; n < nd->mNumMeshes; ++n) {
-		const struct aiMesh* mesh = scene->mMeshes[nd->mMeshes[n]];
-		for (t = 0; t < mesh->mNumVertices; ++t) {
-			struct aiVector3D tmp = mesh->mVertices[t];
-			aiTransformVecByMatrix4(&tmp,trafo);
-
-			min->x = aisgl_min(min->x,tmp.x);
-			min->y = aisgl_min(min->y,tmp.y);
-			min->z = aisgl_min(min->z,tmp.z);
-
-			max->x = aisgl_max(max->x,tmp.x);
-			max->y = aisgl_max(max->y,tmp.y);
-			max->z = aisgl_max(max->z,tmp.z);
-		}
-	}
-
-	for (n = 0; n < nd->mNumChildren; ++n) {
-		get_bounding_box_for_node(nd->mChildren[n],min,max,trafo);
-	}
-	*trafo = prev;
-}
-
 // ----------------------------------------------------------------------------
-void get_bounding_box (struct aiVector3D* min, struct aiVector3D* max)
-{
-	struct aiMatrix4x4 trafo;
-	aiIdentityMatrix4(&trafo);
-
-	min->x = min->y = min->z = 1e10f;
-	max->x = max->y = max->z = -1e10f;
-	get_bounding_box_for_node(scene->mRootNode,min,max,&trafo);
-}
-
 // ----------------------------------------------------------------------------
-void color4_to_float4(const struct aiColor4D *c, float f[4])
-{
-	f[0] = c->r;
-	f[1] = c->g;
-	f[2] = c->b;
-	f[3] = c->a;
-}
-
-// ----------------------------------------------------------------------------
-void set_float4(float f[4], float a, float b, float c, float d)
-{
-	f[0] = a;
-	f[1] = b;
-	f[2] = c;
-	f[3] = d;
-}
-
-// ----------------------------------------------------------------------------
-void apply_material(const struct aiMaterial *mtl)
-{
-	float c[4];
-
-	GLenum fill_mode;
-	int ret1, ret2;
-	struct aiColor4D diffuse;
-	struct aiColor4D specular;
-	struct aiColor4D ambient;
-	struct aiColor4D emission;
-	float shininess, strength;
-	int two_sided;
-	int wireframe;
-	unsigned int max;
-
-	set_float4(c, 0.8f, 0.8f, 0.8f, 1.0f);
-	if(AI_SUCCESS == aiGetMaterialColor(mtl, AI_MATKEY_COLOR_DIFFUSE, &diffuse))
-	color4_to_float4(&diffuse, c);
-	glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, c);
-
-	set_float4(c, 0.0f, 0.0f, 0.0f, 1.0f);
-	if(AI_SUCCESS == aiGetMaterialColor(mtl, AI_MATKEY_COLOR_SPECULAR, &specular))
-	color4_to_float4(&specular, c);
-	glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, c);
-
-	set_float4(c, 0.2f, 0.2f, 0.2f, 1.0f);
-	if(AI_SUCCESS == aiGetMaterialColor(mtl, AI_MATKEY_COLOR_AMBIENT, &ambient))
-	color4_to_float4(&ambient, c);
-	glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, c);
-
-	set_float4(c, 0.0f, 0.0f, 0.0f, 1.0f);
-	if(AI_SUCCESS == aiGetMaterialColor(mtl, AI_MATKEY_COLOR_EMISSIVE, &emission))
-	color4_to_float4(&emission, c);
-	glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, c);
-
-	max = 1;
-	ret1 = aiGetMaterialFloatArray(mtl, AI_MATKEY_SHININESS, &shininess, &max);
-	if(ret1 == AI_SUCCESS) {
-	     max = 1;
-	     ret2 = aiGetMaterialFloatArray(mtl, AI_MATKEY_SHININESS_STRENGTH, &strength, &max);
-			if(ret2 == AI_SUCCESS)
-			glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, shininess * strength);
-	        else
-	         glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, shininess);
-	    }
-	else {
-	glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, 0.0f);
-	set_float4(c, 0.0f, 0.0f, 0.0f, 0.0f);
-	glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, c);
-	}
-
-	max = 1;
-	if(AI_SUCCESS == aiGetMaterialIntegerArray(mtl, AI_MATKEY_ENABLE_WIREFRAME, &wireframe, &max))
-	fill_mode = wireframe ? GL_LINE : GL_FILL;
-	else
-	fill_mode = GL_FILL;
-	glPolygonMode(GL_FRONT_AND_BACK, fill_mode);
-
-	max = 1;
-	if((AI_SUCCESS == aiGetMaterialIntegerArray(mtl, AI_MATKEY_TWOSIDED, &two_sided, &max)) && two_sided)
-	glDisable(GL_CULL_FACE);
-	else
-	glEnable(GL_CULL_FACE);
-}
-
-
-// ----------------------------------------------------------------------------
-void recursive_render (const struct aiScene *sc, const struct aiNode* nd)
-{
-	unsigned int i;
-	unsigned int n = 0, t;
-	struct aiMatrix4x4 m = nd->mTransformation;
-
-	// update transform
-	aiTransposeMatrix4(&m);
-	glPushMatrix();
-	glMultMatrixf((float*)&m);
-
-	// draw all meshes assigned to this node
-	for (; n < nd->mNumMeshes; ++n) {
-		const struct aiMesh* mesh = scene->mMeshes[nd->mMeshes[n]];
-
-		apply_material(sc->mMaterials[mesh->mMaterialIndex]);
-
-		if(mesh->mNormals == NULL) {
-			glDisable(GL_LIGHTING);
-		} else {
-			glEnable(GL_LIGHTING);
-		}
-
-		for (t = 0; t < mesh->mNumFaces; ++t) {
-			const struct aiFace* face = &mesh->mFaces[t];
-			GLenum face_mode;
-
-			switch(face->mNumIndices) {
-			case 1: face_mode = GL_POINTS; break;
-			case 2: face_mode = GL_LINES; break;
-			case 3: face_mode = GL_TRIANGLES; break;
-			default: face_mode = GL_POLYGON; break;
-		}
-
-		glBegin(face_mode);
-
-			for(i = 0; i < face->mNumIndices; i++) {
-				int index = face->mIndices[i];
-				if(mesh->mColors[0] != NULL)
-				glColor4fv((GLfloat*)&mesh->mColors[0][index]);
-				if(mesh->mNormals != NULL)
-				glNormal3fv(&mesh->mNormals[index].x);
-				glVertex3fv(&mesh->mVertices[index].x);
-			}
-
-		glEnd();
-	}
-
-	}
-
-	// draw all children
-	for (n = 0; n < nd->mNumChildren; ++n) {
-		recursive_render(sc, nd->mChildren[n]);
-	}
-
-	glPopMatrix();
-}
 
 void quit()
 {
@@ -1168,10 +1396,7 @@ void quit()
 
 void keyPress(unsigned char key, int x, int y)
 {
-	if (key == VK_ESCAPE)
-	{
-		quit();
-	}
+	quit();
 }
 
 void mouseMotion(int button, int state, int x, int y)
@@ -1224,7 +1449,6 @@ void InitFBO()
 void InitGraphics(int argc, char* argv[])
 {
 	fprintf(stdout, "--- MIDISYS ENGINE: InitGraphics()\n");
-	glutInitDisplayMode(GLUT_RGB | GLUT_DOUBLE | GLUT_DEPTH);
 	glutInit(&argc, argv);
 	glutCreateWindow("MIDISYS window");
 	glutReshapeWindow(g_Width, g_Height);
@@ -1244,6 +1468,12 @@ void InitGraphics(int argc, char* argv[])
 	glEnable(GL_TEXTURE_2D);
 
 	glShadeModel(GL_SMOOTH);
+
+#ifdef  __APPLE__
+	int swap_interval = 1;
+	CGLContextObj cgl_context = CGLGetCurrentContext();
+	CGLSetParameter(cgl_context, kCGLCPSwapInterval, &swap_interval);
+#endif
 
 	glutDisplayFunc(display);
 	glutReshapeFunc(reshape);
@@ -1345,12 +1575,6 @@ GLuint LoadShader(const char* pFilename)
 	glLinkProgram(sp);
 	PrintShaderLog(sp);
 
-	#ifdef SUPERVERBOSE 
-	printf("\tLoadShader(): glUseProgram\n");
-	#endif
-	glUseProgram(sp);
-	PrintShaderLog(sp);
-
 	#ifdef SUPERVERBOSE
 	fprintf(stdout,"--- MIDISYS ENGINE: LoadShader(\"%s\") success\n", pFilename);
 	#else
@@ -1360,62 +1584,32 @@ GLuint LoadShader(const char* pFilename)
 	return sp;
 }
 
-GLuint LoadTexture(const char* pFilename)
+bool Import3DFromFile(const std::string& pFile)
 {
-	printf("--- MIDISYS ENGINE: LoadTexture(\"%s\")", pFilename);
-
-	GLuint tex_2d = SOIL_load_OGL_texture
-		(
-			pFilename,
-			SOIL_LOAD_AUTO,
-			SOIL_CREATE_NEW_ID,
-			SOIL_FLAG_MIPMAPS | SOIL_FLAG_INVERT_Y | SOIL_FLAG_NTSC_SAFE_RGB | SOIL_FLAG_COMPRESS_TO_DXT
-		);
-
-	if(0 == tex_2d)
+	//check if file exists
+	std::ifstream fin(pFile.c_str());
+	if(!fin.fail())
 	{
-		printf(" error loading texture from file \"%s\"\n", SOIL_last_result());
+		fin.close();
+	}
+	else
+	{
+		printf("Could not open file %s\n", pFile.c_str());
 		exit(1);
 	}
 
-	printf(" success\n");
+	scene = importer.ReadFile( pFile, aiProcessPreset_TargetRealtime_Quality);
 
-	return tex_2d;
-}
-
-int loadasset(const char* path)
-{
-	// we are taking one of the postprocessing presets to avoid
-	// spelling out 20+ single postprocessing flags here.
-	scene = aiImportFile(path,aiProcessPreset_TargetRealtime_MaxQuality);
-
-	if (scene) {
-		get_bounding_box(&scene_min,&scene_max);
-		scene_center.x = (scene_min.x + scene_max.x) / 2.0f;
-		scene_center.y = (scene_min.y + scene_max.y) / 2.0f;
-		scene_center.z = (scene_min.z + scene_max.z) / 2.0f;
-		return 0;
-	}
-	return 1;
-}
-
-void Load3DAsset(const char *assetFilename)
-{
-	printf("--- MIDISYS ENGINE: Load3DAsset(\"%s\") ", assetFilename);
-	struct aiLogStream stream;
-	stream = aiGetPredefinedLogStream(aiDefaultLogStream_STDOUT,NULL);
-
-	aiAttachLogStream(&stream);
-
-	if(0 != loadasset(assetFilename)) 
+	// If the import failed, report it
+	if( !scene)
 	{
-		printf("error loading 3d asset from file\n");
+		printf("Import failed %s\n", pFile.c_str());
 		exit(1);
 	}
 
-	printf(" success\n");
+	// We're done. Everything will be cleaned up by the importer destructor
+	return true;
 }
-
 
 void StartMainLoop()
 {
@@ -1433,12 +1627,17 @@ int main(int argc, char* argv[])
 
 	// load shaders
 
+	projector_shaderProg = LoadShader("projector");
 	eye_shaderProg = LoadShader("eye");
 	eye_post_shaderProg = LoadShader("eye_post");
 	fsquad_shaderProg = LoadShader("fsquad");
 	redcircle_shaderProg = LoadShader("redcircle");
 
 	// load textures
+
+	scene_tex = LoadTexture("scene.png");
+
+	copkiller1_tex = LoadTexture("copkiller1.png");
 
 	grayeye_tex = LoadTexture("grayeye.png");
 
@@ -1448,22 +1647,21 @@ int main(int argc, char* argv[])
 
 	majictext1_tex = LoadTexture("majictext1.png");
 
+
 	// load 3d assets
 
-	Load3DAsset("templeton_peck.obj");
+	Import3DFromFile("templeton_peck.obj");
+	LoadGLTextures(scene);
 
 	// init MIDI sync and audio
 
 	LoadMIDIEventList("music.mid");
 	ParseMIDITimeline("mapping.txt");
-	InitAudio("music.mp3");
+	InitAudio("MC3_JAETTIMARSCH.mp3");
 
 	// start mainloop
 
 	StartMainLoop();
-
-	aiReleaseImport(scene);
-	aiDetachAllLogStreams();
 
 	return 0;
 }

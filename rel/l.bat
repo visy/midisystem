@@ -1,0 +1,1 @@
+gcc midifile.c midiutil.c main.c -o midisys.exe -lopengl32 -LC:\mingw\lib -lglew32 -lfreeglut -lglu32 -DSUPERVERBOSE && midisys
