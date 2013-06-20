@@ -56,7 +56,11 @@ GLuint redcircle_shaderProg;
 
 GLuint fb;
 GLuint fb_tex;
+GLuint fb2;
+GLuint fb_tex2;
+
 GLuint depth_rb = 0;
+GLuint depth_rb2 = 0;
 
 // textures
 
@@ -174,13 +178,17 @@ DWORD music_channel = 0;
 int demo_playlist()
 {
 	int sc = current_scene;
-	if (millis >= 0 && millis < (55*60*1000)+922)
+	if (millis >= 0 && millis < (55*1000)+922)
 	{
 		current_scene = 0; // lead masks
 	}
-	else if (millis >= ((60*60*1000)+(51*60*1000)+844) && millis < ((120*60*1000)+(29*60*1000)+126))
+	else if (millis >= (55*1000)+922 && (60*1000)+(51*1000)+844)
 	{
 		current_scene = 1;
+	}
+	else if (millis >= ((60*1000)+(51*1000)+844) && millis < ((120*1000)+(29*1000)+126))
+	{
+		current_scene = 2;
 	}
 
 	if (sc != current_scene)
@@ -870,8 +878,8 @@ void LeadMaskScene()
 	glUseProgram(projector_shaderProg);
 
 	glEnable(GL_BLEND);
-	glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, beatmode == 1 ? GL_SUBTRACT : GL_ADD);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_DST_COLOR);
+	glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_DST_ALPHA);
 
 	GLint widthLoc5 = glGetUniformLocation(projector_shaderProg, "width");
 	GLint heightLoc5 = glGetUniformLocation(projector_shaderProg, "height");
@@ -881,44 +889,53 @@ void LeadMaskScene()
 	glUniform1f(widthLoc5, g_Width);
 	glUniform1f(heightLoc5, g_Height);
 	glUniform1f(timeLoc5, mymillis);
-	glUniform1f(alphaLoc5, cos(mymillis*0.001)*0.8);
+	glUniform1f(alphaLoc5, mymillis*0.0001+0.2-cos(mymillis*0.0005)*0.15);
 
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, scene_tex);
 
-	GLint location5 = glGetUniformLocation(fsquad_shaderProg, "texture0");
+	GLint location5 = glGetUniformLocation(projector_shaderProg, "texture0");
 	glUniform1i(location5, 0);
 
 	glLoadIdentity();
-
 	glTranslatef(-1.2, -1.0, -1.0);
 
-	int i=0;
-	int j=0;
 	glBegin(GL_QUADS);
-	glVertex2f(i, j);
-	glVertex2f(i + 100, j);
-	glVertex2f(i + 100, j + 100);
-	glVertex2f(i, j + 100);
+
+	int i,j;
+
+	for (i = -50; i < 50; i+=10)
+		for (j = -50; j < 50; j+=10)
+		{
+			glVertex2f(i, j);
+			glVertex2f(i + 1, j);
+			glVertex2f(i + 1, j + 1);
+			glVertex2f(i, j + 1);
+		}
 	glEnd();
 
-	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0); // default
+	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fb2); // default
 
 	glUseProgram(fsquad_shaderProg);
 
 	glEnable(GL_BLEND);
-	glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, beatmode == 1 ? GL_SUBTRACT : GL_ADD);
-	glBlendFunc(GL_SRC_COLOR, GL_ONE_MINUS_DST_COLOR);
+	glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+	glBlendFunc(GL_ONE_MINUS_SRC_COLOR, GL_ONE_MINUS_DST_COLOR);
 
 	GLint widthLoc6 = glGetUniformLocation(fsquad_shaderProg, "width");
 	GLint heightLoc6 = glGetUniformLocation(fsquad_shaderProg, "height");
 	GLint timeLoc6 = glGetUniformLocation(fsquad_shaderProg, "time");
 	GLint alphaLoc6 = glGetUniformLocation(fsquad_shaderProg, "alpha");
+	GLint gammaLoc = glGetUniformLocation(fsquad_shaderProg, "gamma");
+	GLint gridLoc6 = glGetUniformLocation(fsquad_shaderProg, "grid");
+	glUniform1f(gridLoc6, 0.001+cos(mymillis)*0.0005);
+
 
 	glUniform1f(widthLoc6, g_Width);
 	glUniform1f(heightLoc6, g_Height);
 	glUniform1f(timeLoc6, mymillis/100);
-	glUniform1f(alphaLoc6, cos(mymillis*0.8)*0.8);
+	glUniform1f(alphaLoc6, 0.1+abs(cos(mymillis*0.08)*0.05));
+	glUniform1f(gammaLoc, 0.0f);
 
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, fb_tex);
@@ -938,6 +955,86 @@ void LeadMaskScene()
 	glVertex2f(i + 100, j + 100);
 	glVertex2f(i, j + 100);
 	glEnd();
+
+	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0); // default
+
+	glUseProgram(fsquad_shaderProg);
+
+	glDisable(GL_BLEND);
+
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	GLint widthLoc7 = glGetUniformLocation(fsquad_shaderProg, "width");
+	GLint heightLoc7 = glGetUniformLocation(fsquad_shaderProg, "height");
+	GLint timeLoc7 = glGetUniformLocation(fsquad_shaderProg, "time");
+	GLint alphaLoc7 = glGetUniformLocation(fsquad_shaderProg, "alpha");
+	GLint gammaLoc2 = glGetUniformLocation(fsquad_shaderProg, "gamma");
+	GLint gridLoc = glGetUniformLocation(fsquad_shaderProg, "grid");
+
+	glUniform1f(widthLoc7, g_Width);
+	glUniform1f(heightLoc7, g_Height);
+	glUniform1f(timeLoc7, mymillis/100);
+	glUniform1f(alphaLoc7, 1.0);
+	glUniform1f(gammaLoc2, 4.0f);
+	glUniform1f(gridLoc, 1.0f+tan(mymillis*10)*0.3);
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, fb_tex2);
+
+	GLint location7 = glGetUniformLocation(fsquad_shaderProg, "texture0");
+	glUniform1i(location7, 0);
+
+	glLoadIdentity();
+
+	glTranslatef(-1.2, -1.0, -1.0);
+
+	i=0;
+	j=0;
+	glBegin(GL_QUADS);
+	glVertex2f(i, j);
+	glVertex2f(i + 100, j);
+	glVertex2f(i + 100, j + 100);
+	glVertex2f(i, j + 100);
+	glEnd();
+
+	glUseProgram(projector_shaderProg);
+
+	glEnable(GL_BLEND);
+	glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_ADD);
+	glBlendFunc(GL_SRC_COLOR, GL_DST_ALPHA);
+
+	widthLoc5 = glGetUniformLocation(projector_shaderProg, "width");
+	heightLoc5 = glGetUniformLocation(projector_shaderProg, "height");
+	timeLoc5 = glGetUniformLocation(projector_shaderProg, "time");
+	alphaLoc5 = glGetUniformLocation(projector_shaderProg, "alpha");
+
+	glUniform1f(widthLoc5, g_Width);
+	glUniform1f(heightLoc5, g_Height);
+	glUniform1f(timeLoc5, mymillis);
+	glUniform1f(alphaLoc5, 1.0);
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, scene_tex);
+
+	location5 = glGetUniformLocation(projector_shaderProg, "texture0");
+	glUniform1i(location5, 0);
+
+	glLoadIdentity();
+	glTranslatef(-1.2, -1.0, -1.0);
+
+	glBegin(GL_QUADS);
+
+
+	for (i = -50; i < 50; i+=10)
+		for (j = -50; j < 50; j+=10)
+		{
+			glVertex2f(i, j);
+			glVertex2f(i + 1, j);
+			glVertex2f(i + 1, j + 1);
+			glVertex2f(i, j + 1);
+		}
+	glEnd();
+
 
 }
 
@@ -1444,6 +1541,45 @@ void InitFBO()
 
 	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
 	glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, 0);
+
+
+
+	glGenTextures(1, &fb_tex2);
+	glBindTexture(GL_TEXTURE_2D, fb_tex2);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, g_Width, g_Height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+	glGenFramebuffersEXT(1, &fb2);
+	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fb2);
+
+	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, fb_tex2, 0);
+
+	glGenRenderbuffersEXT(1, &depth_rb2);
+	glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, depth_rb2);
+	glRenderbufferStorageEXT(GL_RENDERBUFFER_EXT, GL_DEPTH_COMPONENT24, g_Width, g_Height);
+
+	glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_RENDERBUFFER_EXT, depth_rb2);
+
+	status = glCheckFramebufferStatusEXT(GL_FRAMEBUFFER_EXT);
+	switch(status)
+	{
+		case GL_FRAMEBUFFER_COMPLETE_EXT:
+			printf("\tInitFBO() status: GL_FRAMEBUFFER_COMPLETE\n");
+			break;
+		default:
+			printf("\tInitFBO() error: status != GL_FRAMEBUFFER_COMPLETE\n");
+			exit(1);
+			break;
+	}
+
+	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+	glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, 0);
+
 }
 
 void InitGraphics(int argc, char* argv[])
