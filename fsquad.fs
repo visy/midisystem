@@ -9,6 +9,7 @@ uniform float alpha;
 
 uniform float gamma;
 uniform float grid;
+uniform float tvmode;
 
 void main()
 {

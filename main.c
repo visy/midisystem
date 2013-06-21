@@ -46,6 +46,7 @@ int mouseY;
 // shaders
 
 GLuint projector_shaderProg;
+GLuint console_shaderProg;
 
 GLuint eye_shaderProg;
 GLuint eye_post_shaderProg;
@@ -64,13 +65,15 @@ GLuint depth_rb2 = 0;
 
 // textures
 
-int grayeye_tex = -1;
-int room_tex[3] = {-1};
-int majictext1_tex = -1;
+int scene_tex = -1;
+int console_tex = -1;
+int console_time_tex = -1;
 
 int copkiller1_tex = -1;
 
-int scene_tex = -1;
+int grayeye_tex = -1;
+int room_tex[3] = {-1};
+int majictext1_tex = -1;
 
 // texture switchers
 
@@ -133,7 +136,7 @@ typedef void (*SceneLogicCallback)(float);
 SceneLogicCallback scene_logic[] = {
 										&dummy,
 										&dummy,
-										&KolmeDeeLogic,
+										&dummy,
 										&KolmeDeeLogic,
 										&dummy
 									 };
@@ -178,17 +181,17 @@ DWORD music_channel = 0;
 int demo_playlist()
 {
 	int sc = current_scene;
-	if (millis >= 0 && millis < (55*1000)+922)
+	if (millis >= 0 && millis < 111844) // 55922
 	{
 		current_scene = 0; // lead masks
 	}
-	else if (millis >= (55*1000)+922 && (60*1000)+(51*1000)+844)
+	else if (millis >= 111844 && millis < 188737)
 	{
-		current_scene = 1;
+		current_scene = 1; // cops
 	}
-	else if (millis >= ((60*1000)+(51*1000)+844) && millis < ((120*1000)+(29*1000)+126))
+	else if (millis >= 188737 && millis < 300000)
 	{
-		current_scene = 2;
+		current_scene = 2; // eye horror
 	}
 
 	if (sc != current_scene)
@@ -1036,6 +1039,49 @@ void LeadMaskScene()
 	glEnd();
 
 
+	glUseProgram(console_shaderProg);
+
+	glEnable(GL_BLEND);
+	glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_SUBTRACT);
+	glBlendFunc(GL_SRC_COLOR, GL_DST_COLOR);
+
+	widthLoc5 = glGetUniformLocation(console_shaderProg, "width");
+	heightLoc5 = glGetUniformLocation(console_shaderProg, "height");
+	timeLoc5 = glGetUniformLocation(console_shaderProg, "time");
+	alphaLoc5 = glGetUniformLocation(console_shaderProg, "alpha");
+
+	glUniform1f(widthLoc5, g_Width);
+	glUniform1f(heightLoc5, g_Height);
+	glUniform1f(timeLoc5, mymillis);
+	glUniform1f(alphaLoc5, 1.0);
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, console_tex);
+
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, console_time_tex);
+
+	location5 = glGetUniformLocation(console_shaderProg, "texture0");
+	glUniform1i(location5, 0);
+
+	location6 = glGetUniformLocation(console_shaderProg, "texture1");
+	glUniform1i(location5, 1);
+
+	glLoadIdentity();
+	glTranslatef(-1.2, -1.0, -1.0);
+
+	i=0;
+	j=0;
+	glBegin(GL_QUADS);
+	glVertex2f(i, j);
+	glVertex2f(i + 100, j);
+	glVertex2f(i + 100, j + 100);
+	glVertex2f(i, j + 100);
+	glEnd();
+
+
+
+
 }
 
 
@@ -1764,6 +1810,7 @@ int main(int argc, char* argv[])
 	// load shaders
 
 	projector_shaderProg = LoadShader("projector");
+	console_shaderProg = LoadShader("console");
 	eye_shaderProg = LoadShader("eye");
 	eye_post_shaderProg = LoadShader("eye_post");
 	fsquad_shaderProg = LoadShader("fsquad");
@@ -1772,6 +1819,8 @@ int main(int argc, char* argv[])
 	// load textures
 
 	scene_tex = LoadTexture("scene.png");
+	console_tex = LoadTexture("console.png");
+	console_time_tex = LoadTexture("console_time.png");
 
 	copkiller1_tex = LoadTexture("copkiller1.png");
 

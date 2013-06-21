@@ -22,12 +22,12 @@ void main()
 
     if (scroll_trig == 1)
     {
-        scroll = -(time-8000)*0.1;
+        scroll = -(time-9000)*0.1;
         if (scroll < -width/4) scroll = -width/4;
     }
 
     vec4 color = texture2D(texture0, vec2((scroll+gl_FragCoord.x)/width*zoom, (gl_FragCoord.y)/height*zoom));
-    vec4 color3 = texture2D(texture0, vec2(gl_FragCoord.x/width*cos(time*0.01+gl_FragCoord.y*0.01), gl_FragCoord.y/height*sin(time*0.02+gl_FragCoord.x*0.02)));
+    vec4 color3 = texture2D(texture0, vec2(gl_FragCoord.x/width*cos(time*0.01+gl_FragCoord.y*0.01+cos(time)*0.001), gl_FragCoord.y/height*sin(time*0.02+gl_FragCoord.x*0.02)));
     vec4 color4 = texture2D(texture0, vec2(gl_FragCoord.x/width*tan(time*0.001+gl_FragCoord.x*0.002), gl_FragCoord.y/height*tan(time*0.001+gl_FragCoord.x*0.002)));
 
     color.a = alpha;
