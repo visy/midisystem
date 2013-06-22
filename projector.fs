@@ -8,7 +8,7 @@ uniform sampler2D texture0;
 uniform float alpha;
 
 int scroll_trig = 0;
-float trig_time = 0;
+float trig_time = 0.0;
 void main()
 {
 	float zoom = atan(time*0.00015);
@@ -22,8 +22,8 @@ void main()
 
     if (scroll_trig == 1)
     {
-        scroll = -(time-9000)*0.1;
-        if (scroll < -width/4) scroll = -width/4;
+        scroll = -(time-9000.0)*0.1;
+        if (scroll < -width/4.0) scroll = -width/4.0;
     }
 
     vec4 color = texture2D(texture0, vec2((scroll+gl_FragCoord.x)/width*zoom, (gl_FragCoord.y)/height*zoom));

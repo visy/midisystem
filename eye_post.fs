@@ -104,7 +104,7 @@ void main()
     kernel[1] = val2;
     kernel[2] = val3;
     kernel[3] = val1;
-    kernel[4] = 1;
+    kernel[4] = 1.0;
     kernel[5] = val3;
     kernel[6] = val1;
     kernel[7] = val2;

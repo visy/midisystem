@@ -19,11 +19,13 @@ void main()
 
     if (gamma > 0.0) color.rgb*=gamma;
 
+    float off = 0.0;
+
     if (grid > 0.0)
     {
         vec3 col = vec3(0.0,0.0,0.0);
 
-        float off = -time*2;
+        float off = -time*2.0;
         
         //really light lines
         col.g += clamp(ceil(mod(gl_FragCoord.x+off, 5.0)) - 4.0, 4.0, 1.0) * (0.05*grid);
@@ -42,7 +44,7 @@ void main()
 
         if (((color.r + color.b + color.g) / 3.0) > 0.1)
         {
-            if (color.r / col.g < 0.2) color.rgb = 0.0;
+            if (color.r / col.g < 0.2) color = vec4(0.0,0.0,0.0,0.0);
         }
         else
         color.rgb -= col.g*(0.5*cos(time*0.1+(gl_FragCoord.x+gl_FragCoord.y)));

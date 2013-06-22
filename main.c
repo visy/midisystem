@@ -319,7 +319,7 @@ void PrintShaderLog(GLuint obj)
  
 	if (infologLength > 0)
 	{
-		printf("%s\n",infoLog);
+		printf("\n%s\n",infoLog);
 	}
 }
 
@@ -565,10 +565,10 @@ void ParseMIDITimeline(const char* mappingFile)
 
 GLuint LoadTexture(const char* pFilename, int invert)
 {
+	if (strcmp(pFilename,"") == 0) return 99999;
+
 	printf("--- MIDISYS ENGINE: LoadTexture(\"%s\")", pFilename);
 	GLuint tex_2d;
-
-	if (strcmp(pFilename,"") == 0) return 99999;
 
 	if (invert == 1) 
 	{
@@ -1708,14 +1708,17 @@ GLuint LoadShader(const char* pFilename)
 	printf("\tLoadShader(): vs glCreateShader\n");
 	#endif
 	vs = glCreateShader(GL_VERTEX_SHADER);
+	PrintShaderLog(vs);
 	#ifdef SUPERVERBOSE 
 	printf("\tLoadShader(): vs glShaderSource\n");
 	#endif
 	glShaderSource(vs, 1, (const GLchar**)&vsSource, NULL);
+	PrintShaderLog(vs);
 	#ifdef SUPERVERBOSE 
 	printf("\tLoadShader(): vs glCompileShader\n");
 	#endif
 	glCompileShader(vs);
+	PrintShaderLog(vs);
 	#ifdef SUPERVERBOSE 
 	printf("\tLoadShader(): vs compiled\n");
 	#endif
@@ -1724,14 +1727,17 @@ GLuint LoadShader(const char* pFilename)
 	printf("\tLoadShader(): fs glCreateShader\n");
 	#endif
 	fs = glCreateShader(GL_FRAGMENT_SHADER);
+	PrintShaderLog(fs);
 	#ifdef SUPERVERBOSE 
 	printf("\tLoadShader(): fs glShaderSource\n");
 	#endif
 	glShaderSource(fs, 1, (const GLchar**)&fsSource, NULL);
+	PrintShaderLog(fs);
 	#ifdef SUPERVERBOSE 
 	printf("\tLoadShader(): fs glCompileShader\n");
 	#endif
 	glCompileShader(fs);
+	PrintShaderLog(fs);
 	#ifdef SUPERVERBOSE 
 	printf("\tLoadShader(): fs compiled\n");
 	#endif
@@ -1743,14 +1749,17 @@ GLuint LoadShader(const char* pFilename)
 	printf("\tLoadShader(): glCreateProgram\n");
 	#endif
 	sp = glCreateProgram();
+	PrintShaderLog(sp);
 	#ifdef SUPERVERBOSE 
 	printf("\tLoadShader(): glAttachShader vs\n");
 	#endif
 	glAttachShader(sp, vs);
+	PrintShaderLog(sp);
 	#ifdef SUPERVERBOSE 
 	printf("\tLoadShader(): glAttachShader fs\n");
 	#endif
 	glAttachShader(sp, fs);
+	PrintShaderLog(sp);
 	#ifdef SUPERVERBOSE 
 	printf("\tLoadShader(): glLinkProgram\n");
 	#endif
