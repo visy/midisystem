@@ -264,8 +264,8 @@ SceneRenderCallback scene_render[] = {
 										&CopScene,
 										&MarssiScene,
 										&EyeScene, 
-										&KolmeDeeScene,
-										&RedCircleScene
+										&RedCircleScene,
+										&KolmeDeeScene
 									 };
 
 typedef void (*SceneLogicCallback)(float);
@@ -274,8 +274,8 @@ SceneLogicCallback scene_logic[] = {
 										&dummy,
 										&dummy,
 										&dummy,
-										&KolmeDeeLogic,
-										&dummy
+										&dummy,
+										&KolmeDeeLogic
 									 };
 
 // midi sync
@@ -322,17 +322,21 @@ int demo_playlist()
 	{
 		current_scene = 0; // lead masks
 	}
-	else if (millis >= 111844 && millis < 149200)
+	else if (millis >= 111844 && millis < 148800)
 	{
 		current_scene = 1; // cops
 	}
-	else if (millis >= 149200 && millis < 188737)
+	else if (millis >= 148800 && millis < 188737)
 	{
 		current_scene = 2; // marssi
 	}
-	else if (millis >= 188737 && millis < 300000)
+	else if (millis >= 188737 && millis < 264000)
 	{
 		current_scene = 3; // eye horror
+	}
+	else if (millis >= 264000 && millis < 400000)
+	{
+		current_scene = 4; // outro 1
 	}
 
 	if (sc != current_scene)
@@ -1303,7 +1307,14 @@ void EyeScene()
 {
 	int i, j;
 
-	float mymillis = ((millis-scene_start_millis)*100);
+	int lisuri = 0;
+
+	//printf("millis:%f\n",millis);
+	if (millis > 225200) lisuri = 50000+(millis-225200)*0.5;
+	if (lisuri > 150000) lisuri = 150000;
+
+	float mymillis = (((millis)-scene_start_millis)*100);
+	float mymillis2 = (((millis+lisuri)-scene_start_millis)*100);
 	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fb); // fbo
 
 	glClearColor((float)(scene_shader_params[1]/127)*0.7,(float)(scene_shader_params[1]/127)*0.4,(float)(scene_shader_params[1]/127)*0.8,0.9-0.005*(float)(scene_shader_params[1]/127));
@@ -1397,7 +1408,7 @@ void EyeScene()
 	glUniform1f(widthLoc, g_Width);
 	glUniform1f(heightLoc, g_Height);
 
-	glUniform1f(timeLoc, mymillis/100);
+	glUniform1f(timeLoc, mymillis2/100);
 
 
 	int zoom = 0;
@@ -1515,6 +1526,8 @@ void EyeScene()
 
 void RedCircleScene()
 {
+	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fake_framebuffer); // fbo
+
 	glUseProgram(redcircle_shaderProg);
 	float mymillis = (millis-scene_start_millis)*300;
 
@@ -1697,7 +1710,7 @@ double min(double a, double b)
 
 void logic()
 { 	
-	if (music_started == -1) { BASS_ChannelPlay(music_channel,FALSE); music_started = 1;  }
+	if (music_started == -1) { BASS_ChannelPlay(music_channel,FALSE); music_started = 1; }
 
 	QWORD bytepos = BASS_ChannelGetPosition(music_channel, BASS_POS_BYTE);
 	double pos = BASS_ChannelBytes2Seconds(music_channel, bytepos);
@@ -1715,7 +1728,7 @@ void logic()
 void display(void)
 {
 	scene_render[current_scene]();
-	VHSPost(current_scene != 3 ? 1.0 : 0.0);
+	VHSPost(current_scene < 2 ? 1.0 : 0.0);
 
 	glutSwapBuffers();
 	frame++;
