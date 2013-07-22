@@ -322,11 +322,11 @@ int demo_playlist()
 	{
 		current_scene = 0; // lead masks
 	}
-	else if (millis >= 111844 && millis < 149200)
+	else if (millis >= 111844 && millis < 148800)
 	{
 		current_scene = 1; // cops
 	}
-	else if (millis >= 149200 && millis < 188737)
+	else if (millis >= 148800 && millis < 188737)
 	{
 		current_scene = 2; // marssi
 	}
@@ -1697,7 +1697,7 @@ double min(double a, double b)
 
 void logic()
 { 	
-	if (music_started == -1) { BASS_ChannelPlay(music_channel,FALSE); music_started = 1;  }
+	if (music_started == -1) { BASS_ChannelPlay(music_channel,FALSE); music_started = 1; }
 
 	QWORD bytepos = BASS_ChannelGetPosition(music_channel, BASS_POS_BYTE);
 	double pos = BASS_ChannelBytes2Seconds(music_channel, bytepos);
@@ -1715,7 +1715,7 @@ void logic()
 void display(void)
 {
 	scene_render[current_scene]();
-	VHSPost(current_scene != 3 ? 1.0 : 0.0);
+	VHSPost(current_scene < 2 ? 1.0 : 0.0);
 
 	glutSwapBuffers();
 	frame++;
