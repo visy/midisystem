@@ -264,8 +264,8 @@ SceneRenderCallback scene_render[] = {
 										&CopScene,
 										&MarssiScene,
 										&EyeScene, 
-										&KolmeDeeScene,
-										&RedCircleScene
+										&RedCircleScene,
+										&KolmeDeeScene
 									 };
 
 typedef void (*SceneLogicCallback)(float);
@@ -274,8 +274,8 @@ SceneLogicCallback scene_logic[] = {
 										&dummy,
 										&dummy,
 										&dummy,
-										&KolmeDeeLogic,
-										&dummy
+										&dummy,
+										&KolmeDeeLogic
 									 };
 
 // midi sync
@@ -330,9 +330,13 @@ int demo_playlist()
 	{
 		current_scene = 2; // marssi
 	}
-	else if (millis >= 188737 && millis < 300000)
+	else if (millis >= 188737 && millis < 264000)
 	{
 		current_scene = 3; // eye horror
+	}
+	else if (millis >= 264000 && millis < 400000)
+	{
+		current_scene = 4; // outro 1
 	}
 
 	if (sc != current_scene)
@@ -1303,7 +1307,14 @@ void EyeScene()
 {
 	int i, j;
 
-	float mymillis = ((millis-scene_start_millis)*100);
+	int lisuri = 0;
+
+	//printf("millis:%f\n",millis);
+	if (millis > 225200) lisuri = 50000+(millis-225200)*0.5;
+	if (lisuri > 150000) lisuri = 150000;
+
+	float mymillis = (((millis)-scene_start_millis)*100);
+	float mymillis2 = (((millis+lisuri)-scene_start_millis)*100);
 	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fb); // fbo
 
 	glClearColor((float)(scene_shader_params[1]/127)*0.7,(float)(scene_shader_params[1]/127)*0.4,(float)(scene_shader_params[1]/127)*0.8,0.9-0.005*(float)(scene_shader_params[1]/127));
@@ -1397,7 +1408,7 @@ void EyeScene()
 	glUniform1f(widthLoc, g_Width);
 	glUniform1f(heightLoc, g_Height);
 
-	glUniform1f(timeLoc, mymillis/100);
+	glUniform1f(timeLoc, mymillis2/100);
 
 
 	int zoom = 0;
@@ -1515,6 +1526,8 @@ void EyeScene()
 
 void RedCircleScene()
 {
+	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fake_framebuffer); // fbo
+
 	glUseProgram(redcircle_shaderProg);
 	float mymillis = (millis-scene_start_millis)*300;
 
