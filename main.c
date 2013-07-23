@@ -78,6 +78,7 @@ int scene_tex = -1;
 int dude1_tex = -1;
 int dude2_tex = -1;
 int mask_tex = -1;
+int note_tex = -1;
 int console_tex = -1;
 int console_time_tex = -1;
 
@@ -1038,8 +1039,11 @@ void LeadMaskScene()
 	else if (millis >= 37000 && millis < 48500) {
 		kuvaflag = 2;
 	}
-	else if (millis >= 48500) {
+	else if (millis >= 48500 && millis < 64000) {
 		kuvaflag = 3;
+	}
+	else if (millis >= 64000) {
+		kuvaflag = 4;
 	}
 
 	glEnable(GL_BLEND);
@@ -1053,7 +1057,7 @@ void LeadMaskScene()
 
 	glUniform1f(widthLoc5, g_Width);
 	glUniform1f(heightLoc5, g_Height);
-	glUniform1f(timeLoc5, mymillis);
+	glUniform1f(timeLoc5, mymillis - (millis < 64000 ? 0 : 30000));
 	glUniform1f(alphaLoc5, mymillis*0.0001+0.2-cos(mymillis*0.0005)*0.15);
 
 	glActiveTexture(GL_TEXTURE0);
@@ -1065,6 +1069,8 @@ void LeadMaskScene()
 		glBindTexture(GL_TEXTURE_2D, dude2_tex);
 	else if (kuvaflag == 3)
 		glBindTexture(GL_TEXTURE_2D, mask_tex);
+	else if (kuvaflag == 4)
+		glBindTexture(GL_TEXTURE_2D, note_tex);
 
 	GLint location5 = glGetUniformLocation(projector_shaderProg, "texture0");
 	glUniform1i(location5, 0);
@@ -2140,6 +2146,7 @@ int main(int argc, char* argv[])
 	dude1_tex = LoadTexture("data/gfx/dude1.jpg");
 	dude2_tex = LoadTexture("data/gfx/dude2.jpg");
 	mask_tex = LoadTexture("data/gfx/mask.jpg");
+	note_tex = LoadTexture("data/gfx/note.jpg");
 	console_tex = LoadTexture("data/gfx/console.png");
 	console_time_tex = LoadTexture("data/gfx/console_time.png");
 
