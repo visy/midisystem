@@ -588,6 +588,8 @@ console_process( console_t *self,
         }
     }
 }
+int keyindex = 0;
+int startrec = 0;
 
 
 
@@ -646,6 +648,23 @@ on_key_press ( unsigned char key, int x, int y )
     {
         console_process( console, "type", key );
     }
+
+    if (startrec > 0)
+    {
+        if (startrec == 1) initTime();
+
+        startrec = 2;
+
+    keymillis[keyindex] = (int)millis();
+    keyrec[keyindex] = lastkey;
+    //fprintf( stderr, "moicca: i:%d, code:%d, millis:%d\n",keyindex,lastkey,(int)millis());
+        keyindex++;
+    }
+
+    if (lastkey == 8 && startrec == 0) startrec = 1;
+
+
+    
     glutPostRedisplay();
 }
 
@@ -682,7 +701,6 @@ on_special_key_press( int key, int x, int y )
 }
 
 
-int keyindex = 0;
 
 void dumpkeys(){
     fprintf(stderr,"\n\n\n\n\n=================================================================\n");
@@ -695,7 +713,7 @@ void dumpkeys(){
     }
     fprintf(stdout, "};");
     fprintf(stdout,"\n");
-    fprintf(stdout, "unsigned int keymillis[%d] = {",keyindex-1);
+    fprintf(stdout, "int keymillis[%d] = {",keyindex-1);
     for(int i = 0; i < keyindex-1; i++)
     {
         fprintf(stdout, "%d",keymillis[i]);
@@ -708,25 +726,10 @@ void dumpkeys(){
 }
 
 
-int startrec = 0;
 
 // ------------------------------------------------------------- on_display ---
 void on_display (void) {
     glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    if (startrec > 0)
-    {
-        if (startrec == 1) initTime();
-
-        startrec = 2;
-
-    keymillis[keyindex] = (int)millis();
-    keyrec[keyindex] = lastkey;
-    //fprintf( stderr, "moicca: i:%d, code:%d, millis:%d\n",keyindex,lastkey,(int)millis());
-        keyindex++;
-    }
-
-    if (lastkey == 8 && startrec == 0) startrec = 1;
 
     console_render( console );
     glutSwapBuffers();
