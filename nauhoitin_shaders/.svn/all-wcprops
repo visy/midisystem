@@ -1,0 +1,83 @@
+K 25
+svn:wc:ra_dav:version-url
+V 31
+/svn/!svn/ver/226/trunk/shaders
+END
+distance-field.vert
+K 25
+svn:wc:ra_dav:version-url
+V 51
+/svn/!svn/ver/134/trunk/shaders/distance-field.vert
+END
+cube.frag
+K 25
+svn:wc:ra_dav:version-url
+V 41
+/svn/!svn/ver/193/trunk/shaders/cube.frag
+END
+cube.vert
+K 25
+svn:wc:ra_dav:version-url
+V 41
+/svn/!svn/ver/226/trunk/shaders/cube.vert
+END
+v3f-t2f-c4f.frag
+K 25
+svn:wc:ra_dav:version-url
+V 48
+/svn/!svn/ver/193/trunk/shaders/v3f-t2f-c4f.frag
+END
+v3f-t2f-c4f.vert
+K 25
+svn:wc:ra_dav:version-url
+V 48
+/svn/!svn/ver/193/trunk/shaders/v3f-t2f-c4f.vert
+END
+text.frag
+K 25
+svn:wc:ra_dav:version-url
+V 41
+/svn/!svn/ver/209/trunk/shaders/text.frag
+END
+text.vert
+K 25
+svn:wc:ra_dav:version-url
+V 41
+/svn/!svn/ver/193/trunk/shaders/text.vert
+END
+v3f-c4f.frag
+K 25
+svn:wc:ra_dav:version-url
+V 44
+/svn/!svn/ver/193/trunk/shaders/v3f-c4f.frag
+END
+v3f-c4f.vert
+K 25
+svn:wc:ra_dav:version-url
+V 44
+/svn/!svn/ver/193/trunk/shaders/v3f-c4f.vert
+END
+distance-field-2.frag
+K 25
+svn:wc:ra_dav:version-url
+V 53
+/svn/!svn/ver/193/trunk/shaders/distance-field-2.frag
+END
+distance-field.frag
+K 25
+svn:wc:ra_dav:version-url
+V 51
+/svn/!svn/ver/134/trunk/shaders/distance-field.frag
+END
+distance-field-2.vert
+K 25
+svn:wc:ra_dav:version-url
+V 53
+/svn/!svn/ver/193/trunk/shaders/distance-field-2.vert
+END
+distance-field-3.frag
+K 25
+svn:wc:ra_dav:version-url
+V 53
+/svn/!svn/ver/193/trunk/shaders/distance-field-3.frag
+END
