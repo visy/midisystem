@@ -2355,6 +2355,25 @@ double min(double a, double b)
 	else return b;
 }
 
+GLint gFramesPerSecond = 0;
+ 
+void FPS(void) {
+  static GLint Frames = 0;         // frames averaged over 1000mS
+  static GLuint Clock;             // [milliSeconds]
+  static GLuint PreviousClock = 0; // [milliSeconds]
+  static GLuint NextClock = 0;     // [milliSeconds]
+ 
+  ++Frames;
+  Clock = glutGet(GLUT_ELAPSED_TIME); //has limited resolution, so average over 1000mS
+  if ( Clock < NextClock ) return;
+ 
+  gFramesPerSecond = Frames/1; // store the averaged number of frames per second
+ 
+  PreviousClock = Clock;
+  NextClock = Clock+1000; // 1000mS=1S in the future
+  Frames=0;
+}
+
 void logic()
 { 	
 	if (music_started == -1) { BASS_ChannelPlay(music_channel,FALSE); music_started = 1; }
@@ -2367,8 +2386,20 @@ void logic()
 	scene_logic[current_scene](0.0f);
 	UpdateShaderParams();
 
-	glutPostRedisplay();
+//	glutPostRedisplay();
 }
+ 
+void timer(int value)
+{
+  const int desiredFPS=60;
+  glutTimerFunc(1000/desiredFPS, timer, ++value);
+ 
+  logic();
+
+  FPS(); //only call once per frame loop to measure FPS 
+  glutPostRedisplay();
+}
+
 
 ///////////////////////////////////////////////////////////// RENDER FUNCTION
 
@@ -2590,6 +2621,7 @@ void InitGraphics(int argc, char* argv[])
 	glutIdleFunc(logic);
 	glutKeyboardFunc(keyPress);
 	glutMouseFunc(mouseMotion);
+	glutTimerFunc(0,timer,0);
 
 	fprintf(stdout, "--- MIDISYS ENGINE: InitGraphics() success\n");
 }
