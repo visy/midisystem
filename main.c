@@ -6,6 +6,18 @@
 #include <math.h>
 #include <fstream>
 #include <map>
+#include <wchar.h>
+
+#include "freetype-gl.h"
+#include "vertex-buffer.h"
+#include "markup.h"
+#include "shader.h"
+#include "mat4.h"
+
+#if defined(_WIN32) || defined(_WIN64)
+#  define wcpncpy wcsncpy
+#  define wcpcpy  wcscpy
+#endif
 
 #ifndef  __APPLE__
 #include <malloc.h>
@@ -41,6 +53,518 @@
 #include "ggets.h"
 #include "ggets.c"
 
+
+
+
+
+
+
+const int __SIGNAL_ACTIVATE__     = 0;
+const int __SIGNAL_COMPLETE__     = 1;
+const int __SIGNAL_HISTORY_NEXT__ = 2;
+const int __SIGNAL_HISTORY_PREV__ = 3;
+#define MAX_LINE_LENGTH  511
+
+
+const int MARKUP_NORMAL      = 0;
+const int MARKUP_DEFAULT     = 0;
+const int MARKUP_ERROR       = 1;
+const int MARKUP_WARNING     = 2;
+const int MARKUP_OUTPUT      = 3;
+const int MARKUP_BOLD        = 4;
+const int MARKUP_ITALIC      = 5;
+const int MARKUP_BOLD_ITALIC = 6;
+const int MARKUP_FAINT       = 7;
+#define   MARKUP_COUNT         8
+
+
+// ------------------------------------------------------- typedef & struct ---
+typedef struct {
+    float x, y, z;
+    float s, t;
+    float r, g, b, a;
+} vertex_t;
+
+struct _console_t {
+    vector_t *     lines;
+    wchar_t *      prompt;
+    wchar_t        killring[MAX_LINE_LENGTH+1];
+    wchar_t        input[MAX_LINE_LENGTH+1];
+    size_t         cursor;
+    markup_t       markup[MARKUP_COUNT];
+    vertex_buffer_t * buffer;
+    vec2           pen; 
+    void (*handlers[4])( struct _console_t *, wchar_t * );
+};
+typedef struct _console_t console_t;
+
+
+// ------------------------------------------------------- global variables ---
+static console_t * console;
+GLuint shader;
+mat4   model, view, projection;
+
+
+// ------------------------------------------------------------ console_new ---
+console_t *
+console_new( void )
+{
+    console_t *self = (console_t *) malloc( sizeof(console_t) );
+    if( !self )
+    {
+        return self;
+    }
+    self->lines = vector_new( sizeof(wchar_t *) );
+    self->prompt = (wchar_t *) wcsdup( L"" );
+    self->cursor = 0;
+    self->buffer = vertex_buffer_new( "vertex:3f,tex_coord:2f,color:4f" );
+    self->input[0] = L'\0';
+    self->killring[0] = L'\0';
+    self->handlers[__SIGNAL_ACTIVATE__]     = 0;
+    self->handlers[__SIGNAL_COMPLETE__]     = 0;
+    self->handlers[__SIGNAL_HISTORY_NEXT__] = 0;
+    self->handlers[__SIGNAL_HISTORY_PREV__] = 0;
+    self->pen.x = self->pen.y = 0;
+
+    texture_atlas_t * atlas = texture_atlas_new( 512, 512, 1 );
+ 
+    vec4 white = {{1,1,1,1}};
+    vec4 black = {{0,0,0,1}};
+    vec4 none = {{0,0,1,0}};
+
+    markup_t normal;
+    normal.family  = "fonts/VeraMono.ttf";
+    normal.size    = 13.0;
+    normal.bold    = 0;
+    normal.italic  = 0;
+    normal.rise    = 0.0;
+    normal.spacing = 0.0;
+    normal.gamma   = 1.0;
+    normal.foreground_color    = black;
+    normal.background_color    = none;
+    normal.underline           = 0;
+    normal.underline_color     = white;
+    normal.overline            = 0;
+    normal.overline_color      = white;
+    normal.strikethrough       = 0;
+    normal.strikethrough_color = white;
+
+    normal.font = texture_font_new( atlas, "fonts/VeraMono.ttf", 13 );
+
+    markup_t bold = normal;
+    bold.bold = 1;
+    bold.font = texture_font_new( atlas, "fonts/VeraMoBd.ttf", 13 );
+
+    markup_t italic = normal;
+    italic.italic = 1;
+    bold.font = texture_font_new( atlas, "fonts/VeraMoIt.ttf", 13 );
+
+    markup_t bold_italic = normal;
+    bold.bold = 1;
+    italic.italic = 1;
+    italic.font = texture_font_new( atlas, "fonts/VeraMoBI.ttf", 13 );
+
+    markup_t faint = normal;
+    faint.foreground_color.r = 0.35;
+    faint.foreground_color.g = 0.35;
+    faint.foreground_color.b = 0.35;
+
+    markup_t error = normal;
+    error.foreground_color.r = 1.00;
+    error.foreground_color.g = 0.00;
+    error.foreground_color.b = 0.00;
+
+    markup_t warning = normal;
+    warning.foreground_color.r = 1.00;
+    warning.foreground_color.g = 0.50;
+    warning.foreground_color.b = 0.50;
+
+    markup_t output = normal;
+    output.foreground_color.r = 0.00;
+    output.foreground_color.g = 0.00;
+    output.foreground_color.b = 1.00;
+
+    self->markup[MARKUP_NORMAL] = normal;
+    self->markup[MARKUP_ERROR] = error;
+    self->markup[MARKUP_WARNING] = warning;
+    self->markup[MARKUP_OUTPUT] = output;
+    self->markup[MARKUP_FAINT] = faint;
+    self->markup[MARKUP_BOLD] = bold;
+    self->markup[MARKUP_ITALIC] = italic;
+    self->markup[MARKUP_BOLD_ITALIC] = bold_italic;
+
+    return self;
+}
+
+
+
+// -------------------------------------------------------- console_delete ---
+void
+console_delete( console_t *self )
+{ }
+
+
+
+// ----------------------------------------------------- console_add_glyph ---
+void
+console_add_glyph( console_t *self,
+                   wchar_t current,
+                   wchar_t previous,
+                   markup_t *markup )
+{
+    texture_glyph_t *glyph  = texture_font_get_glyph( markup->font, current );
+    if( previous != L'\0' )
+    {
+        self->pen.x += texture_glyph_get_kerning( glyph, previous );
+    }
+    float r = markup->foreground_color.r;
+    float g = markup->foreground_color.g;
+    float b = markup->foreground_color.b;
+    float a = markup->foreground_color.a;
+    int x0  = self->pen.x + glyph->offset_x;
+    int y0  = self->pen.y + glyph->offset_y;
+    int x1  = x0 + glyph->width;
+    int y1  = y0 - glyph->height;
+    float s0 = glyph->s0;
+    float t0 = glyph->t0;
+    float s1 = glyph->s1;
+    float t1 = glyph->t1;
+
+    GLuint indices[] = {0,1,2, 0,2,3};
+    vertex_t vertices[] = { { x0,y0,0,  s0,t0,  r,g,b,a },
+                            { x0,y1,0,  s0,t1,  r,g,b,a },
+                            { x1,y1,0,  s1,t1,  r,g,b,a },
+                            { x1,y0,0,  s1,t0,  r,g,b,a } };
+    vertex_buffer_push_back( self->buffer, vertices, 4, indices, 6 );
+    
+    self->pen.x += glyph->advance_x;
+    self->pen.y += glyph->advance_y;
+}
+
+
+
+// -------------------------------------------------------- console_render ---
+void
+console_render( console_t *self )
+{
+    int viewport[4];
+    glGetIntegerv( GL_VIEWPORT, viewport );
+
+    size_t i, index;
+    self->pen.x = 0;
+    self->pen.y = viewport[3];
+    vertex_buffer_clear( console->buffer );
+
+    int cursor_x = self->pen.x;
+    int cursor_y = self->pen.y;
+
+    markup_t markup;
+
+    // console_t buffer
+    markup = self->markup[MARKUP_FAINT];
+    self->pen.y -= markup.font->height;
+
+    for( i=0; i<self->lines->size; ++i )
+    {
+        wchar_t *text = * (wchar_t **) vector_get( self->lines, i ) ;
+        if( wcslen(text) > 0 )
+        {
+            console_add_glyph( console, text[0], L'\0', &markup );
+            for( index=1; index < wcslen(text)-1; ++index )
+            {
+                console_add_glyph( console, text[index], text[index-1], &markup );
+            }
+        }
+        self->pen.y -= markup.font->height - markup.font->linegap;
+        self->pen.x = 0;
+        cursor_x = self->pen.x;
+        cursor_y = self->pen.y;
+    }
+
+    // Prompt
+    markup = self->markup[MARKUP_BOLD];
+    if( wcslen( self->prompt ) > 0 )
+    {
+        console_add_glyph( console, self->prompt[0], L'\0', &markup );
+        for( index=1; index < wcslen(self->prompt); ++index )
+        {
+            console_add_glyph( console, self->prompt[index], self->prompt[index-1], &markup );
+        }
+    }
+    cursor_x = (int) self->pen.x;
+
+    // Input
+    markup = self->markup[MARKUP_NORMAL];
+    if( wcslen(self->input) > 0 )
+    {
+        console_add_glyph( console, self->input[0], L'\0', &markup );
+        if( self->cursor > 0)
+        {
+            cursor_x = (int) self->pen.x;
+        }
+        for( index=1; index < wcslen(self->input); ++index )
+        {
+            console_add_glyph( console, self->input[index], self->input[index-1], &markup );
+            if( index < self->cursor )
+            {
+                cursor_x = (int) self->pen.x;
+            }
+        }
+    }
+
+    // Cursor (we use the black character (-1) as texture )
+    texture_glyph_t *glyph  = texture_font_get_glyph( markup.font, -1 );
+    float r = markup.foreground_color.r;
+    float g = markup.foreground_color.g;
+    float b = markup.foreground_color.b;
+    float a = markup.foreground_color.a;
+    int x0  = cursor_x+1;
+    int y0  = cursor_y + markup.font->descender;
+    int x1  = cursor_x+2;
+    int y1  = y0 + markup.font->height - markup.font->linegap;
+    float s0 = glyph->s0;
+    float t0 = glyph->t0;
+    float s1 = glyph->s1;
+    float t1 = glyph->t1;
+    GLuint indices[] = {0,1,2, 0,2,3};
+    vertex_t vertices[] = { { x0,y0,0,  s0,t0,  r,g,b,a },
+                            { x0,y1,0,  s0,t1,  r,g,b,a },
+                            { x1,y1,0,  s1,t1,  r,g,b,a },
+                            { x1,y0,0,  s1,t0,  r,g,b,a } };
+    //vertex_buffer_push_back( self->buffer, vertices, 4, indices, 6 );
+    glEnable( GL_TEXTURE_2D );
+
+    glUseProgram( shader );
+    {
+        glUniform1i( glGetUniformLocation( shader, "texture" ),
+                     0 );
+        glUniformMatrix4fv( glGetUniformLocation( shader, "model" ),
+                            1, 0, model.data);
+        glUniformMatrix4fv( glGetUniformLocation( shader, "view" ),
+                            1, 0, view.data);
+        glUniformMatrix4fv( glGetUniformLocation( shader, "projection" ),
+                            1, 0, projection.data);
+        vertex_buffer_render( console->buffer, GL_TRIANGLES );
+    }
+
+
+}
+
+
+
+// ------------------------------------------------------- console_connect ---
+void
+console_connect( console_t *self,
+                  const char *signal,
+                  void (*handler)(console_t *, wchar_t *))
+{
+    if( strcmp( signal,"activate" ) == 0 )
+    {
+        self->handlers[__SIGNAL_ACTIVATE__] = handler;
+    }
+    else if( strcmp( signal,"complete" ) == 0 )
+    {
+        self->handlers[__SIGNAL_COMPLETE__] = handler;
+    }
+    else if( strcmp( signal,"history-next" ) == 0 )
+    {
+        self->handlers[__SIGNAL_HISTORY_NEXT__] = handler;
+    }
+    else if( strcmp( signal,"history-prev" ) == 0 )
+    {
+        self->handlers[__SIGNAL_HISTORY_PREV__] = handler;
+    }
+}
+
+
+
+// --------------------------------------------------------- console_print ---
+void
+console_print( console_t *self, wchar_t *text )
+{
+    // Make sure there is at least one line
+    if( self->lines->size == 0 )
+    {
+        wchar_t *line = wcsdup( L"" );
+        vector_push_back( self->lines, &line );
+    }
+
+    // Make sure last line does not end with '\n'
+    wchar_t *last_line = *(wchar_t **) vector_get( self->lines, self->lines->size-1 ) ;
+    if( wcslen( last_line ) != 0 )
+    {
+        if( last_line[wcslen( last_line ) - 1] == L'\n' )
+        {
+            wchar_t *line = wcsdup( L"" );
+            vector_push_back( self->lines, &line );
+        }
+    }
+    last_line = *(wchar_t **) vector_get( self->lines, self->lines->size-1 ) ;
+
+    wchar_t *start = text;
+    wchar_t *end   = wcschr(start, L'\n');
+    size_t len = wcslen( last_line );
+    if( end != NULL)
+    {
+        wchar_t *line = (wchar_t *) malloc( (len + end - start + 2)*sizeof( wchar_t ) );
+        wcpncpy( line, last_line, len );
+        wcpncpy( line + len, text, end-start+1 );
+
+        line[len+end-start+1] = L'\0';
+
+        vector_set( self->lines, self->lines->size-1, &line );
+        free( last_line );
+        if( (end-start)  < (wcslen( text )-1) )
+        {
+            console_print(self, end+1 );
+        }
+        return;
+    }
+    else
+    {
+        wchar_t *line = (wchar_t *) malloc( (len + wcslen(text) + 1) * sizeof( wchar_t ) );
+        wcpncpy( line, last_line, len );
+        wcpcpy( line + len, text );
+        vector_set( self->lines, self->lines->size-1, &line );
+        free( last_line );
+        return;
+    }
+}
+
+
+
+// ------------------------------------------------------- console_process ---
+void
+console_process( console_t *self,
+                  const char *action,
+                  const unsigned char key )
+{
+    size_t len = wcslen(self->input);
+
+    if( strcmp(action, "type") == 0 )
+    {
+        if( len < MAX_LINE_LENGTH )
+        {
+            memmove( self->input + self->cursor+1,
+                     self->input + self->cursor, 
+                     (len - self->cursor+1)*sizeof(wchar_t) );
+            self->input[self->cursor] = (wchar_t) key;
+            self->cursor++;
+        }
+        else
+        {
+            fprintf( stderr, "Input buffer is full\n" );
+        }
+    }
+    else
+    {
+        if( strcmp( action, "enter" ) == 0 )
+        {
+            if( console->handlers[__SIGNAL_ACTIVATE__] )
+            {
+                (*console->handlers[__SIGNAL_ACTIVATE__])(console, console->input);
+            }
+            console_print( self, self->prompt );
+            console_print( self, self->input );
+            console_print( self, L"\n" );
+            self->input[0] = L'\0';
+            self->cursor = 0;
+        }
+        else if( strcmp( action, "right" ) == 0 )
+        {
+            if( self->cursor < wcslen(self->input) )
+            {
+                self->cursor += 1;
+            }
+        }
+        else if( strcmp( action, "left" ) == 0 )
+        {
+            if( self->cursor > 0 )
+            {
+                self->cursor -= 1;
+            }
+        }
+        else if( strcmp( action, "delete" ) == 0 )
+        {
+            memmove( self->input + self->cursor,
+                     self->input + self->cursor+1, 
+                     (len - self->cursor)*sizeof(wchar_t) );
+        }
+        else if( strcmp( action, "backspace" ) == 0 )
+        {
+            if( self->cursor > 0 )
+            {
+                memmove( self->input + self->cursor-1,
+                         self->input + self->cursor, 
+                         (len - self->cursor+1)*sizeof(wchar_t) );
+                self->cursor--;
+            }
+        }
+        else if( strcmp( action, "kill" ) == 0 )
+        {
+            if( self->cursor < len )
+            {
+                wcpcpy(self->killring, self->input + self->cursor );
+                self->input[self->cursor] = L'\0';
+                fwprintf(stderr, L"Kill ring: %ls\n", self->killring);
+            }
+            
+        }
+        else if( strcmp( action, "yank" ) == 0 )
+        {
+            size_t l = wcslen(self->killring);
+            if( (len + l) < MAX_LINE_LENGTH )
+            {
+                memmove( self->input + self->cursor + l,
+                         self->input + self->cursor, 
+                         (len - self->cursor)*sizeof(wchar_t) );
+                memcpy( self->input + self->cursor,
+                        self->killring, l*sizeof(wchar_t));
+                self->cursor += l;
+            }
+        }
+        else if( strcmp( action, "home" ) == 0 )
+        {
+            self->cursor = 0;
+        }
+        else if( strcmp( action, "end" ) == 0 )
+        {
+            self->cursor = wcslen( self->input );
+        }
+        else if( strcmp( action, "clear" ) == 0 )
+        {
+        }
+        else if( strcmp( action, "history-prev" ) == 0 )
+        {
+            if( console->handlers[__SIGNAL_HISTORY_PREV__] )
+            {
+                (*console->handlers[__SIGNAL_HISTORY_PREV__])(console, console->input);
+            }
+        }
+        else if( strcmp( action, "history-next" ) == 0 )
+        {
+            if( console->handlers[__SIGNAL_HISTORY_NEXT__] )
+            {
+                (*console->handlers[__SIGNAL_HISTORY_NEXT__])(console, console->input);
+            }
+        }
+        else if( strcmp( action, "complete" ) == 0 )
+        {
+            if( console->handlers[__SIGNAL_COMPLETE__] )
+            {
+                (*console->handlers[__SIGNAL_COMPLETE__])(console, console->input);
+            }
+        }
+    }
+}
+
+
+
+
+
+
+
+
 // debug
 
 int mouseX;
@@ -75,10 +599,6 @@ GLuint depth_rb3 = 0;
 // textures
 
 int scene_tex = -1;
-int dude1_tex = -1;
-int dude2_tex = -1;
-int mask_tex = -1;
-int note_tex = -1;
 int console_tex = -1;
 int console_time_tex = -1;
 
@@ -1021,30 +1541,13 @@ void KolmeDeeScene()
 	recursive_render(scene, scene->mRootNode, 0.5);
 }
 
+
 void LeadMaskScene()
 {
 	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fb); // fbo
 
 	float mymillis = millis;
 	glUseProgram(projector_shaderProg);
-
-	int kuvaflag = 0;
-
-	if (millis >= 0 && millis < 25000) {
-		kuvaflag = 0;
-	}
-	else if (millis >= 25000 && millis < 37000) {
-		kuvaflag = 1;
-	}
-	else if (millis >= 37000 && millis < 48500) {
-		kuvaflag = 2;
-	}
-	else if (millis >= 48500 && millis < 64000) {
-		kuvaflag = 3;
-	}
-	else if (millis >= 64000) {
-		kuvaflag = 4;
-	}
 
 	glEnable(GL_BLEND);
 	glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
@@ -1057,20 +1560,11 @@ void LeadMaskScene()
 
 	glUniform1f(widthLoc5, g_Width);
 	glUniform1f(heightLoc5, g_Height);
-	glUniform1f(timeLoc5, mymillis - (millis < 64000 ? 0 : 30000));
+	glUniform1f(timeLoc5, mymillis);
 	glUniform1f(alphaLoc5, mymillis*0.0001+0.2-cos(mymillis*0.0005)*0.15);
 
 	glActiveTexture(GL_TEXTURE0);
-	if (kuvaflag == 0)
-		glBindTexture(GL_TEXTURE_2D, scene_tex);
-	else if (kuvaflag == 1)
-		glBindTexture(GL_TEXTURE_2D, dude1_tex);
-	else if (kuvaflag == 2)
-		glBindTexture(GL_TEXTURE_2D, dude2_tex);
-	else if (kuvaflag == 3)
-		glBindTexture(GL_TEXTURE_2D, mask_tex);
-	else if (kuvaflag == 4)
-		glBindTexture(GL_TEXTURE_2D, note_tex);
+	glBindTexture(GL_TEXTURE_2D, scene_tex);
 
 	GLint location5 = glGetUniformLocation(projector_shaderProg, "texture0");
 	glUniform1i(location5, 0);
@@ -1253,6 +1747,10 @@ void LeadMaskScene()
 	glVertex2f(i + 100, j + 100);
 	glVertex2f(i, j + 100);
 	glEnd();
+
+
+
+
 }
 
 
@@ -1941,7 +2439,7 @@ void InitGraphics(int argc, char* argv[])
 	glutInit(&argc, argv);
 	glutCreateWindow("MIDISYS window");
 	glutReshapeWindow(g_Width, g_Height);
-	glutFullScreen();
+	//glutFullScreen();
 
 	glutSetCursor(GLUT_CURSOR_NONE);
 
@@ -2122,6 +2620,34 @@ void StartMainLoop()
 
 int main(int argc, char* argv[])
 {
+    console = console_new();
+    console_print( console,
+                   L"01234567891123456789212345678931234567894123456789512345678961234567897123456789\n"
+                   L"1\n"
+                   L"2\n"
+                   L"3\n"
+                   L"4\n"
+                   L"5\n"
+                   L"6\n"
+                   L"7\n"
+                   L"8\n"
+                   L"9\n"
+                   L"1\n"
+                   L"1\n"
+                   L"2\n"
+                   L"3\n"
+                   L"4\n"
+                   L"5\n"
+                   L"6\n"
+                   L"7\n"
+                   L"8\n"
+                   L"9\n"
+                   L"2\n"
+                   L"1\n"
+                   L"2\n"
+                   L"3\n"
+                   L"24-----------------------------------------------------------------------------\n" );
+
 	printf("--- MIDISYS ENGINE: bilotrip foundation MIDISYS ENGINE 0.1 - dosing, please wait\n");
 	
 	// init graphics
@@ -2143,10 +2669,6 @@ int main(int argc, char* argv[])
 	// load textures
 
 	scene_tex = LoadTexture("data/gfx/scene.jpg");
-	dude1_tex = LoadTexture("data/gfx/dude1.jpg");
-	dude2_tex = LoadTexture("data/gfx/dude2.jpg");
-	mask_tex = LoadTexture("data/gfx/mask.jpg");
-	note_tex = LoadTexture("data/gfx/note.jpg");
 	console_tex = LoadTexture("data/gfx/console.png");
 	console_time_tex = LoadTexture("data/gfx/console_time.png");
 
