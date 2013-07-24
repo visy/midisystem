@@ -75,10 +75,6 @@ GLuint depth_rb3 = 0;
 // textures
 
 int scene_tex = -1;
-int dude1_tex = -1;
-int dude2_tex = -1;
-int mask_tex = -1;
-int note_tex = -1;
 int console_tex = -1;
 int console_time_tex = -1;
 
@@ -1021,30 +1017,13 @@ void KolmeDeeScene()
 	recursive_render(scene, scene->mRootNode, 0.5);
 }
 
+
 void LeadMaskScene()
 {
 	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fb); // fbo
 
 	float mymillis = millis;
 	glUseProgram(projector_shaderProg);
-
-	int kuvaflag = 0;
-
-	if (millis >= 0 && millis < 25000) {
-		kuvaflag = 0;
-	}
-	else if (millis >= 25000 && millis < 37000) {
-		kuvaflag = 1;
-	}
-	else if (millis >= 37000 && millis < 48500) {
-		kuvaflag = 2;
-	}
-	else if (millis >= 48500 && millis < 64000) {
-		kuvaflag = 3;
-	}
-	else if (millis >= 64000) {
-		kuvaflag = 4;
-	}
 
 	glEnable(GL_BLEND);
 	glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
@@ -1061,16 +1040,7 @@ void LeadMaskScene()
 	glUniform1f(alphaLoc5, mymillis*0.0001+0.2-cos(mymillis*0.0005)*0.15);
 
 	glActiveTexture(GL_TEXTURE0);
-	if (kuvaflag == 0)
-		glBindTexture(GL_TEXTURE_2D, scene_tex);
-	else if (kuvaflag == 1)
-		glBindTexture(GL_TEXTURE_2D, dude1_tex);
-	else if (kuvaflag == 2)
-		glBindTexture(GL_TEXTURE_2D, dude2_tex);
-	else if (kuvaflag == 3)
-		glBindTexture(GL_TEXTURE_2D, mask_tex);
-	else if (kuvaflag == 4)
-		glBindTexture(GL_TEXTURE_2D, note_tex);
+	glBindTexture(GL_TEXTURE_2D, scene_tex);
 
 	GLint location5 = glGetUniformLocation(projector_shaderProg, "texture0");
 	glUniform1i(location5, 0);
@@ -1253,6 +1223,10 @@ void LeadMaskScene()
 	glVertex2f(i + 100, j + 100);
 	glVertex2f(i, j + 100);
 	glEnd();
+
+
+
+
 }
 
 
@@ -2143,10 +2117,6 @@ int main(int argc, char* argv[])
 	// load textures
 
 	scene_tex = LoadTexture("data/gfx/scene.jpg");
-	dude1_tex = LoadTexture("data/gfx/dude1.jpg");
-	dude2_tex = LoadTexture("data/gfx/dude2.jpg");
-	mask_tex = LoadTexture("data/gfx/mask.jpg");
-	note_tex = LoadTexture("data/gfx/note.jpg");
 	console_tex = LoadTexture("data/gfx/console.png");
 	console_time_tex = LoadTexture("data/gfx/console_time.png");
 
