@@ -53,10 +53,21 @@
 #include "ggets.h"
 #include "ggets.c"
 
+// fbo
+
+GLuint fb;
+GLuint fb_tex;
+GLuint fb2;
+GLuint fb_tex2;
+
+GLuint fake_framebuffer;
+GLuint fake_framebuffer_tex;
 
 
 
-
+#define KEYEVENTS_COUNT 461
+unsigned char keyrec[461] = {8,8,8,8,49,54,58,51,48,32,98,101,32,97,116,32,116,104,101,32,97,103,114,101,101,100,32,112,108,97,99,101,13,49,56,58,51,48,32,115,119,97,108,108,111,119,32,99,97,112,115,117,108,101,115,13,45,45,45,45,45,32,97,102,8,116,8,102,114,101,8,8,8,102,116,101,114,32,101,102,102,101,99,101,116,116,58,8,8,8,116,116,58,32,112,114,111,106,101,8,8,116,101,99,116,32,109,101,116,97,108,115,13,45,45,45,45,45,32,119,97,105,116,32,102,111,114,32,109,97,115,107,32,115,105,103,110,97,108,46,46,46,13,45,45,45,45,45,13,112,114,105,110,116,116,116,95,99,114,101,105,100,8,8,100,105,116,115,115,58,98,105,108,111,116,114,105,112,112,40,41,41,59,13,45,45,45,45,45,13,100,101,112,112,8,32,45,32,111,97,115,105,122,32,45,32,112,97,104,97,109,111,107,97,32,45,32,115,112,105,105,107,107,105,32,45,32,118,105,115,121,45,8,32,45,122,111,118,8,8,8,32,122,111,118,13,45,45,45,45,45,13,98,105,108,111,116,114,105,112,32,111,112,101,114,101,97,116,105,110,8,8,8,8,114,97,8,8,8,97,116,105,110,103,32,115,121,115,116,101,109,32,52,46,50,48,13,97,108,108,32,114,105,103,104,116,115,32,97,110,100,32,108,101,102,116,115,32,114,101,118,101,114,115,101,100,46,13,45,45,45,45,45,13,105,32,32,84,104,105,115,8,110,107,32,105,116,39,115,32,119,114,8,8,103,8,115,116,97,114,116,105,110,103,32,116,111,32,107,105,99,107,32,105,116,13,121,101,115,44,32,32,73,32,97,103,114,101,101,46,13,105,116,39,115,32,114,101,97,108,108,121,32,115,116,97,114,116,46,46,46,32,8,8,8,8,105,8,116,116,116,32,105,105,32,109,8,8,39,109,32,103,102,8,8,102,101,101,101,108,105,108,105,105,110,105,110,105,110,110,103,103,103,103,103,103,103,103,103};
+unsigned int keymillis[461] = {0,2163,2608,3432,5333,5775,6104,6568,7291,8057,11184,11269,11357,11525,11910,12021,12179,12311,12396,12468,12606,12703,12894,12954,13101,13183,13257,13475,13528,13588,13690,13751,13896,18124,18666,19036,19386,19981,20662,23655,23811,23870,23949,24087,24248,24318,24398,24547,24580,24599,24721,24783,24879,24963,25031,25363,27081,27226,27367,27521,27822,27997,28362,28435,29480,30311,30770,30905,31092,31182,31568,31698,31953,32124,32604,32679,32786,32899,33033,33075,33222,33276,33346,33414,33425,33578,33658,33919,34055,34175,34217,34333,34369,34522,34633,34765,34839,35056,35146,35282,35433,35504,35547,35732,35963,36134,36340,36400,36477,36555,36651,36717,37273,37610,37751,37886,38021,38156,38310,38403,38755,38824,38948,39054,39173,39221,39322,39383,39472,39524,39605,39666,39921,39994,40037,40204,40395,40448,40613,41077,41222,41355,42243,42835,43052,43210,43372,43676,43870,44227,44318,44404,44562,44601,44732,44891,44959,45141,45288,45369,45566,45647,45853,45985,46029,46131,46185,46239,46459,46538,47094,47187,47245,47423,47525,47952,48054,48109,48249,48345,48670,50084,50117,50697,51040,51178,51328,51475,51647,51858,52858,52948,53048,53211,53493,53884,53998,54160,54529,54637,54755,54826,54948,55316,55391,55523,55829,55901,56187,56303,56454,56504,56623,56680,56869,57011,57096,57397,57443,57569,57687,57958,58071,58230,58363,58634,58782,58901,59013,59134,59209,59446,59773,59861,59988,60070,60236,60330,60640,60766,60893,60919,60988,61191,61315,62087,62921,63072,63216,63381,63679,63982,64507,64586,64683,64824,64982,65142,65191,65235,65402,65535,65589,65627,65712,65779,65790,65942,66043,66244,66486,66629,66759,66891,67395,67470,67829,67968,68096,68533,68727,68792,68941,68995,69096,69229,69271,69368,69457,69527,69672,70142,70326,70585,70739,70877,71198,71466,71540,71687,71776,71983,72079,72182,72309,72382,72429,72546,72636,72742,72963,73085,73233,73270,73338,73501,73561,73979,74241,74292,74476,74537,74673,74770,74856,75143,75693,76126,76652,76805,76960,77114,77264,77536,77929,77998,78439,78670,78847,78904,79028,79665,79765,79838,79939,80117,80236,80631,80683,80785,81037,81223,81535,81670,81717,82039,82124,82205,82269,82369,82495,82615,82682,82721,82850,82983,83066,83165,83345,83766,84037,84111,84223,84341,84435,84860,85412,85475,85560,85712,85838,86261,86432,86733,86836,86938,87113,87171,87319,87466,87852,88269,88416,88822,88906,89149,89353,89376,89434,89488,89616,89750,89876,90618,90696,90798,90897,91070,91204,91356,91486,91667,92386,92516,92643,92756,92835,93706,93785,93906,94040,94253,94339,94479,95221,95908,96141,96261,96608,96894,96963,97228,97385,97511,97647,97720,97763,97905,98021,98069,98412,98424,98746,98867,98963,98991,99126,99141,99263,99412,99511,99637,99762,99899,100031,100161,100285,100405,100521};
 
 
 const int __SIGNAL_ACTIVATE__     = 0;
@@ -98,9 +109,9 @@ struct _console_t {
 };
 typedef struct _console_t console_t;
 
-
 // ------------------------------------------------------- global variables ---
 static console_t * console;
+texture_atlas_t *atlas;
 GLuint shader;
 mat4   model, view, projection;
 
@@ -126,48 +137,44 @@ console_new( void )
     self->handlers[__SIGNAL_HISTORY_PREV__] = 0;
     self->pen.x = self->pen.y = 0;
 
-    texture_atlas_t * atlas = texture_atlas_new( 512, 512, 1 );
- 
-    vec4 white = {{1,1,1,1}};
+    atlas = texture_atlas_new( 512, 512, 1 );
+
+    vec4 white = {{0.2,1,0.2,0.7}};
     vec4 black = {{0,0,0,1}};
     vec4 none = {{0,0,1,0}};
 
     markup_t normal;
-    normal.family  = "fonts/VeraMono.ttf";
-    normal.size    = 13.0;
+    normal.family  = "nauhoitin_fonts/VeraMono.ttf";
+    normal.size    = 23.0;
     normal.bold    = 0;
     normal.italic  = 0;
     normal.rise    = 0.0;
     normal.spacing = 0.0;
     normal.gamma   = 1.0;
-    normal.foreground_color    = black;
-    normal.background_color    = none;
-    normal.underline           = 0;
-    normal.underline_color     = white;
-    normal.overline            = 0;
-    normal.overline_color      = white;
-    normal.strikethrough       = 0;
-    normal.strikethrough_color = white;
+    normal.foreground_color    = white;
+    normal.foreground_color.r = 0.15;
+    normal.foreground_color.g = 0.35;
+    normal.foreground_color.b = 0.15;
 
-    normal.font = texture_font_new( atlas, "fonts/VeraMono.ttf", 13 );
+    normal.font = texture_font_new( atlas, "nauhoitin_fonts/term.ttf", 40 );
 
     markup_t bold = normal;
     bold.bold = 1;
-    bold.font = texture_font_new( atlas, "fonts/VeraMoBd.ttf", 13 );
+    bold.font = texture_font_new( atlas, "nauhoitin_fonts/VeraMoBd.ttf", 23 );
 
     markup_t italic = normal;
     italic.italic = 1;
-    bold.font = texture_font_new( atlas, "fonts/VeraMoIt.ttf", 13 );
+    bold.font = texture_font_new( atlas, "nauhoitin_fonts/VeraMoIt.ttf", 23 );
 
     markup_t bold_italic = normal;
     bold.bold = 1;
     italic.italic = 1;
-    italic.font = texture_font_new( atlas, "fonts/VeraMoBI.ttf", 13 );
+    italic.font = texture_font_new( atlas, "nauhoitin_fonts/VeraMoBI.ttf", 13 );
 
     markup_t faint = normal;
-    faint.foreground_color.r = 0.35;
-    faint.foreground_color.g = 0.35;
-    faint.foreground_color.b = 0.35;
+    faint.foreground_color.r = 0.10;
+    faint.foreground_color.g = 0.25;
+    faint.foreground_color.b = 0.10;
 
     markup_t error = normal;
     error.foreground_color.r = 1.00;
@@ -332,7 +339,9 @@ console_render( console_t *self )
                             { x1,y1,0,  s1,t1,  r,g,b,a },
                             { x1,y0,0,  s1,t0,  r,g,b,a } };
     //vertex_buffer_push_back( self->buffer, vertices, 4, indices, 6 );
+	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fb2); // default
     glEnable( GL_TEXTURE_2D );
+    glBindTexture(GL_TEXTURE_2D, atlas->id);
 
     glUseProgram( shader );
     {
@@ -440,6 +449,8 @@ console_process( console_t *self,
                   const unsigned char key )
 {
     size_t len = wcslen(self->input);
+
+    printf("console_process:%d\n", key);
 
     if( strcmp(action, "type") == 0 )
     {
@@ -583,22 +594,16 @@ GLuint redcircle_shaderProg;
 GLuint vhs_shaderProg;
 GLuint yuv2rgb_shaderProg;
 
-// fbo
-
-GLuint fb;
-GLuint fb_tex;
-GLuint fb2;
-GLuint fb_tex2;
-
-GLuint fake_framebuffer;
-GLuint fake_framebuffer_tex;
-
 GLuint depth_rb = 0;
 GLuint depth_rb2 = 0;
 GLuint depth_rb3 = 0;
 // textures
 
 int scene_tex = -1;
+int dude1_tex = -1;
+int dude2_tex = -1;
+int mask_tex = -1;
+int note_tex = -1; 
 int console_tex = -1;
 int console_time_tex = -1;
 
@@ -781,6 +786,7 @@ void RedCircleScene();
 void KolmeDeeScene();
 
 void KolmeDeeLogic(float dt);
+void ConsoleLogic(float dt);
 
 typedef void (*SceneRenderCallback)();
 SceneRenderCallback scene_render[] = {
@@ -794,7 +800,7 @@ SceneRenderCallback scene_render[] = {
 
 typedef void (*SceneLogicCallback)(float);
 SceneLogicCallback scene_logic[] = {
-										&dummy,
+										&ConsoleLogic,
 										&dummy,
 										&dummy,
 										&dummy,
@@ -1541,217 +1547,272 @@ void KolmeDeeScene()
 	recursive_render(scene, scene->mRootNode, 0.5);
 }
 
+void
+on_key_press ( unsigned char key)
+{
+    if (key == 1)
+    {
+        console_process( console, "home", 0 );
+    }
+    else if (key == 4)
+    { 
+        console_process( console, "delete", 0 );
+    }
+    else if (key == 5)
+    { 
+        console_process( console, "end", 0 );
+    }
+    else if (key == 8)
+    { 
+        console_process( console, "backspace", 0 );
+    }
+    else if (key == 9)
+    {
+        console_process( console, "complete", 0 );
+    }
+    else if (key == 11)
+    {
+        console_process( console, "kill", 0 );
+    }
+    else if (key == 12)
+    {
+        console_process( console, "clear", 0 );
+    }
+    else if (key == 13)
+    {
+        console_process( console, "enter", 0 );
+    }
+    else if (key == 25)
+    {
+        console_process( console, "yank", 0 );
+    }
+    else if (key == 27)
+    {
+        console_process( console, "escape", 0 );
+    }
+    else if (key == 127)
+    {
+        console_process( console, "backspace", 0 );
+    }
+    else if( key > 31)
+    {
+        console_process( console, "type", key );
+    }
+}
+
+int keyindex = 3;
+int nextmillis = 0;
+
+void ConsoleLogic(float dt)
+{
+	int kmillis = (int)(millis-11000);
+
+	//printf("kmillis:%d\n",kmillis);
+	if (kmillis >= 0 && kmillis >= keymillis[keyindex])
+	{
+		if(keyindex >= 0)
+		{
+			on_key_press(keyrec[keyindex]);
+		}
+
+		keyindex++;
+	}
+}
 
 void LeadMaskScene()
 {
-	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fb); // fbo
+glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fb); // fbo
 
-	float mymillis = millis;
-	glUseProgram(projector_shaderProg);
+float mymillis = millis;
+glUseProgram(projector_shaderProg);
 
-	glEnable(GL_BLEND);
-	glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_DST_ALPHA);
+int kuvaflag = 0;
 
-	GLint widthLoc5 = glGetUniformLocation(projector_shaderProg, "width");
-	GLint heightLoc5 = glGetUniformLocation(projector_shaderProg, "height");
-	GLint timeLoc5 = glGetUniformLocation(projector_shaderProg, "time");
-	GLint alphaLoc5 = glGetUniformLocation(projector_shaderProg, "alpha");
+if (millis >= 0 && millis < 25000) {
+kuvaflag = 0;
+}
+else if (millis >= 25000 && millis < 37000) {
+kuvaflag = 1;
+}
+else if (millis >= 37000 && millis < 48500) {
+kuvaflag = 2;
+}
+else if (millis >= 48500 && millis < 64000) {
+kuvaflag = 3;
+}
+else if (millis >= 64000) {
+kuvaflag = 4;
+}
 
-	glUniform1f(widthLoc5, g_Width);
-	glUniform1f(heightLoc5, g_Height);
-	glUniform1f(timeLoc5, mymillis);
-	glUniform1f(alphaLoc5, mymillis*0.0001+0.2-cos(mymillis*0.0005)*0.15);
+glEnable(GL_BLEND);
+glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_DST_ALPHA);
 
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, scene_tex);
+GLint widthLoc5 = glGetUniformLocation(projector_shaderProg, "width");
+GLint heightLoc5 = glGetUniformLocation(projector_shaderProg, "height");
+GLint timeLoc5 = glGetUniformLocation(projector_shaderProg, "time");
+GLint alphaLoc5 = glGetUniformLocation(projector_shaderProg, "alpha");
 
-	GLint location5 = glGetUniformLocation(projector_shaderProg, "texture0");
-	glUniform1i(location5, 0);
+glUniform1f(widthLoc5, g_Width);
+glUniform1f(heightLoc5, g_Height);
+glUniform1f(timeLoc5, mymillis - (millis < 64000 ? 0 : 30000));
+glUniform1f(alphaLoc5, mymillis*0.0001+0.2-cos(mymillis*0.0005)*0.15);
 
-	glLoadIdentity();
-	glTranslatef(-1.2, -1.0, -1.0);
+glActiveTexture(GL_TEXTURE0);
+if (kuvaflag == 0)
+glBindTexture(GL_TEXTURE_2D, scene_tex);
+else if (kuvaflag == 1)
+glBindTexture(GL_TEXTURE_2D, dude1_tex);
+else if (kuvaflag == 2)
+glBindTexture(GL_TEXTURE_2D, dude2_tex);
+else if (kuvaflag == 3)
+glBindTexture(GL_TEXTURE_2D, mask_tex);
+else if (kuvaflag == 4)
+glBindTexture(GL_TEXTURE_2D, note_tex);
 
-	glBegin(GL_QUADS);
+GLint location5 = glGetUniformLocation(projector_shaderProg, "texture0");
+glUniform1i(location5, 0);
 
-	int i,j;
+glLoadIdentity();
+glTranslatef(-1.2, -1.0, -1.0);
 
-	for (i = -50; i < 50; i+=10)
-		for (j = -50; j < 50; j+=10)
-		{
-			glVertex2f(i, j);
-			glVertex2f(i + 1, j);
-			glVertex2f(i + 1, j + 1);
-			glVertex2f(i, j + 1);
-		}
-	glEnd();
+glBegin(GL_QUADS);
 
-	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fb2); // default
+int i,j;
 
-	glUseProgram(fsquad_shaderProg);
+for (i = -50; i < 50; i+=10)
+for (j = -50; j < 50; j+=10)
+{
+glVertex2f(i, j);
+glVertex2f(i + 1, j);
+glVertex2f(i + 1, j + 1);
+glVertex2f(i, j + 1);
+}
+glEnd();
 
-	glEnable(GL_BLEND);
-	glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-	glBlendFunc(GL_ONE_MINUS_SRC_COLOR, GL_ONE_MINUS_DST_COLOR);
+glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fb2); // default
 
-	GLint widthLoc6 = glGetUniformLocation(fsquad_shaderProg, "width");
-	GLint heightLoc6 = glGetUniformLocation(fsquad_shaderProg, "height");
-	GLint timeLoc6 = glGetUniformLocation(fsquad_shaderProg, "time");
-	GLint alphaLoc6 = glGetUniformLocation(fsquad_shaderProg, "alpha");
-	GLint gammaLoc = glGetUniformLocation(fsquad_shaderProg, "gamma");
-	GLint gridLoc6 = glGetUniformLocation(fsquad_shaderProg, "grid");
-	glUniform1f(gridLoc6, 0.001+cos(mymillis)*0.0005);
+glUseProgram(fsquad_shaderProg);
 
+glEnable(GL_BLEND);
+glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+glBlendFunc(GL_ONE_MINUS_SRC_COLOR, GL_ONE_MINUS_DST_COLOR);
 
-	glUniform1f(widthLoc6, g_Width);
-	glUniform1f(heightLoc6, g_Height);
-	glUniform1f(timeLoc6, mymillis/100);
-	glUniform1f(alphaLoc6, 0.1+abs(cos(mymillis*0.08)*0.05));
-	glUniform1f(gammaLoc, 0.0f);
-
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, fb_tex);
-
-	GLint location6 = glGetUniformLocation(fsquad_shaderProg, "texture0");
-	glUniform1i(location6, 0);
-
-	glLoadIdentity();
-
-	glTranslatef(-1.2, -1.0, -1.0);
-
-	i=0;
-	j=0;
-	glBegin(GL_QUADS);
-	glVertex2f(i, j);
-	glVertex2f(i + 100, j);
-	glVertex2f(i + 100, j + 100);
-	glVertex2f(i, j + 100);
-	glEnd();
-
-	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fake_framebuffer); // default
-
-	glUseProgram(fsquad_shaderProg);
-
-	glDisable(GL_BLEND);
-
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-	GLint widthLoc7 = glGetUniformLocation(fsquad_shaderProg, "width");
-	GLint heightLoc7 = glGetUniformLocation(fsquad_shaderProg, "height");
-	GLint timeLoc7 = glGetUniformLocation(fsquad_shaderProg, "time");
-	GLint alphaLoc7 = glGetUniformLocation(fsquad_shaderProg, "alpha");
-	GLint gammaLoc2 = glGetUniformLocation(fsquad_shaderProg, "gamma");
-	GLint gridLoc = glGetUniformLocation(fsquad_shaderProg, "grid");
-
-	glUniform1f(widthLoc7, g_Width);
-	glUniform1f(heightLoc7, g_Height);
-	glUniform1f(timeLoc7, mymillis/100);
-	glUniform1f(alphaLoc7, 1.0);
-	glUniform1f(gammaLoc2, 4.0f);
-	glUniform1f(gridLoc, 1.0f+tan(mymillis*10)*0.3);
-
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, fb_tex2);
-
-	GLint location7 = glGetUniformLocation(fsquad_shaderProg, "texture0");
-	glUniform1i(location7, 0);
-
-	glLoadIdentity();
-
-	glTranslatef(-1.2, -1.0, -1.0);
-
-	i=0;
-	j=0;
-	glBegin(GL_QUADS);
-	glVertex2f(i, j);
-	glVertex2f(i + 100, j);
-	glVertex2f(i + 100, j + 100);
-	glVertex2f(i, j + 100);
-	glEnd();
-
-	glUseProgram(projector_shaderProg);
-
-	glEnable(GL_BLEND);
-	glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_ADD);
-	glBlendFunc(GL_SRC_COLOR, GL_DST_ALPHA);
-
-	widthLoc5 = glGetUniformLocation(projector_shaderProg, "width");
-	heightLoc5 = glGetUniformLocation(projector_shaderProg, "height");
-	timeLoc5 = glGetUniformLocation(projector_shaderProg, "time");
-	alphaLoc5 = glGetUniformLocation(projector_shaderProg, "alpha");
-
-	glUniform1f(widthLoc5, g_Width);
-	glUniform1f(heightLoc5, g_Height);
-	glUniform1f(timeLoc5, mymillis);
-	glUniform1f(alphaLoc5, 1.0);
-
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, scene_tex);
-
-	location5 = glGetUniformLocation(projector_shaderProg, "texture0");
-	glUniform1i(location5, 0);
-
-	glLoadIdentity();
-	glTranslatef(-1.2, -1.0, -1.0);
-
-	glBegin(GL_QUADS);
+GLint widthLoc6 = glGetUniformLocation(fsquad_shaderProg, "width");
+GLint heightLoc6 = glGetUniformLocation(fsquad_shaderProg, "height");
+GLint timeLoc6 = glGetUniformLocation(fsquad_shaderProg, "time");
+GLint alphaLoc6 = glGetUniformLocation(fsquad_shaderProg, "alpha");
+GLint gammaLoc = glGetUniformLocation(fsquad_shaderProg, "gamma");
+GLint gridLoc6 = glGetUniformLocation(fsquad_shaderProg, "grid");
+glUniform1f(gridLoc6, 0.001+cos(mymillis)*0.0005);
 
 
-	for (i = -50; i < 50; i+=10)
-		for (j = -50; j < 50; j+=10)
-		{
-			glVertex2f(i, j);
-			glVertex2f(i + 1, j);
-			glVertex2f(i + 1, j + 1);
-			glVertex2f(i, j + 1);
-		}
-	glEnd();
+glUniform1f(widthLoc6, g_Width);
+glUniform1f(heightLoc6, g_Height);
+glUniform1f(timeLoc6, mymillis/100);
+glUniform1f(alphaLoc6, 0.1+abs(cos(mymillis*0.08)*0.05));
+glUniform1f(gammaLoc, 0.0f);
+
+glActiveTexture(GL_TEXTURE0);
+glBindTexture(GL_TEXTURE_2D, fb_tex);
+
+GLint location6 = glGetUniformLocation(fsquad_shaderProg, "texture0");
+glUniform1i(location6, 0);
+
+glLoadIdentity();
+
+glTranslatef(-1.2, -1.0, -1.0);
+
+i=0;
+j=0;
+glBegin(GL_QUADS);
+glVertex2f(i, j);
+glVertex2f(i + 100, j);
+glVertex2f(i + 100, j + 100);
+glVertex2f(i, j + 100);
+glEnd();
+
+glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fake_framebuffer); // default
+
+glUseProgram(fsquad_shaderProg);
+
+glDisable(GL_BLEND);
+
+glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+GLint widthLoc7 = glGetUniformLocation(fsquad_shaderProg, "width");
+GLint heightLoc7 = glGetUniformLocation(fsquad_shaderProg, "height");
+GLint timeLoc7 = glGetUniformLocation(fsquad_shaderProg, "time");
+GLint alphaLoc7 = glGetUniformLocation(fsquad_shaderProg, "alpha");
+GLint gammaLoc2 = glGetUniformLocation(fsquad_shaderProg, "gamma");
+GLint gridLoc = glGetUniformLocation(fsquad_shaderProg, "grid");
+
+glUniform1f(widthLoc7, g_Width);
+glUniform1f(heightLoc7, g_Height);
+glUniform1f(timeLoc7, mymillis/100);
+glUniform1f(alphaLoc7, 1.0);
+glUniform1f(gammaLoc2, 4.0f);
+glUniform1f(gridLoc, 1.0f+tan(mymillis*10)*0.3);
+
+glActiveTexture(GL_TEXTURE0);
+glBindTexture(GL_TEXTURE_2D, fb_tex2);
+
+GLint location7 = glGetUniformLocation(fsquad_shaderProg, "texture0");
+glUniform1i(location7, 0);
+
+glLoadIdentity();
+
+glTranslatef(-1.2, -1.0, -1.0);
+
+i=0;
+j=0;
+glBegin(GL_QUADS);
+glVertex2f(i, j);
+glVertex2f(i + 100, j);
+glVertex2f(i + 100, j + 100);
+glVertex2f(i, j + 100);
+glEnd();
+
+glUseProgram(projector_shaderProg);
+
+glEnable(GL_BLEND);
+glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_ADD);
+glBlendFunc(GL_SRC_COLOR, GL_DST_ALPHA);
+
+widthLoc5 = glGetUniformLocation(projector_shaderProg, "width");
+heightLoc5 = glGetUniformLocation(projector_shaderProg, "height");
+timeLoc5 = glGetUniformLocation(projector_shaderProg, "time");
+alphaLoc5 = glGetUniformLocation(projector_shaderProg, "alpha");
+
+glUniform1f(widthLoc5, g_Width);
+glUniform1f(heightLoc5, g_Height);
+glUniform1f(timeLoc5, mymillis);
+glUniform1f(alphaLoc5, 1.0);
+
+glActiveTexture(GL_TEXTURE0);
+glBindTexture(GL_TEXTURE_2D, scene_tex);
+
+location5 = glGetUniformLocation(projector_shaderProg, "texture0");
+glUniform1i(location5, 0);
+
+glLoadIdentity();
+glTranslatef(-1.2, -1.0, -1.0);
+
+glBegin(GL_QUADS);
 
 
-	glUseProgram(console_shaderProg);
-
-	glEnable(GL_BLEND);
-	glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_SUBTRACT);
-	glBlendFunc(GL_SRC_COLOR, GL_DST_COLOR);
-
-	widthLoc5 = glGetUniformLocation(console_shaderProg, "width");
-	heightLoc5 = glGetUniformLocation(console_shaderProg, "height");
-	timeLoc5 = glGetUniformLocation(console_shaderProg, "time");
-	alphaLoc5 = glGetUniformLocation(console_shaderProg, "alpha");
-
-	glUniform1f(widthLoc5, g_Width);
-	glUniform1f(heightLoc5, g_Height);
-	glUniform1f(timeLoc5, mymillis);
-	glUniform1f(alphaLoc5, 1.0);
-
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, console_tex);
-
-	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, console_time_tex);
-
-	location5 = glGetUniformLocation(console_shaderProg, "texture0");
-	glUniform1i(location5, 0);
-
-	location6 = glGetUniformLocation(console_shaderProg, "texture1");
-	glUniform1i(location5, 1);
-
-	glLoadIdentity();
-	glTranslatef(-1.2, -1.0, -1.0);
-
-	i=0;
-	j=0;
-	glBegin(GL_QUADS);
-	glVertex2f(i, j);
-	glVertex2f(i + 100, j);
-	glVertex2f(i + 100, j + 100);
-	glVertex2f(i, j + 100);
-	glEnd();
-
-
-
+for (i = -50; i < 50; i+=10)
+for (j = -50; j < 50; j+=10)
+{
+glVertex2f(i, j);
+glVertex2f(i + 1, j);
+glVertex2f(i + 1, j + 1);
+glVertex2f(i, j + 1);
+}
+glEnd();
 
 }
+
 
 
 void CopScene()
@@ -2098,20 +2159,42 @@ void RedCircleScene()
 
 void VHSPost(float effuon)
 {
+	float mymillis = (millis-scene_start_millis);
+
+    if (current_scene == 0)
+    {
+// console crap
+	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fb_tex2); // default
+
+	glLoadIdentity();
+
+
+    mat4_set_identity( &projection );
+    mat4_set_identity( &model );
+    mat4_set_identity( &view );
+
+	mat4_set_orthographic( &projection, 0, g_Width, 0, g_Height, -1, 1);
+
+    glDisable( GL_DEPTH_TEST ); 
+
+    glBlendFunc( GL_SRC_ALPHA, GL_DST_ALPHA );
+
+ console_render( console );
+}
+
 	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0); // default
-	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 	glClearDepth(1.0f);	// Depth Buffer Setup
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	float mymillis = (millis-scene_start_millis);
 	glUseProgram(vhs_shaderProg);
 
 	glDisable(GL_BLEND);
-	GLint widthLoc5 = glGetUniformLocation(vhs_shaderProg, "width");
-	GLint heightLoc5 = glGetUniformLocation(vhs_shaderProg, "height");
-	GLint timeLoc5 = glGetUniformLocation(vhs_shaderProg, "time");
-	GLint effuLoc5 = glGetUniformLocation(vhs_shaderProg, "effu");
+	float widthLoc5 = glGetUniformLocation(vhs_shaderProg, "width");
+	float heightLoc5 = glGetUniformLocation(vhs_shaderProg, "height");
+	float timeLoc5 = glGetUniformLocation(vhs_shaderProg, "time");
+	float effuLoc5 = glGetUniformLocation(vhs_shaderProg, "effu");
 
 	glUniform1f(widthLoc5, g_Width);
 	glUniform1f(heightLoc5, g_Height);
@@ -2121,7 +2204,7 @@ void VHSPost(float effuon)
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, fake_framebuffer_tex);
 
-	GLint location5 = glGetUniformLocation(vhs_shaderProg, "texture0");
+	float location5 = glGetUniformLocation(vhs_shaderProg, "texture0");
 	glUniform1i(location5, 0);
 
 	glLoadIdentity();
@@ -2136,6 +2219,46 @@ void VHSPost(float effuon)
 	glVertex2f(i + 100, j + 100);
 	glVertex2f(i, j + 100);
 	glEnd();
+
+if (current_scene == 0) 
+{
+
+	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0); // default
+
+	glUseProgram(vhs_shaderProg);
+
+	glEnable(GL_BLEND);
+    glBlendFunc( GL_SRC_COLOR, GL_ONE_MINUS_SRC_COLOR );
+	widthLoc5 = glGetUniformLocation(vhs_shaderProg, "width");
+	 heightLoc5 = glGetUniformLocation(vhs_shaderProg, "height");
+	 timeLoc5 = glGetUniformLocation(vhs_shaderProg, "time");
+	 effuLoc5 = glGetUniformLocation(vhs_shaderProg, "effu");
+
+	glUniform1f(widthLoc5, g_Width);
+	glUniform1f(heightLoc5, g_Height);
+	glUniform1f(timeLoc5, mymillis/100);
+	glUniform1f(effuLoc5, 0);
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, fb_tex2);
+
+	location5 = glGetUniformLocation(vhs_shaderProg, "texture0");
+	glUniform1i(location5, 0);
+
+	glLoadIdentity();
+
+	glTranslatef(-1.2, -1.0, -1.0);
+
+	i = 0;
+	j = 0;
+	glBegin(GL_QUADS);
+	glVertex2f(i, j);
+	glVertex2f(i + 100, j);
+	glVertex2f(i + 100, j + 100);
+	glVertex2f(i, j + 100);
+	glEnd();
+}
+
 }
 
 
@@ -2439,7 +2562,7 @@ void InitGraphics(int argc, char* argv[])
 	glutInit(&argc, argv);
 	glutCreateWindow("MIDISYS window");
 	glutReshapeWindow(g_Width, g_Height);
-	//glutFullScreen();
+	glutFullScreen();
 
 	glutSetCursor(GLUT_CURSOR_NONE);
 
@@ -2620,44 +2743,19 @@ void StartMainLoop()
 
 int main(int argc, char* argv[])
 {
-    console = console_new();
-    console_print( console,
-                   L"01234567891123456789212345678931234567894123456789512345678961234567897123456789\n"
-                   L"1\n"
-                   L"2\n"
-                   L"3\n"
-                   L"4\n"
-                   L"5\n"
-                   L"6\n"
-                   L"7\n"
-                   L"8\n"
-                   L"9\n"
-                   L"1\n"
-                   L"1\n"
-                   L"2\n"
-                   L"3\n"
-                   L"4\n"
-                   L"5\n"
-                   L"6\n"
-                   L"7\n"
-                   L"8\n"
-                   L"9\n"
-                   L"2\n"
-                   L"1\n"
-                   L"2\n"
-                   L"3\n"
-                   L"24-----------------------------------------------------------------------------\n" );
-
 	printf("--- MIDISYS ENGINE: bilotrip foundation MIDISYS ENGINE 0.1 - dosing, please wait\n");
 	
 	// init graphics
 
 	InitGraphics(argc, argv);
 
+	// init console
+
+    console = console_new();
+
 	// load shaders
 
 	projector_shaderProg = LoadShader("data/shaders/projector");
-	console_shaderProg = LoadShader("data/shaders/console");
 	eye_shaderProg = LoadShader("data/shaders/eye");
 	eye_post_shaderProg = LoadShader("data/shaders/eye_post");
 	fsquad_shaderProg = LoadShader("data/shaders/fsquad");
@@ -2666,11 +2764,16 @@ int main(int argc, char* argv[])
 	vhs_shaderProg = LoadShader("data/shaders/vhs");
 	yuv2rgb_shaderProg = LoadShader("data/shaders/yuv2rgb");
 
+    shader = shader_load("nauhoitin_shaders/v3f-t2f-c4f.vert",
+                         "nauhoitin_shaders/v3f-t2f-c4f.frag");
+
 	// load textures
 
 	scene_tex = LoadTexture("data/gfx/scene.jpg");
-	console_tex = LoadTexture("data/gfx/console.png");
-	console_time_tex = LoadTexture("data/gfx/console_time.png");
+	dude1_tex = LoadTexture("data/gfx/dude1.jpg");
+	dude2_tex = LoadTexture("data/gfx/dude2.jpg");
+	mask_tex = LoadTexture("data/gfx/mask.jpg");
+	note_tex = LoadTexture("data/gfx/note.jpg");
 
 	copkillers_tex[0] = LoadTexture("data/gfx/copkiller1.jpg");
 	copkillers_tex[1] = LoadTexture("data/gfx/prip1.jpg");

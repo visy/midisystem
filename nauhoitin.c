@@ -686,17 +686,23 @@ int keyindex = 0;
 
 void dumpkeys(){
     fprintf(stderr,"\n\n\n\n\n=================================================================\n");
+    fprintf(stdout, "#define KEYEVENTS_COUNT %d\n", keyindex-1);
+    fprintf(stdout, "unsigned char keyrec[%d] = {",keyindex-1);
     for(int i = 0; i < keyindex-1; i++)
     {
-        fprintf(stderr, "%d", keyrec[i]);
-        if (i < keyindex-2) fprintf(stderr, ",");
+        fprintf(stdout, "%d", keyrec[i]);
+        if (i < keyindex-2) fprintf(stdout, ",");
     }
-    fprintf(stderr,"\n\n");
+    fprintf(stdout, "};");
+    fprintf(stdout,"\n");
+    fprintf(stdout, "unsigned int keymillis[%d] = {",keyindex-1);
     for(int i = 0; i < keyindex-1; i++)
     {
-        fprintf(stderr, "%d",keymillis[i]);
-        if (i < keyindex-2) fprintf(stderr, ",");
+        fprintf(stdout, "%d",keymillis[i]);
+        if (i < keyindex-2) fprintf(stdout, ",");
     }
+    fprintf(stdout, "};");
+    fprintf(stdout,"\n");
 
     exit(1);
 }
