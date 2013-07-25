@@ -619,11 +619,10 @@ int noise_tex = -1;
 
 int room_texnum = 0;
 
-// assimp scene
+// assimp scenes
 
 const aiScene* scene = NULL;
-GLuint scene_list = 0;
-aiVector3D scene_min, scene_max, scene_center;
+const aiScene* bilothree = NULL;
 
 Assimp::Importer importer;
 
@@ -645,9 +644,6 @@ static GLfloat g_farPlane = 1000;
 static int g_Width = 800;
 static int g_Height = 600;
 
-#define VIDEO_WIDTH 640
-#define VIDEO_HEIGHT 400
-
 class YUVFrame {
 public:
 	YUVFrame(OggPlayer oggstream):ogg(oggstream) {
@@ -655,14 +651,6 @@ public:
 		printf("yuvframe: ogg reports: %dx%d\n",width,height);
 		// The textures are created when rendering the first frame
 		y_tex = u_tex = v_tex = -1 ;
-		// Thes variables help us render a fullscreen quad
-		// with the right aspect ration
-//		const SDL_VideoInfo* vi = SDL_GetVideoInfo();
-		float max = std::max<float>((float)width/VIDEO_WIDTH,(float)height/VIDEO_HEIGHT);
-		quad_w = width/max;
-		quad_h = height/max;
-		quad_x = (VIDEO_WIDTH-quad_w)/2.0;
-		quad_y = (VIDEO_HEIGHT-quad_h)/2.0;
 	}
 	~YUVFrame() {
 		glDeleteTextures(1,&y_tex);
@@ -763,7 +751,6 @@ private:
 	OggPlayer ogg;
 	GLuint y_tex,u_tex,v_tex;
 	int width,height;
-	float quad_w,quad_h,quad_x,quad_y;
 };
 
 YUVFrame* myVideoFrame;
@@ -783,6 +770,7 @@ void CopScene();
 void MarssiScene();
 void EyeScene();
 void RedCircleScene();
+void BiloThreeScene();
 void KolmeDeeScene();
 
 void KolmeDeeLogic(float dt);
@@ -795,7 +783,7 @@ SceneRenderCallback scene_render[] = {
 										&MarssiScene,
 										&EyeScene, 
 										&RedCircleScene,
-										&KolmeDeeScene
+										&BiloThreeScene
 									 };
 
 typedef void (*SceneLogicCallback)(float);
@@ -805,7 +793,7 @@ SceneLogicCallback scene_logic[] = {
 										&dummy,
 										&dummy,
 										&dummy,
-										&KolmeDeeLogic
+										&dummy
 									 };
 
 // midi sync
@@ -864,9 +852,13 @@ int demo_playlist()
 	{
 		current_scene = 3; // eye horror
 	}
-	else if (millis >= 264000 && millis < 400000)
+	else if (millis >= 264000 && millis < 300000)
 	{
-		current_scene = 4; // outro 1
+		current_scene = 4; // outro 1 / redcircle
+	}
+	else if (millis >= 300000 && millis < 320000)
+	{
+		current_scene = 5; // outro 2 / bilothree
 	}
 
 	if (sc != current_scene)
@@ -1415,6 +1407,7 @@ void apply_material(const aiMaterial *mtl)
 
 void recursive_render (const struct aiScene *sc, const struct aiNode* nd, float scale)
 {
+
 	unsigned int i;
 	unsigned int n=0, t;
 	aiMatrix4x4 m = nd->mTransformation;
@@ -1431,7 +1424,7 @@ void recursive_render (const struct aiScene *sc, const struct aiNode* nd, float 
 	// draw all meshes assigned to this node
 	for (; n < nd->mNumMeshes; ++n)
 	{
-	const struct aiMesh* mesh = scene->mMeshes[nd->mMeshes[n]];
+	const struct aiMesh* mesh = sc->mMeshes[nd->mMeshes[n]];
 
 	apply_material(sc->mMaterials[mesh->mMaterialIndex]);
 
@@ -1501,6 +1494,61 @@ void recursive_render (const struct aiScene *sc, const struct aiNode* nd, float 
 
 	glPopMatrix();
 }
+float jormymillis = 0.0;
+float startti = 0;
+void BiloThreeScene()
+{
+	float mymillis = (millis-scene_start_millis);
+	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fake_framebuffer); // default
+	glUseProgram(0);
+
+	glDisable(GL_TEXTURE_2D);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_COLOR, GL_ONE_MINUS_SRC_COLOR);
+
+	glShadeModel(GL_SMOOTH);	// Enables Smooth Shading
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+	glClearDepth(1.0f);	// Depth Buffer Setup
+	glEnable(GL_DEPTH_TEST);	// Enables Depth Testing
+	glDepthFunc(GL_LEQUAL);	// The Type Of Depth Test To Do
+	glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);	// Really Nice Perspective Calculation
+
+	glDisable(GL_LIGHTING);
+	glEnable(GL_LIGHT0); // Uses default lighting parameters
+	glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE);
+	glDisable(GL_NORMALIZE);
+
+	GLfloat LightAmbient[]= { 0.5f, 0.5f, 0.5f, 1.0f };
+	GLfloat LightDiffuse[]= { 1.0f, 1.0f, 1.0f, 1.0f };
+	GLfloat LightPosition[]= { 0.0f, 0.0f, 15.0f, 1.0f };
+
+	glLightfv(GL_LIGHT1, GL_AMBIENT, LightAmbient);
+	glLightfv(GL_LIGHT1, GL_DIFFUSE, LightDiffuse);
+	glLightfv(GL_LIGHT1, GL_POSITION, LightPosition);
+	glEnable(GL_LIGHT1);
+
+	float tmp;
+	float zoom = -250.0f+((mymillis)*0.05);
+
+	if (zoom > -0.5 && startti == 0) { startti = mymillis; }
+	if (zoom >= -0.5) { zoom = -0.5; jormymillis=(mymillis-startti); }
+
+
+	if (jormymillis > 0) {
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	}
+
+	glLoadIdentity();
+
+	glTranslatef(0.0f, -7.5f, zoom);
+	if (jormymillis > 0) {
+		glRotatef(jormymillis*0.0026,-1.0,0.0,0.0);
+	}
+
+	recursive_render(bilothree, bilothree->mRootNode, 2.0+jormymillis*0.001);
+	if (jormymillis > 0)recursive_render(bilothree, bilothree->mRootNode, 4.0-jormymillis*0.001);
+}
+
 
 
 void KolmeDeeLogic(float dt)
@@ -2593,7 +2641,7 @@ void InitGraphics(int argc, char* argv[])
 	glutInit(&argc, argv);
 	glutCreateWindow("MIDISYS window");
 	glutReshapeWindow(g_Width, g_Height);
-	glutFullScreen();
+	//lScreen();
 
 	glutSetCursor(GLUT_CURSOR_NONE);
 
@@ -2735,7 +2783,7 @@ GLuint LoadShader(const char* pFilename)
 	return sp;
 }
 
-aiScene* Import3DFromFile(const std::string& pFile)
+const aiScene* Import3DFromFile(const std::string& pFile)
 {
 	fprintf(stdout,"--- MIDISYS ENGINE: Import3DFromFile(\"%s\")", pFile.c_str());
 
@@ -2751,10 +2799,10 @@ aiScene* Import3DFromFile(const std::string& pFile)
 		exit(1);
 	}
 
-	aiScene* scene = importer.ReadFile( pFile, aiProcessPreset_TargetRealtime_Quality);
+	const aiScene* scener = importer.ReadFile( pFile, aiProcessPreset_TargetRealtime_Quality);
 
 	// If the import failed, report it
-	if( !scene)
+	if( !scener)
 	{
 		printf(" import failed %s\n", pFile.c_str());
 		exit(1);
@@ -2764,7 +2812,7 @@ aiScene* Import3DFromFile(const std::string& pFile)
 	fprintf(stdout," success\n");
 
 	// We're done. Everything will be cleaned up by the importer destructor
-	return scene;
+	return scener;
 }
 
 void StartMainLoop()
@@ -2801,6 +2849,11 @@ int main(int argc, char* argv[])
 
 	// load textures
 
+    int notex = 1;
+
+if (notex != 1)
+{
+
 	scene_tex = LoadTexture("data/gfx/scene.jpg");
 	dude1_tex = LoadTexture("data/gfx/dude1.jpg");
 	dude2_tex = LoadTexture("data/gfx/dude2.jpg");
@@ -2836,11 +2889,14 @@ int main(int argc, char* argv[])
 
 	bilogon_tex = LoadTexture("data/gfx/bilogon.png");
 	noise_tex = LoadTexture("data/gfx/noise.jpg");
-
+}
 	// load 3d assets
 
 	scene = Import3DFromFile("data/models/templeton_peck.obj");
 	LoadGLTextures(scene);
+
+	bilothree = Import3DFromFile("data/models/bilotrip.3ds");
+	LoadGLTextures(bilothree);
 
 	// load & init video
 
