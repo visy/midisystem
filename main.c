@@ -593,6 +593,7 @@ GLuint copquad_shaderProg;
 GLuint redcircle_shaderProg;
 GLuint vhs_shaderProg;
 GLuint yuv2rgb_shaderProg;
+GLuint hex_shaderProg;
 
 GLuint depth_rb = 0;
 GLuint depth_rb2 = 0;
@@ -1499,7 +1500,9 @@ float startti = 0;
 void BiloThreeScene()
 {
 	float mymillis = (millis-scene_start_millis);
-	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fake_framebuffer); // default
+	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fb); // default
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
 	glUseProgram(0);
 
 	glDisable(GL_TEXTURE_2D);
@@ -1547,6 +1550,44 @@ void BiloThreeScene()
 
 	recursive_render(bilothree, bilothree->mRootNode, 2.0+jormymillis*0.001);
 	if (jormymillis > 0)recursive_render(bilothree, bilothree->mRootNode, 4.0-jormymillis*0.001);
+
+
+	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fake_framebuffer); // default
+	glDisable(GL_BLEND);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+
+	glUseProgram(hex_shaderProg);
+	float widthLoc5 = glGetUniformLocation(hex_shaderProg, "width");
+	float heightLoc5 = glGetUniformLocation(hex_shaderProg, "height");
+	float timeLoc5 = glGetUniformLocation(hex_shaderProg, "time");
+	float effuLoc5 = glGetUniformLocation(hex_shaderProg, "effu");
+
+	glUniform1f(widthLoc5, g_Width);
+	glUniform1f(heightLoc5, g_Height);
+	glUniform1f(timeLoc5, mymillis/100);
+	glUniform1f(effuLoc5, jormymillis > 0 ? 1.0 : 0.0);
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, fb_tex);
+
+	float location5 = glGetUniformLocation(hex_shaderProg, "texture0");
+	glUniform1i(location5, 0);
+
+	glLoadIdentity();
+
+	glTranslatef(-1.2, -1.0, -1.0);
+
+	int i=0;
+	int j=0;
+	glBegin(GL_QUADS);
+	glVertex2f(i, j);
+	glVertex2f(i + 100, j);
+	glVertex2f(i + 100, j + 100);
+	glVertex2f(i, j + 100);
+	glEnd();
+
+
 }
 
 
@@ -2424,7 +2465,7 @@ void FPS(void) {
 
 void logic()
 { 	
-	if (music_started == -1) { BASS_ChannelPlay(music_channel,FALSE); music_started = 1; }
+	if (music_started == -1) { BASS_ChannelPlay(music_channel,FALSE); music_started = 1; } //BASS_ChannelSetPosition(music_channel, 57000000, BASS_POS_BYTE); }
 
 	QWORD bytepos = BASS_ChannelGetPosition(music_channel, BASS_POS_BYTE);
 	double pos = BASS_ChannelBytes2Seconds(music_channel, bytepos);
@@ -2843,13 +2884,14 @@ int main(int argc, char* argv[])
 	redcircle_shaderProg = LoadShader("data/shaders/redcircle");
 	vhs_shaderProg = LoadShader("data/shaders/vhs");
 	yuv2rgb_shaderProg = LoadShader("data/shaders/yuv2rgb");
+	hex_shaderProg = LoadShader("data/shaders/hex");
 
     shader = shader_load("nauhoitin_shaders/v3f-t2f-c4f.vert",
                          "nauhoitin_shaders/v3f-t2f-c4f.frag");
 
 	// load textures
 
-    int notex = 0;
+    int notex = 1;
 
 if (notex != 1)
 {
