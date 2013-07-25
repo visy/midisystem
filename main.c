@@ -2891,7 +2891,7 @@ int main(int argc, char* argv[])
 
 	// load textures
 
-    int notex = 1;
+    int notex = 0;
 
 if (notex != 1)
 {
