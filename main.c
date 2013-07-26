@@ -590,38 +590,60 @@ int mouseY;
 
 // shaders
 
-GLuint projector_shaderProg;
-GLuint console_shaderProg;
-
-GLuint eye_shaderProg;
-GLuint eye_post_shaderProg;
-GLuint fsquad_shaderProg;
-GLuint copquad_shaderProg;
-GLuint redcircle_shaderProg;
-GLuint vhs_shaderProg;
-GLuint yuv2rgb_shaderProg;
-GLuint hex_shaderProg;
+GLuint shaders[10];
+const char* shaderss[] = {  "nauhoitin_shaders/v3f-t2f-c4f.frag",
+                            "data/shaders/projector",
+                            "data/shaders/eye",
+                            "data/shaders/eye_post",
+                            "data/shaders/fsquad",
+                            "data/shaders/copquad",
+                            "data/shaders/redcircle",
+                            "data/shaders/vhs",
+                            "data/shaders/yuv2rgb",
+                            "data/shaders/hex"};
+enum shaderi { nannanna, projector, eye, eye_post, fsquad, copquad, redcircle, vhs, yuv2rgb, hex };
 
 GLuint depth_rb = 0;
 GLuint depth_rb2 = 0;
 GLuint depth_rb3 = 0;
 // textures
 
-int scene_tex = -1;
-int dude1_tex = -1;
-int dude2_tex = -1;
-int mask_tex = -1;
-int note_tex = -1; 
-int console_tex = -1;
-int console_time_tex = -1;
+int textures[30] = {-1};
+const char* texturess[] = {"data/gfx/scene.jpg",
+                    "data/gfx/dude1.jpg",
+                    "data/gfx/dude2.jpg",
+                    "data/gfx/mask.jpg",
+                    "data/gfx/note.jpg",
 
-int copkillers_tex[18] = {-1};
+                    "data/gfx/copkiller1.jpg",
+                    "data/gfx/prip1.jpg",
+                    "data/gfx/copkiller2.jpg",
+                    "data/gfx/prip2.jpg",
+                    "data/gfx/copkiller3.jpg",
+                    "data/gfx/prip3.jpg",
+                    "data/gfx/copkiller4.jpg",
+                    "data/gfx/prip4.jpg",
+                    "data/gfx/copkiller5.jpg",
+                    "data/gfx/prip5.jpg",
+                    "data/gfx/copkiller6.jpg",
+                    "data/gfx/prip6.jpg",
+                    "data/gfx/copkiller7.jpg",
+                    "data/gfx/prip7.jpg",
+                    "data/gfx/copkiller8.jpg",
+                    "data/gfx/prip8.jpg",
+                    "data/gfx/copkiller9.jpg",
+                    "data/gfx/prip9.jpg",
 
-int grayeye_tex = -1;
-int room_tex[3] = {-1};
-int majictext1_tex = -1;
-int bilogon_tex = -1;
-int noise_tex = -1;
+                    "data/gfx/grayeye.jpg",
+
+                    "data/gfx/room1.jpg",
+                    "data/gfx/room2.jpg",
+                    "data/gfx/room3.jpg",
+
+                    "data/gfx/majictext1.png",
+
+                    "data/gfx/bilogon.png",
+                    "data/gfx/noise.jpg"};
 
 // texture switchers
 
@@ -675,16 +697,16 @@ public:
 	void render() {
 		update();
 		if(-1==y_tex) return; // not ready yet
-		glUseProgram(yuv2rgb_shaderProg);
+		glUseProgram(shaders[yuv2rgb]);
 
-		GLint widthLoc5 = glGetUniformLocation(yuv2rgb_shaderProg, "width");
-		GLint heightLoc5 = glGetUniformLocation(yuv2rgb_shaderProg, "height");
+		GLint widthLoc5 = glGetUniformLocation(shaders[yuv2rgb], "width");
+		GLint heightLoc5 = glGetUniformLocation(shaders[yuv2rgb], "height");
 		glUniform1f(widthLoc5, g_Width);
 		glUniform1f(heightLoc5, g_Height);
 
-		GLint y_pos = glGetUniformLocation(yuv2rgb_shaderProg,"y_tex");
-		GLint u_pos = glGetUniformLocation(yuv2rgb_shaderProg,"u_tex");
-		GLint v_pos = glGetUniformLocation(yuv2rgb_shaderProg,"v_tex");
+		GLint y_pos = glGetUniformLocation(shaders[yuv2rgb],"y_tex");
+		GLint u_pos = glGetUniformLocation(shaders[yuv2rgb],"u_tex");
+		GLint v_pos = glGetUniformLocation(shaders[yuv2rgb],"v_tex");
 
 		glDisable(GL_BLEND);
 
@@ -790,6 +812,7 @@ void ConsoleLogic2(float dt);
 
 typedef void (*SceneRenderCallback)();
 SceneRenderCallback scene_render[] = {
+										&Loader,
                                         &LeadMaskScene,
 										&CopScene,
 										&MarssiScene,
@@ -800,6 +823,7 @@ SceneRenderCallback scene_render[] = {
 
 typedef void (*SceneLogicCallback)(float);
 SceneLogicCallback scene_logic[] = {
+										&dummy,
                                         &ConsoleLogic,
 										&dummy,
 										&ConsoleLogic2,
@@ -850,31 +874,39 @@ int demo_playlist()
 	int sc = current_scene;
 	if (millis >= 0 && millis < 111844) // 55922
 	{
-		current_scene = 0; // lead masks
+		current_scene = 1; // lead masks
 	}
 	else if (millis >= 111844 && millis < 148800)
 	{
-		current_scene = 1; // cops
+		current_scene = 2; // cops
 	}
 	else if (millis >= 148800 && millis < 188737)
 	{
-		current_scene = 2; // marssi
+		current_scene = 3; // marssi
 	}
 	else if (millis >= 188737 && millis < 264000)
 	{
-		current_scene = 3; // eye horror
+		current_scene = 4; // eye horror
 	}
 	else if (millis >= 264000 && millis < 300000)
 	{
-		current_scene = 4; // outro 1 / redcircle
+		current_scene = 5; // outro 1 / redcircle
 	}
 	else if (millis >= 300000 && millis < 320000)
 	{
-		current_scene = 5; // outro 2 / bilothree
+		current_scene = 6; // outro 2 / bilothree
 	}
 
 	if (sc != current_scene)
 	{
+        /*if(current_scene == 1) 
+        {
+            //printf("xx XX xxxxxxxRESHAPING HAXXXXxxxxx xxx XX xx");
+            //glutLeaveMainLoop();
+            //glutReshapeWindow(g_Width, g_Height);
+            //glutFullScreen();
+            //glutMainLoop();
+         }*/
 		scene_start_millis = millis;
 		vector_clear(console->lines);
 	}
@@ -1316,6 +1348,114 @@ int LoadGLTextures(const aiScene* scene) {
 	return true;
 }
 
+GLuint LoadShader(const char* pFilename)
+{
+    fprintf(stdout,"--- MIDISYS ENGINE: LoadShader(\"%s\")", pFilename);
+
+    #ifdef SUPERVERBOSE
+    printf("\n");
+    #endif
+
+    char vsName[256] = "";
+    strcpy(vsName, pFilename);
+    strcat(vsName, ".vs");
+
+    char fsName[256] = "";
+    strcpy(fsName, pFilename);
+    strcat(fsName, ".fs");
+
+    #ifdef SUPERVERBOSE 
+    fprintf(stdout,"\tLoadShader(\"%s\") vertex shader source file: \"%s\"\n", pFilename, vsName);
+    #endif
+
+    GLchar *vsSource = File2String(vsName);
+
+    #ifdef SUPERVERBOSE 
+    fprintf(stdout,"\tLoadShader(\"%s\") vertex shader source:\n----------------------------------------------------\n%s\n----------------------------------------------------\n", pFilename, vsSource);
+    #endif
+
+    #ifdef SUPERVERBOSE 
+    fprintf(stdout,"\tLoadShader(\"%s\") fragment shader source file: \"%s\"\n", pFilename, fsName);
+    #endif
+
+    GLchar *fsSource = File2String(fsName);
+
+    #ifdef SUPERVERBOSE 
+    fprintf(stdout,"\tLoadShader(\"%s\") fragment shader source:\n----------------------------------------------------\n%s\n----------------------------------------------------\n", pFilename, fsSource);
+    #endif
+
+    GLuint vs, fs, sp;
+
+    #ifdef SUPERVERBOSE 
+    printf("\tLoadShader(): vs glCreateShader\n");
+    #endif
+    vs = glCreateShader(GL_VERTEX_SHADER);
+    PrintShaderLog(vs);
+    #ifdef SUPERVERBOSE 
+    printf("\tLoadShader(): vs glShaderSource\n");
+    #endif
+    glShaderSource(vs, 1, (const GLchar**)&vsSource, NULL);
+    PrintShaderLog(vs);
+    #ifdef SUPERVERBOSE 
+    printf("\tLoadShader(): vs glCompileShader\n");
+    #endif
+    glCompileShader(vs);
+    PrintShaderLog(vs);
+    #ifdef SUPERVERBOSE 
+    printf("\tLoadShader(): vs compiled\n");
+    #endif
+
+    #ifdef SUPERVERBOSE 
+    printf("\tLoadShader(): fs glCreateShader\n");
+    #endif
+    fs = glCreateShader(GL_FRAGMENT_SHADER);
+    PrintShaderLog(fs);
+    #ifdef SUPERVERBOSE 
+    printf("\tLoadShader(): fs glShaderSource\n");
+    #endif
+    glShaderSource(fs, 1, (const GLchar**)&fsSource, NULL);
+    PrintShaderLog(fs);
+    #ifdef SUPERVERBOSE 
+    printf("\tLoadShader(): fs glCompileShader\n");
+    #endif
+    glCompileShader(fs);
+    PrintShaderLog(fs);
+    #ifdef SUPERVERBOSE 
+    printf("\tLoadShader(): fs compiled\n");
+    #endif
+
+    free(vsSource);
+    free(fsSource);
+
+    #ifdef SUPERVERBOSE 
+    printf("\tLoadShader(): glCreateProgram\n");
+    #endif
+    sp = glCreateProgram();
+    PrintShaderLog(sp);
+    #ifdef SUPERVERBOSE 
+    printf("\tLoadShader(): glAttachShader vs\n");
+    #endif
+    glAttachShader(sp, vs);
+    PrintShaderLog(sp);
+    #ifdef SUPERVERBOSE 
+    printf("\tLoadShader(): glAttachShader fs\n");
+    #endif
+    glAttachShader(sp, fs);
+    PrintShaderLog(sp);
+    #ifdef SUPERVERBOSE 
+    printf("\tLoadShader(): glLinkProgram\n");
+    #endif
+    glLinkProgram(sp);
+    PrintShaderLog(sp);
+
+    #ifdef SUPERVERBOSE
+    fprintf(stdout,"--- MIDISYS ENGINE: LoadShader(\"%s\") success\n", pFilename);
+    #else
+    printf(" success\n");
+    #endif
+
+    return sp;
+}
 
 ///////////////////////////////////////////////////////////////// EFFECTS
 ///////////////////////////////////////////////////////////////// EFFECTS
@@ -1569,11 +1709,11 @@ void BiloThreeScene()
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 
-	glUseProgram(hex_shaderProg);
-	float widthLoc5 = glGetUniformLocation(hex_shaderProg, "width");
-	float heightLoc5 = glGetUniformLocation(hex_shaderProg, "height");
-	float timeLoc5 = glGetUniformLocation(hex_shaderProg, "time");
-	float effuLoc5 = glGetUniformLocation(hex_shaderProg, "effu");
+	glUseProgram(shaders[hex]);
+	float widthLoc5 = glGetUniformLocation(shaders[hex], "width");
+	float heightLoc5 = glGetUniformLocation(shaders[hex], "height");
+	float timeLoc5 = glGetUniformLocation(shaders[hex], "time");
+	float effuLoc5 = glGetUniformLocation(shaders[hex], "effu");
 
 	glUniform1f(widthLoc5, g_Width);
 	glUniform1f(heightLoc5, g_Height);
@@ -1583,7 +1723,7 @@ void BiloThreeScene()
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, fb_tex);
 
-	float location5 = glGetUniformLocation(hex_shaderProg, "texture0");
+	float location5 = glGetUniformLocation(shaders[hex], "texture0");
 	glUniform1i(location5, 0);
 
 	glLoadIdentity();
@@ -1738,115 +1878,6 @@ void ConsoleLogic2(float dt)
 	}
 }
 
-GLuint LoadShader(const char* pFilename)
-{
-    fprintf(stdout,"--- MIDISYS ENGINE: LoadShader(\"%s\")", pFilename);
-
-    #ifdef SUPERVERBOSE
-    printf("\n");
-    #endif
-
-    char vsName[256] = "";
-    strcpy(vsName, pFilename);
-    strcat(vsName, ".vs");
-
-    char fsName[256] = "";
-    strcpy(fsName, pFilename);
-    strcat(fsName, ".fs");
-
-    #ifdef SUPERVERBOSE 
-    fprintf(stdout,"\tLoadShader(\"%s\") vertex shader source file: \"%s\"\n", pFilename, vsName);
-    #endif
-
-    GLchar *vsSource = File2String(vsName);
-
-    #ifdef SUPERVERBOSE 
-    fprintf(stdout,"\tLoadShader(\"%s\") vertex shader source:\n----------------------------------------------------\n%s\n----------------------------------------------------\n", pFilename, vsSource);
-    #endif
-
-    #ifdef SUPERVERBOSE 
-    fprintf(stdout,"\tLoadShader(\"%s\") fragment shader source file: \"%s\"\n", pFilename, fsName);
-    #endif
-
-    GLchar *fsSource = File2String(fsName);
-
-    #ifdef SUPERVERBOSE 
-    fprintf(stdout,"\tLoadShader(\"%s\") fragment shader source:\n----------------------------------------------------\n%s\n----------------------------------------------------\n", pFilename, fsSource);
-    #endif
-
-    GLuint vs, fs, sp;
-
-    #ifdef SUPERVERBOSE 
-    printf("\tLoadShader(): vs glCreateShader\n");
-    #endif
-    vs = glCreateShader(GL_VERTEX_SHADER);
-    PrintShaderLog(vs);
-    #ifdef SUPERVERBOSE 
-    printf("\tLoadShader(): vs glShaderSource\n");
-    #endif
-    glShaderSource(vs, 1, (const GLchar**)&vsSource, NULL);
-    PrintShaderLog(vs);
-    #ifdef SUPERVERBOSE 
-    printf("\tLoadShader(): vs glCompileShader\n");
-    #endif
-    glCompileShader(vs);
-    PrintShaderLog(vs);
-    #ifdef SUPERVERBOSE 
-    printf("\tLoadShader(): vs compiled\n");
-    #endif
-
-    #ifdef SUPERVERBOSE 
-    printf("\tLoadShader(): fs glCreateShader\n");
-    #endif
-    fs = glCreateShader(GL_FRAGMENT_SHADER);
-    PrintShaderLog(fs);
-    #ifdef SUPERVERBOSE 
-    printf("\tLoadShader(): fs glShaderSource\n");
-    #endif
-    glShaderSource(fs, 1, (const GLchar**)&fsSource, NULL);
-    PrintShaderLog(fs);
-    #ifdef SUPERVERBOSE 
-    printf("\tLoadShader(): fs glCompileShader\n");
-    #endif
-    glCompileShader(fs);
-    PrintShaderLog(fs);
-    #ifdef SUPERVERBOSE 
-    printf("\tLoadShader(): fs compiled\n");
-    #endif
-
-    free(vsSource);
-    free(fsSource);
-
-    #ifdef SUPERVERBOSE 
-    printf("\tLoadShader(): glCreateProgram\n");
-    #endif
-    sp = glCreateProgram();
-    PrintShaderLog(sp);
-    #ifdef SUPERVERBOSE 
-    printf("\tLoadShader(): glAttachShader vs\n");
-    #endif
-    glAttachShader(sp, vs);
-    PrintShaderLog(sp);
-    #ifdef SUPERVERBOSE 
-    printf("\tLoadShader(): glAttachShader fs\n");
-    #endif
-    glAttachShader(sp, fs);
-    PrintShaderLog(sp);
-    #ifdef SUPERVERBOSE 
-    printf("\tLoadShader(): glLinkProgram\n");
-    #endif
-    glLinkProgram(sp);
-    PrintShaderLog(sp);
-
-    #ifdef SUPERVERBOSE
-    fprintf(stdout,"--- MIDISYS ENGINE: LoadShader(\"%s\") success\n", pFilename);
-    #else
-    printf(" success\n");
-    #endif
-
-    return sp;
-}
-
 const aiScene* Import3DFromFile(const std::string& pFile)
 {
     fprintf(stdout,"--- MIDISYS ENGINE: Import3DFromFile(\"%s\")", pFile.c_str());
@@ -1879,8 +1910,53 @@ const aiScene* Import3DFromFile(const std::string& pFile)
     return scener;
 }
 
+int shader_index = 1; // 1 not 0 because console shader is loaded separately
+bool LoadShaders() 
+{
+    if(shader_index == 10) return false;
+    shaders[shader_index] = LoadShader(shaderss[shader_index]);
+    shader_index++;
+
+    return true;
+}
+int texture_index = 0;
+bool LoadTextures()
+{
+    if(texture_index == 30) return false;
+    textures[texture_index] = LoadTexture(texturess[texture_index]);
+    texture_index++;
+
+    return true;
+}
+bool Load3DAssets()
+{
+    scene = Import3DFromFile("data/models/templeton_peck.obj");
+    LoadGLTextures(scene);
+    bilothree = Import3DFromFile("data/models/bilotrip.3ds");
+    LoadGLTextures(bilothree);
+
+    return true;
+}
+
+bool assets_loaded = false;
 void Loader()
 {
+    // format bilotrip terminal 1.6.2.0
+
+    glFlush();
+    glutSwapBuffers();
+    glClearColor (1.0,1.0,0.96,1.0);
+    glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    // begin loading animation
+
+    if(!LoadShaders()) {
+        if(!LoadTextures()) {
+            // load all 3d models; after that all asset loading is done
+            Load3DAssets();
+            assets_loaded = true;
+        }   
+    }
 }
 
 void LeadMaskScene()
@@ -1888,7 +1964,7 @@ void LeadMaskScene()
 glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fb); // fbo
 
 float mymillis = millis;
-glUseProgram(projector_shaderProg);
+glUseProgram(shaders[projector]);
 
 int kuvaflag = 0;
 
@@ -1912,10 +1988,10 @@ glEnable(GL_BLEND);
 glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_DST_ALPHA);
 
-GLint widthLoc5 = glGetUniformLocation(projector_shaderProg, "width");
-GLint heightLoc5 = glGetUniformLocation(projector_shaderProg, "height");
-GLint timeLoc5 = glGetUniformLocation(projector_shaderProg, "time");
-GLint alphaLoc5 = glGetUniformLocation(projector_shaderProg, "alpha");
+GLint widthLoc5 = glGetUniformLocation(shaders[projector], "width");
+GLint heightLoc5 = glGetUniformLocation(shaders[projector], "height");
+GLint timeLoc5 = glGetUniformLocation(shaders[projector], "time");
+GLint alphaLoc5 = glGetUniformLocation(shaders[projector], "alpha");
 
 glUniform1f(widthLoc5, g_Width);
 glUniform1f(heightLoc5, g_Height);
@@ -1924,17 +2000,17 @@ glUniform1f(alphaLoc5, mymillis*0.0001+0.2-cos(mymillis*0.0005)*0.15);
 
 glActiveTexture(GL_TEXTURE0);
 if (kuvaflag == 0)
-glBindTexture(GL_TEXTURE_2D, scene_tex);
+glBindTexture(GL_TEXTURE_2D, textures[0]);
 else if (kuvaflag == 1)
-glBindTexture(GL_TEXTURE_2D, dude1_tex);
+glBindTexture(GL_TEXTURE_2D, textures[1]);
 else if (kuvaflag == 2)
-glBindTexture(GL_TEXTURE_2D, dude2_tex);
+glBindTexture(GL_TEXTURE_2D, textures[2]);
 else if (kuvaflag == 3)
-glBindTexture(GL_TEXTURE_2D, mask_tex);
+glBindTexture(GL_TEXTURE_2D, textures[3]);
 else if (kuvaflag == 4)
-glBindTexture(GL_TEXTURE_2D, note_tex);
+glBindTexture(GL_TEXTURE_2D, textures[4]);
 
-GLint location5 = glGetUniformLocation(projector_shaderProg, "texture0");
+GLint location5 = glGetUniformLocation(shaders[projector], "texture0");
 glUniform1i(location5, 0);
 
 glLoadIdentity();
@@ -1956,18 +2032,18 @@ glEnd();
 
 glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fb2); // default
 
-glUseProgram(fsquad_shaderProg);
+glUseProgram(shaders[fsquad]);
 
 glEnable(GL_BLEND);
 glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 glBlendFunc(GL_ONE_MINUS_SRC_COLOR, GL_ONE_MINUS_DST_COLOR);
 
-GLint widthLoc6 = glGetUniformLocation(fsquad_shaderProg, "width");
-GLint heightLoc6 = glGetUniformLocation(fsquad_shaderProg, "height");
-GLint timeLoc6 = glGetUniformLocation(fsquad_shaderProg, "time");
-GLint alphaLoc6 = glGetUniformLocation(fsquad_shaderProg, "alpha");
-GLint gammaLoc = glGetUniformLocation(fsquad_shaderProg, "gamma");
-GLint gridLoc6 = glGetUniformLocation(fsquad_shaderProg, "grid");
+GLint widthLoc6 = glGetUniformLocation(shaders[fsquad], "width");
+GLint heightLoc6 = glGetUniformLocation(shaders[fsquad], "height");
+GLint timeLoc6 = glGetUniformLocation(shaders[fsquad], "time");
+GLint alphaLoc6 = glGetUniformLocation(shaders[fsquad], "alpha");
+GLint gammaLoc = glGetUniformLocation(shaders[fsquad], "gamma");
+GLint gridLoc6 = glGetUniformLocation(shaders[fsquad], "grid");
 glUniform1f(gridLoc6, 0.001+cos(mymillis)*0.0005);
 
 
@@ -1980,7 +2056,7 @@ glUniform1f(gammaLoc, 0.0f);
 glActiveTexture(GL_TEXTURE0);
 glBindTexture(GL_TEXTURE_2D, fb_tex);
 
-GLint location6 = glGetUniformLocation(fsquad_shaderProg, "texture0");
+GLint location6 = glGetUniformLocation(shaders[fsquad], "texture0");
 glUniform1i(location6, 0);
 
 glLoadIdentity();
@@ -1998,18 +2074,18 @@ glEnd();
 
 glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fake_framebuffer); // default
 
-glUseProgram(fsquad_shaderProg);
+glUseProgram(shaders[fsquad]);
 
 glDisable(GL_BLEND);
 
 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-GLint widthLoc7 = glGetUniformLocation(fsquad_shaderProg, "width");
-GLint heightLoc7 = glGetUniformLocation(fsquad_shaderProg, "height");
-GLint timeLoc7 = glGetUniformLocation(fsquad_shaderProg, "time");
-GLint alphaLoc7 = glGetUniformLocation(fsquad_shaderProg, "alpha");
-GLint gammaLoc2 = glGetUniformLocation(fsquad_shaderProg, "gamma");
-GLint gridLoc = glGetUniformLocation(fsquad_shaderProg, "grid");
+GLint widthLoc7 = glGetUniformLocation(shaders[fsquad], "width");
+GLint heightLoc7 = glGetUniformLocation(shaders[fsquad], "height");
+GLint timeLoc7 = glGetUniformLocation(shaders[fsquad], "time");
+GLint alphaLoc7 = glGetUniformLocation(shaders[fsquad], "alpha");
+GLint gammaLoc2 = glGetUniformLocation(shaders[fsquad], "gamma");
+GLint gridLoc = glGetUniformLocation(shaders[fsquad], "grid");
 
 glUniform1f(widthLoc7, g_Width);
 glUniform1f(heightLoc7, g_Height);
@@ -2021,7 +2097,7 @@ glUniform1f(gridLoc, 1.0f+tan(mymillis*10)*0.3);
 glActiveTexture(GL_TEXTURE0);
 glBindTexture(GL_TEXTURE_2D, fb_tex2);
 
-GLint location7 = glGetUniformLocation(fsquad_shaderProg, "texture0");
+GLint location7 = glGetUniformLocation(shaders[fsquad], "texture0");
 glUniform1i(location7, 0);
 
 glLoadIdentity();
@@ -2037,16 +2113,16 @@ glVertex2f(i + 100, j + 100);
 glVertex2f(i, j + 100);
 glEnd();
 
-glUseProgram(projector_shaderProg);
+glUseProgram(shaders[projector]);
 
 glEnable(GL_BLEND);
 glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_ADD);
 glBlendFunc(GL_SRC_COLOR, GL_DST_ALPHA);
 
-widthLoc5 = glGetUniformLocation(projector_shaderProg, "width");
-heightLoc5 = glGetUniformLocation(projector_shaderProg, "height");
-timeLoc5 = glGetUniformLocation(projector_shaderProg, "time");
-alphaLoc5 = glGetUniformLocation(projector_shaderProg, "alpha");
+widthLoc5 = glGetUniformLocation(shaders[projector], "width");
+heightLoc5 = glGetUniformLocation(shaders[projector], "height");
+timeLoc5 = glGetUniformLocation(shaders[projector], "time");
+alphaLoc5 = glGetUniformLocation(shaders[projector], "alpha");
 
 glUniform1f(widthLoc5, g_Width);
 glUniform1f(heightLoc5, g_Height);
@@ -2054,9 +2130,9 @@ glUniform1f(timeLoc5, mymillis);
 glUniform1f(alphaLoc5, 1.0);
 
 glActiveTexture(GL_TEXTURE0);
-glBindTexture(GL_TEXTURE_2D, scene_tex);
+glBindTexture(GL_TEXTURE_2D, textures[0]);
 
-location5 = glGetUniformLocation(projector_shaderProg, "texture0");
+location5 = glGetUniformLocation(shaders[projector], "texture0");
 glUniform1i(location5, 0);
 
 glLoadIdentity();
@@ -2084,7 +2160,7 @@ void CopScene()
 	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fake_framebuffer); // default
 
 	float mymillis = (millis-scene_start_millis);
-	glUseProgram(copquad_shaderProg);
+	glUseProgram(shaders[copquad]);
 
 	glEnable(GL_BLEND);
 
@@ -2093,11 +2169,11 @@ void CopScene()
 	glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, joo < 0.5 ? GL_MODULATE : GL_SUBTRACT );
 	glBlendFunc(GL_SRC_COLOR, joo < 0.5 ? GL_DST_ALPHA : GL_ONE_MINUS_DST_COLOR);
 
-	GLint widthLoc5 = glGetUniformLocation(copquad_shaderProg, "width");
-	GLint heightLoc5 = glGetUniformLocation(copquad_shaderProg, "height");
-	GLint timeLoc5 = glGetUniformLocation(copquad_shaderProg, "time");
-	GLint alphaLoc5 = glGetUniformLocation(copquad_shaderProg, "alpha");
-	GLint gridLoc6 = glGetUniformLocation(copquad_shaderProg, "grid");
+	GLint widthLoc5 = glGetUniformLocation(shaders[copquad], "width");
+	GLint heightLoc5 = glGetUniformLocation(shaders[copquad], "height");
+	GLint timeLoc5 = glGetUniformLocation(shaders[copquad], "time");
+	GLint alphaLoc5 = glGetUniformLocation(shaders[copquad], "alpha");
+	GLint gridLoc6 = glGetUniformLocation(shaders[copquad], "grid");
 	glUniform1f(gridLoc6, tan(mymillis));
 
 	glUniform1f(widthLoc5, g_Width);
@@ -2109,15 +2185,15 @@ void CopScene()
 	if (texind > 17) texind = 17;
 
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, copkillers_tex[texind]);
+	glBindTexture(GL_TEXTURE_2D, textures[5+texind]);
 
 	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, copkillers_tex[texind == 0 ? 17 : texind-1]);
+	glBindTexture(GL_TEXTURE_2D, textures[texind == 0 ? 17 : texind-1]);
 
-	GLint location5 = glGetUniformLocation(copquad_shaderProg, "texture0");
+	GLint location5 = glGetUniformLocation(shaders[copquad], "texture0");
 	glUniform1i(location5, 0);
 
-	GLint location6 = glGetUniformLocation(copquad_shaderProg, "texture1");
+	GLint location6 = glGetUniformLocation(shaders[copquad], "texture1");
 	glUniform1i(location6, 1);
 
 	glLoadIdentity();
@@ -2186,13 +2262,13 @@ void EyeScene()
 	glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 	glBlendFunc(GL_ONE_MINUS_SRC_ALPHA, GL_DST_COLOR);
 
-	glUseProgram(eye_post_shaderProg);
+	glUseProgram(shaders[eye_post]);
 
 //	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	GLint widthLoc3 = glGetUniformLocation(eye_post_shaderProg, "width");
-	GLint heightLoc3 = glGetUniformLocation(eye_post_shaderProg, "height");
-	GLint timeLoc3 = glGetUniformLocation(eye_post_shaderProg, "time");
+	GLint widthLoc3 = glGetUniformLocation(shaders[eye_post], "width");
+	GLint heightLoc3 = glGetUniformLocation(shaders[eye_post], "height");
+	GLint timeLoc3 = glGetUniformLocation(shaders[eye_post], "time");
 
 	glUniform1f(widthLoc3, g_Width);
 	glUniform1f(heightLoc3, g_Height);
@@ -2201,7 +2277,7 @@ void EyeScene()
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, fb_tex);
 
-	GLint location3 = glGetUniformLocation(eye_post_shaderProg, "texture0");
+	GLint location3 = glGetUniformLocation(shaders[eye_post], "texture0");
 	glUniform1i(location3, 0);
 
 	glLoadIdentity();
@@ -2224,26 +2300,26 @@ void EyeScene()
 	glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_DST_ALPHA);
 
-	glUseProgram(eye_shaderProg);
+	glUseProgram(shaders[eye]);
 
 	GLfloat waveTime = 1+atan(mymillis*0.0001)*0.1,
 			waveWidth = cos(mymillis*0.000001)*1000+atan(mymillis*0.00001)*2.0,
 			waveHeight = sin(mymillis*0.0001)*100*atan(mymillis*0.00001)*2.0,
 			waveFreq = 0.0001+cos(mymillis*0.000003)*1000.1;
-	GLint waveTimeLoc = glGetUniformLocation(eye_shaderProg, "waveTime");
-	GLint waveWidthLoc = glGetUniformLocation(eye_shaderProg, "waveWidth");
-	GLint waveHeightLoc = glGetUniformLocation(eye_shaderProg, "waveHeight");
+	GLint waveTimeLoc = glGetUniformLocation(shaders[eye], "waveTime");
+	GLint waveWidthLoc = glGetUniformLocation(shaders[eye], "waveWidth");
+	GLint waveHeightLoc = glGetUniformLocation(shaders[eye], "waveHeight");
 
-	GLint widthLoc = glGetUniformLocation(eye_shaderProg, "width");
-	GLint heightLoc = glGetUniformLocation(eye_shaderProg, "height");
+	GLint widthLoc = glGetUniformLocation(shaders[eye], "width");
+	GLint heightLoc = glGetUniformLocation(shaders[eye], "height");
 
-	GLint timeLoc = glGetUniformLocation(eye_shaderProg, "time");
+	GLint timeLoc = glGetUniformLocation(shaders[eye], "time");
 
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, grayeye_tex);
+	glBindTexture(GL_TEXTURE_2D, textures[23]);
 
 	GLuint location;
-	location = glGetUniformLocation(eye_shaderProg, "texture0");
+	location = glGetUniformLocation(shaders[eye], "texture0");
 	glUniform1i(location, 0);
 
 	glLoadIdentity();
@@ -2288,15 +2364,15 @@ void EyeScene()
 
 	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fake_framebuffer); // default
 
-	glUseProgram(eye_post_shaderProg);
+	glUseProgram(shaders[eye_post]);
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	glDisable(GL_BLEND);
 
-	GLint widthLoc2 = glGetUniformLocation(eye_post_shaderProg, "width");
-	GLint heightLoc2 = glGetUniformLocation(eye_post_shaderProg, "height");
-	GLint timeLoc2 = glGetUniformLocation(eye_post_shaderProg, "time");
+	GLint widthLoc2 = glGetUniformLocation(shaders[eye_post], "width");
+	GLint heightLoc2 = glGetUniformLocation(shaders[eye_post], "height");
+	GLint timeLoc2 = glGetUniformLocation(shaders[eye_post], "time");
 
 	glUniform1f(widthLoc2, g_Width);
 	glUniform1f(heightLoc2, g_Height);
@@ -2311,12 +2387,12 @@ void EyeScene()
 	}
 
 	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, room_tex[room_texnum]);
+	glBindTexture(GL_TEXTURE_2D, textures[24+room_texnum]);
 
-	GLint location2 = glGetUniformLocation(eye_post_shaderProg, "texture0");
+	GLint location2 = glGetUniformLocation(shaders[eye_post], "texture0");
 	glUniform1i(location2, 0);
 
-	GLint location4 = glGetUniformLocation(eye_post_shaderProg, "texture1");
+	GLint location4 = glGetUniformLocation(shaders[eye_post], "texture1");
 	glUniform1i(location4, 1);
 
 	glLoadIdentity();
@@ -2336,16 +2412,16 @@ void EyeScene()
 
 	if (beatmode == 1)
 	{
-		glUseProgram(fsquad_shaderProg);
+		glUseProgram(shaders[fsquad]);
 
 		glEnable(GL_BLEND);
 		glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_SUBTRACT);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_DST_COLOR);
 
-		GLint widthLoc5 = glGetUniformLocation(fsquad_shaderProg, "width");
-		GLint heightLoc5 = glGetUniformLocation(fsquad_shaderProg, "height");
-		GLint timeLoc5 = glGetUniformLocation(fsquad_shaderProg, "time");
-		GLint alphaLoc5 = glGetUniformLocation(fsquad_shaderProg, "alpha");
+		GLint widthLoc5 = glGetUniformLocation(shaders[fsquad], "width");
+		GLint heightLoc5 = glGetUniformLocation(shaders[fsquad], "height");
+		GLint timeLoc5 = glGetUniformLocation(shaders[fsquad], "time");
+		GLint alphaLoc5 = glGetUniformLocation(shaders[fsquad], "alpha");
 
 		glUniform1f(widthLoc5, g_Width);
 		glUniform1f(heightLoc5, g_Height);
@@ -2353,9 +2429,9 @@ void EyeScene()
 		glUniform1f(alphaLoc5, cos(mymillis*0.1)*0.1);
 
 		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, majictext1_tex);
+		glBindTexture(GL_TEXTURE_2D, textures[27]);
 
-		GLint location5 = glGetUniformLocation(fsquad_shaderProg, "texture0");
+		GLint location5 = glGetUniformLocation(shaders[fsquad], "texture0");
 		glUniform1i(location5, 0);
 
 		glLoadIdentity();
@@ -2379,7 +2455,7 @@ void RedCircleScene()
 {
 	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fake_framebuffer); // fbo
 
-	glUseProgram(redcircle_shaderProg);
+	glUseProgram(shaders[redcircle]);
 	float mymillis = (millis-scene_start_millis)*300;
 
 	if (frame % 500 == 1) glClear(GL_COLOR_BUFFER_BIT);
@@ -2388,16 +2464,16 @@ void RedCircleScene()
 	glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-	GLint widthLoc2 = glGetUniformLocation(redcircle_shaderProg, "width");
-	GLint heightLoc2 = glGetUniformLocation(redcircle_shaderProg, "height");
+	GLint widthLoc2 = glGetUniformLocation(shaders[redcircle], "width");
+	GLint heightLoc2 = glGetUniformLocation(shaders[redcircle], "height");
 
 	glUniform1f(widthLoc2, g_Width);
 	glUniform1f(heightLoc2, g_Height);
 
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, grayeye_tex);
+	glBindTexture(GL_TEXTURE_2D, textures[23]);
 
-	GLint location2 = glGetUniformLocation(redcircle_shaderProg, "texture0");
+	GLint location2 = glGetUniformLocation(shaders[redcircle], "texture0");
 	glUniform1i(location2, 0);
 
 	glLoadIdentity();
@@ -2427,7 +2503,7 @@ void VHSPost(float effuon)
 {
 	float mymillis = (millis-scene_start_millis);
 
-    if (current_scene == 0 || current_scene == 2) 
+    if (current_scene == 1 || current_scene == 3) 
     {
 // console crap
 		glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fake_framebuffer); // default
@@ -2450,13 +2526,13 @@ void VHSPost(float effuon)
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	glUseProgram(vhs_shaderProg);
+	glUseProgram(shaders[vhs]);
 
 	glDisable(GL_BLEND);
-	float widthLoc5 = glGetUniformLocation(vhs_shaderProg, "width");
-	float heightLoc5 = glGetUniformLocation(vhs_shaderProg, "height");
-	float timeLoc5 = glGetUniformLocation(vhs_shaderProg, "time");
-	float effuLoc5 = glGetUniformLocation(vhs_shaderProg, "effu");
+	float widthLoc5 = glGetUniformLocation(shaders[vhs], "width");
+	float heightLoc5 = glGetUniformLocation(shaders[vhs], "height");
+	float timeLoc5 = glGetUniformLocation(shaders[vhs], "time");
+	float effuLoc5 = glGetUniformLocation(shaders[vhs], "effu");
 
 	glUniform1f(widthLoc5, g_Width);
 	glUniform1f(heightLoc5, g_Height);
@@ -2466,7 +2542,7 @@ void VHSPost(float effuon)
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, fake_framebuffer_tex);
 
-	float location5 = glGetUniformLocation(vhs_shaderProg, "texture0");
+	float location5 = glGetUniformLocation(shaders[vhs], "texture0");
 	glUniform1i(location5, 0);
 
 	glLoadIdentity();
@@ -2600,15 +2676,17 @@ void FPS(void) {
 
 void logic()
 { 	
-	if (music_started == -1) { BASS_ChannelPlay(music_channel,FALSE); music_started = 1; } //BASS_ChannelSetPosition(music_channel, 27000000, BASS_POS_BYTE); }
+    if (assets_loaded) {
+        if (music_started == -1) { BASS_ChannelPlay(music_channel,FALSE); music_started = 1; } //BASS_ChannelSetPosition(music_channel, 57000000, BASS_POS_BYTE); }
 
-	QWORD bytepos = BASS_ChannelGetPosition(music_channel, BASS_POS_BYTE);
-	double pos = BASS_ChannelBytes2Seconds(music_channel, bytepos);
-	millis = (float)pos*1000;
+	    QWORD bytepos = BASS_ChannelGetPosition(music_channel, BASS_POS_BYTE);
+	    double pos = BASS_ChannelBytes2Seconds(music_channel, bytepos);
+	    millis = (float)pos*1000;
 
-	demo_playlist();
-	scene_logic[current_scene](0.0f);
-	UpdateShaderParams();
+	    demo_playlist();
+	    scene_logic[current_scene](0.0f);
+	    UpdateShaderParams();
+    } 
 
 //	glutPostRedisplay();
 }
@@ -2630,7 +2708,7 @@ void timer(int value)
 void display(void)
 {
 	scene_render[current_scene]();
-	VHSPost(current_scene > 0 && current_scene < 3 ? 1.0 : 0.0);
+	VHSPost(assets_loaded && current_scene < 4 ? 1.0 : 0.0);
 
 	glutSwapBuffers();
 	frame++;
@@ -2817,6 +2895,7 @@ void InitGraphics(int argc, char* argv[])
 	fprintf(stdout, "--- MIDISYS ENGINE: InitGraphics()\n");
 	glutInit(&argc, argv);
 
+
 	glutInitDisplayMode( GLUT_RGBA | GLUT_DOUBLE | GLUT_DEPTH );
     // 1280x720, 32bit pixel depth, 60Hz refresh rate
     glutGameModeString( "1280x720:32@60" );
@@ -2825,7 +2904,7 @@ void InitGraphics(int argc, char* argv[])
     glutEnterGameMode();
 
 //	glutCreateWindow("MIDISYS window");
-//	glutReshapeWindow(g_Width, g_Height);
+//	glutReshapeWindow(c_Width, c_Height);
 	//lScreen();
 
 	glutSetCursor(GLUT_CURSOR_NONE);
@@ -2876,72 +2955,8 @@ int main(int argc, char* argv[])
 	// init console
 
     console = console_new();
-
-	// load shaders
-
-	projector_shaderProg = LoadShader("data/shaders/projector");
-	eye_shaderProg = LoadShader("data/shaders/eye");
-	eye_post_shaderProg = LoadShader("data/shaders/eye_post");
-	fsquad_shaderProg = LoadShader("data/shaders/fsquad");
-	copquad_shaderProg = LoadShader("data/shaders/copquad");
-	redcircle_shaderProg = LoadShader("data/shaders/redcircle");
-	vhs_shaderProg = LoadShader("data/shaders/vhs");
-	yuv2rgb_shaderProg = LoadShader("data/shaders/yuv2rgb");
-	hex_shaderProg = LoadShader("data/shaders/hex");
-
     shader = shader_load("nauhoitin_shaders/v3f-t2f-c4f.vert",
-                         "nauhoitin_shaders/v3f-t2f-c4f.frag");
-
-	// load textures
-
-    int notex = 0;
-
-if (notex != 1)
-{
-
-	scene_tex = LoadTexture("data/gfx/scene.jpg");
-	dude1_tex = LoadTexture("data/gfx/dude1.jpg");
-	dude2_tex = LoadTexture("data/gfx/dude2.jpg");
-	mask_tex = LoadTexture("data/gfx/mask.jpg");
-	note_tex = LoadTexture("data/gfx/note.jpg");
-
-	copkillers_tex[0] = LoadTexture("data/gfx/copkiller1.jpg");
-	copkillers_tex[1] = LoadTexture("data/gfx/prip1.jpg");
-	copkillers_tex[2] = LoadTexture("data/gfx/copkiller2.jpg");
-	copkillers_tex[3] = LoadTexture("data/gfx/prip2.jpg");
-	copkillers_tex[4] = LoadTexture("data/gfx/copkiller3.jpg");
-	copkillers_tex[5] = LoadTexture("data/gfx/prip3.jpg");
-	copkillers_tex[6] = LoadTexture("data/gfx/copkiller4.jpg");
-	copkillers_tex[7] = LoadTexture("data/gfx/prip4.jpg");
-	copkillers_tex[8] = LoadTexture("data/gfx/copkiller5.jpg");
-	copkillers_tex[9] = LoadTexture("data/gfx/prip5.jpg");
-	copkillers_tex[10] = LoadTexture("data/gfx/copkiller6.jpg");
-	copkillers_tex[11] = LoadTexture("data/gfx/prip6.jpg");
-	copkillers_tex[12] = LoadTexture("data/gfx/copkiller7.jpg");
-	copkillers_tex[13] = LoadTexture("data/gfx/prip7.jpg");
-	copkillers_tex[14] = LoadTexture("data/gfx/copkiller8.jpg");
-	copkillers_tex[15] = LoadTexture("data/gfx/prip8.jpg");
-	copkillers_tex[16] = LoadTexture("data/gfx/copkiller9.jpg");
-	copkillers_tex[17] = LoadTexture("data/gfx/prip9.jpg");
-
-	grayeye_tex = LoadTexture("data/gfx/grayeye.jpg");
-
-	room_tex[0] = LoadTexture("data/gfx/room1.jpg");
-	room_tex[1] = LoadTexture("data/gfx/room2.jpg");
-	room_tex[2] = LoadTexture("data/gfx/room3.jpg");
-
-	majictext1_tex = LoadTexture("data/gfx/majictext1.png");
-
-	bilogon_tex = LoadTexture("data/gfx/bilogon.png");
-	noise_tex = LoadTexture("data/gfx/noise.jpg");
-}
-	// load 3d assets
-
-	scene = Import3DFromFile("data/models/templeton_peck.obj");
-	LoadGLTextures(scene);
-
-	bilothree = Import3DFromFile("data/models/bilotrip.3ds");
-	LoadGLTextures(bilothree);
+                         shaderss[0]);
 
 	// load & init video
 
