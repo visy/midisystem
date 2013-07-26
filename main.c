@@ -2674,6 +2674,7 @@ void reshape(GLint width, GLint height)
 void quit()
 {
 	printf("--- MIDISYS ENGINE: time to quit()\n");
+	glutLeaveGameMode();
 	glutLeaveMainLoop();
 }
 
@@ -2815,8 +2816,16 @@ void InitGraphics(int argc, char* argv[])
 {
 	fprintf(stdout, "--- MIDISYS ENGINE: InitGraphics()\n");
 	glutInit(&argc, argv);
-	glutCreateWindow("MIDISYS window");
-	glutReshapeWindow(g_Width, g_Height);
+
+	glutInitDisplayMode( GLUT_RGBA | GLUT_DOUBLE | GLUT_DEPTH );
+    // 1280x720, 32bit pixel depth, 60Hz refresh rate
+    glutGameModeString( "1280x720:32@60" );
+
+    // start fullscreen game mode
+    glutEnterGameMode();
+
+//	glutCreateWindow("MIDISYS window");
+//	glutReshapeWindow(g_Width, g_Height);
 	//lScreen();
 
 	glutSetCursor(GLUT_CURSOR_NONE);
@@ -2957,7 +2966,6 @@ if (notex != 1)
 
 	// start mainloop
 
-	glutFullScreen();
 	StartMainLoop();
 
 	return 0;
