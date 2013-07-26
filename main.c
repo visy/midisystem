@@ -7,6 +7,7 @@
 #include <fstream>
 #include <map>
 #include <wchar.h>
+#include <time.h>
 
 #include "freetype-gl.h"
 #include "vertex-buffer.h"
@@ -644,6 +645,20 @@ const char* texturess[] = {"data/gfx/scene.jpg",
 
                     "data/gfx/bilogon.png",
                     "data/gfx/noise.jpg"};
+enum texturi { tex_scene, tex_dude, tex_dude2, tex_mask, tex_note,
+                tex_copkiller, tex_prip,
+                tex_copkiller2, tex_prip2,
+                tex_copkiller3, tex_prip3,
+                tex_copkiller4, tex_prip4,
+                tex_copkiller5, tex_prip5,
+                tex_copkiller6, tex_prip6,
+                tex_copkiller7, tex_prip7,
+                tex_copkiller8, tex_prip8,
+                tex_copkiller9, tex_prip9,
+                tex_grayeye, tex_room, tex_room2, tex_room3,
+                tex_majestictext,
+                tex_bilogon,
+                tex_noise};
 
 // texture switchers
 
@@ -807,6 +822,7 @@ void BiloThreeScene();
 void KolmeDeeScene();
 
 void KolmeDeeLogic(float dt);
+void ConsoleLogicLoader(float dt);
 void ConsoleLogic(float dt);
 void ConsoleLogic2(float dt);
 
@@ -823,7 +839,7 @@ SceneRenderCallback scene_render[] = {
 
 typedef void (*SceneLogicCallback)(float);
 SceneLogicCallback scene_logic[] = {
-										&dummy,
+                                        &ConsoleLogicLoader,
                                         &ConsoleLogic,
 										&dummy,
 										&ConsoleLogic2,
@@ -1844,6 +1860,23 @@ on_key_press ( unsigned char key)
 int keyindex = 0;
 int nextmillis = 0;
 
+void ConsoleLogicLoader(float dt)
+{
+    printf("ConsoleLogicLoader: %f", dt);
+    int kmillis = (int)(millis);
+
+    //printf("kmillis:%d\n",kmillis);
+    /*if (kmillis >= 0 && kmillis >= keymillis[keyindex])
+    {
+        if(keyindex >= 0 && keyindex < KEYEVENTS_COUNT)
+        {
+            on_key_press(keyrec[keyindex]);
+        }
+
+        keyindex++;
+    }*/
+}
+
 void ConsoleLogic(float dt)
 {
 	int kmillis = (int)(millis-15750);
@@ -1913,7 +1946,7 @@ const aiScene* Import3DFromFile(const std::string& pFile)
 int shader_index = 1; // 1 not 0 because console shader is loaded separately
 bool LoadShaders() 
 {
-    if(shader_index == 10) return false;
+    if(shader_index == sizeof(shaders) / sizeof(shaders[0])) return false;
     shaders[shader_index] = LoadShader(shaderss[shader_index]);
     shader_index++;
 
@@ -1922,7 +1955,7 @@ bool LoadShaders()
 int texture_index = 0;
 bool LoadTextures()
 {
-    if(texture_index == 30) return false;
+    if(texture_index == sizeof(textures) / sizeof(textures[0])) return false;
     textures[texture_index] = LoadTexture(texturess[texture_index]);
     texture_index++;
 
@@ -1939,23 +1972,33 @@ bool Load3DAssets()
 }
 
 bool assets_loaded = false;
+int skip_frames = 10;
+int skip_frames_count = 0;
+clock_t t_loader_begin = NULL, t_loader_d;
 void Loader()
 {
+    if(t_loader_begin == NULL) { t_loader_begin = clock(); }
     // format bilotrip terminal 1.6.2.0
 
-    glFlush();
-    glutSwapBuffers();
     glClearColor (1.0,1.0,0.96,1.0);
     glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glFlush();
+    glutSwapBuffers();
+    glutPostRedisplay();
 
-    // begin loading animation
+    skip_frames_count++;
+    if(skip_frames_count == skip_frames) {
+        skip_frames_count = 0;
 
-    if(!LoadShaders()) {
-        if(!LoadTextures()) {
-            // load all 3d models; after that all asset loading is done
-            Load3DAssets();
-            assets_loaded = true;
-        }   
+        // begin loading animation
+
+        if(!LoadShaders()) {
+            if(!LoadTextures()) {
+                // load all 3d models; after that all asset loading is done
+                Load3DAssets();
+                assets_loaded = true;
+            }   
+        }
     }
 }
 
@@ -2000,15 +2043,15 @@ glUniform1f(alphaLoc5, mymillis*0.0001+0.2-cos(mymillis*0.0005)*0.15);
 
 glActiveTexture(GL_TEXTURE0);
 if (kuvaflag == 0)
-glBindTexture(GL_TEXTURE_2D, textures[0]);
+glBindTexture(GL_TEXTURE_2D, textures[tex_scene]);
 else if (kuvaflag == 1)
-glBindTexture(GL_TEXTURE_2D, textures[1]);
+glBindTexture(GL_TEXTURE_2D, textures[tex_dude]);
 else if (kuvaflag == 2)
-glBindTexture(GL_TEXTURE_2D, textures[2]);
+glBindTexture(GL_TEXTURE_2D, textures[tex_dude2]);
 else if (kuvaflag == 3)
-glBindTexture(GL_TEXTURE_2D, textures[3]);
+glBindTexture(GL_TEXTURE_2D, textures[tex_mask]);
 else if (kuvaflag == 4)
-glBindTexture(GL_TEXTURE_2D, textures[4]);
+glBindTexture(GL_TEXTURE_2D, textures[tex_note]);
 
 GLint location5 = glGetUniformLocation(shaders[projector], "texture0");
 glUniform1i(location5, 0);
@@ -2130,7 +2173,7 @@ glUniform1f(timeLoc5, mymillis);
 glUniform1f(alphaLoc5, 1.0);
 
 glActiveTexture(GL_TEXTURE0);
-glBindTexture(GL_TEXTURE_2D, textures[0]);
+glBindTexture(GL_TEXTURE_2D, textures[tex_scene]);
 
 location5 = glGetUniformLocation(shaders[projector], "texture0");
 glUniform1i(location5, 0);
@@ -2185,7 +2228,7 @@ void CopScene()
 	if (texind > 17) texind = 17;
 
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, textures[5+texind]);
+	glBindTexture(GL_TEXTURE_2D, textures[tex_copkiller + texind]);
 
 	glActiveTexture(GL_TEXTURE1);
 	glBindTexture(GL_TEXTURE_2D, textures[texind == 0 ? 17 : texind-1]);
@@ -2316,7 +2359,7 @@ void EyeScene()
 	GLint timeLoc = glGetUniformLocation(shaders[eye], "time");
 
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, textures[23]);
+	glBindTexture(GL_TEXTURE_2D, textures[tex_grayeye]);
 
 	GLuint location;
 	location = glGetUniformLocation(shaders[eye], "texture0");
@@ -2387,7 +2430,7 @@ void EyeScene()
 	}
 
 	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, textures[24+room_texnum]);
+	glBindTexture(GL_TEXTURE_2D, textures[tex_room + room_texnum]);
 
 	GLint location2 = glGetUniformLocation(shaders[eye_post], "texture0");
 	glUniform1i(location2, 0);
@@ -2429,7 +2472,7 @@ void EyeScene()
 		glUniform1f(alphaLoc5, cos(mymillis*0.1)*0.1);
 
 		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, textures[27]);
+		glBindTexture(GL_TEXTURE_2D, textures[tex_majestictext]);
 
 		GLint location5 = glGetUniformLocation(shaders[fsquad], "texture0");
 		glUniform1i(location5, 0);
@@ -2471,7 +2514,7 @@ void RedCircleScene()
 	glUniform1f(heightLoc2, g_Height);
 
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, textures[23]);
+	glBindTexture(GL_TEXTURE_2D, textures[tex_grayeye]);
 
 	GLint location2 = glGetUniformLocation(shaders[redcircle], "texture0");
 	glUniform1i(location2, 0);
@@ -2686,7 +2729,10 @@ void logic()
 	    demo_playlist();
 	    scene_logic[current_scene](0.0f);
 	    UpdateShaderParams();
-    } 
+    } else {
+        t_loader_d = clock();
+        ConsoleLogicLoader((float)((((float)t_loader_begin - (float)t_loader_d) / 1000000.0F ) * 1000));
+    }
 
 //	glutPostRedisplay();
 }
