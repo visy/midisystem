@@ -6,6 +6,18 @@
 #include <math.h>
 #include <fstream>
 #include <map>
+#include <wchar.h>
+
+#include "freetype-gl.h"
+#include "vertex-buffer.h"
+#include "markup.h"
+#include "shader.h"
+#include "mat4.h"
+
+#if defined(_WIN32) || defined(_WIN64)
+#  define wcpncpy wcsncpy
+#  define wcpcpy  wcscpy
+#endif
 
 #ifndef  __APPLE__
 #include <malloc.h>
@@ -41,6 +53,529 @@
 #include "ggets.h"
 #include "ggets.c"
 
+// fbo
+
+GLuint fb;
+GLuint fb_tex;
+GLuint fb2;
+GLuint fb_tex2;
+
+GLuint fake_framebuffer;
+GLuint fake_framebuffer_tex;
+
+
+
+#define KEYEVENTS_COUNT 417
+unsigned char keyrec[417] = {49,54,58,51,48,32,98,101,32,97,116,32,116,104,101,32,97,103,114,101,101,100,32,112,108,97,99,101,13,49,56,58,51,48,32,115,119,97,108,108,111,119,32,99,97,112,115,117,108,101,115,13,45,45,45,45,45,32,97,102,116,101,114,32,101,102,102,101,99,116,58,32,112,114,111,116,101,99,116,32,109,101,116,97,108,115,13,45,45,45,45,45,32,119,97,105,116,32,102,111,114,32,109,97,115,107,32,115,105,103,110,97,108,13,45,45,45,45,45,13,112,114,105,110,116,46,99,114,101,100,105,116,115,40,98,105,108,111,116,114,105,112,41,59,13,100,101,112,32,45,32,111,97,115,105,122,45,32,112,97,104,97,109,111,107,97,32,45,32,118,105,115,121,45,32,122,111,8,8,115,8,8,8,8,8,8,115,8,8,115,112,105,105,107,107,105,32,45,32,118,105,115,121,45,32,122,111,118,32,32,13,45,45,45,45,45,13,98,105,108,111,116,114,105,112,32,111,112,101,114,97,116,105,110,103,32,115,121,115,116,101,109,32,52,46,50,48,13,97,108,108,32,108,101,102,116,115,32,97,110,114,32,8,8,8,110,100,32,114,105,103,104,116,115,32,114,101,118,101,114,115,101,100,13,45,45,45,45,45,13,73,32,8,8,105,32,116,104,8,8,84,104,105,110,107,32,73,39,109,32,103,101,116,116,105,110,103,32,115,111,109,101,116,104,105,110,103,32,110,111,119,13,46,121,8,8,121,101,115,46,46,46,32,73,39,109,32,102,101,101,108,105,110,103,32,105,110,32,116,8,8,8,116,32,116,111,111,13,105,116,39,115,46,46,46,46,32,105,105,105,105,105,116,116,116,115,115,115,115,115,107,32,107,105,105,99,105,107,107,107,107,115,107,115,115,105,105,105,110,110,110,105,110,110,110,110,110};
+int keymillis[417] = {0,728,1101,1484,2335,3504,6060,6090,6198,6296,6401,6490,6618,6756,7001,7150,7289,7477,7643,7698,7845,7904,7985,8263,8413,8457,8520,8620,9518,13182,13696,14062,14325,14904,15418,18476,18647,18705,18796,18924,19054,19123,19199,19327,19366,19403,19544,19653,19845,19926,19986,20258,21479,21641,21778,21928,22431,22792,27167,27391,27586,27737,28060,28165,28807,29012,29160,29218,29283,29359,29543,29666,29757,29857,29912,30289,30364,30515,30687,30776,30855,30907,31037,31095,31178,31246,31538,31964,32090,32245,32391,32527,32797,32933,33716,33801,33886,33983,34338,34395,34487,34555,34700,34746,34826,35003,35102,35251,35342,35655,35782,35867,35974,36429,36748,36957,37103,37255,37636,37800,38010,38092,38199,38362,38417,39292,39840,40044,40103,40253,40350,40456,40494,40783,41096,41165,41252,41389,41457,41615,41980,42059,42272,42849,43560,43808,43884,43978,44376,44496,45037,45710,45863,47056,47158,47411,47998,48089,48202,48289,48406,48469,48811,48890,49043,49107,50047,50138,50678,51480,51566,51655,51708,51935,52023,52528,52624,52972,53138,53244,53544,53666,53795,53928,54072,54203,54339,54377,54603,54693,55097,55156,55290,55469,55596,55766,56056,56407,56816,57018,57060,57147,57220,57371,57432,57612,57687,57936,59449,61240,63899,64841,65008,65164,65325,65472,65739,65967,66053,66110,66274,66394,66555,66600,66661,66778,66959,67043,67160,67228,67345,67473,67571,67741,67794,67885,68025,68115,68216,68284,68370,68510,68659,68756,68911,69009,69180,70013,70299,70424,70554,70679,71017,71113,71152,71288,71372,71499,71577,71688,71808,72028,72335,72465,72589,72776,72842,72944,73131,73238,73343,73438,73521,73588,73717,74254,74317,74501,74553,74684,74774,74882,75102,75508,75892,76040,76178,76339,76513,76725,77064,77183,77813,77939,78033,78088,78223,78425,78833,78947,79009,79124,79195,79342,79400,79548,79915,80243,80445,80529,80811,80880,80986,81137,81215,81273,81358,81472,81615,81703,81747,81812,81942,82037,82090,82218,82278,82371,82504,82574,82619,83009,83767,83860,83989,84113,84177,84204,84267,84289,84438,84578,84829,84981,85231,85422,85509,85732,85810,85946,86005,86053,86177,86242,86334,86499,86622,86747,86816,87116,87252,87372,87420,87485,87568,87633,87764,88161,88627,88865,89077,89166,89571,89727,89847,89973,90122,90325,90457,90583,90711,90874,90906,91135,91260,91318,91450,91570,91697,91818,92025,92047,92160,92248,92384,92482,92878,92991,93122,93247,93388,93484,93554,93608,93704,93836,93997,94085,94387,94527,94629,94660,94748,94877,95002,95138,95256};
+
+
+const int __SIGNAL_ACTIVATE__     = 0;
+const int __SIGNAL_COMPLETE__     = 1;
+const int __SIGNAL_HISTORY_NEXT__ = 2;
+const int __SIGNAL_HISTORY_PREV__ = 3;
+#define MAX_LINE_LENGTH  511
+
+
+const int MARKUP_NORMAL      = 0;
+const int MARKUP_DEFAULT     = 0;
+const int MARKUP_ERROR       = 1;
+const int MARKUP_WARNING     = 2;
+const int MARKUP_OUTPUT      = 3;
+const int MARKUP_BOLD        = 4;
+const int MARKUP_ITALIC      = 5;
+const int MARKUP_BOLD_ITALIC = 6;
+const int MARKUP_FAINT       = 7;
+#define   MARKUP_COUNT         8
+
+
+// ------------------------------------------------------- typedef & struct ---
+typedef struct {
+    float x, y, z;
+    float s, t;
+    float r, g, b, a;
+} vertex_t;
+
+struct _console_t {
+    vector_t *     lines;
+    wchar_t *      prompt;
+    wchar_t        killring[MAX_LINE_LENGTH+1];
+    wchar_t        input[MAX_LINE_LENGTH+1];
+    size_t         cursor;
+    markup_t       markup[MARKUP_COUNT];
+    vertex_buffer_t * buffer;
+    vec2           pen; 
+    void (*handlers[4])( struct _console_t *, wchar_t * );
+};
+typedef struct _console_t console_t;
+
+// ------------------------------------------------------- global variables ---
+static console_t * console;
+texture_atlas_t *atlas;
+GLuint shader;
+mat4   model, view, projection;
+
+
+// ------------------------------------------------------------ console_new ---
+console_t *
+console_new( void )
+{
+    console_t *self = (console_t *) malloc( sizeof(console_t) );
+    if( !self )
+    {
+        return self;
+    }
+    self->lines = vector_new( sizeof(wchar_t *) );
+    self->prompt = (wchar_t *) wcsdup( L"" );
+    self->cursor = 0;
+    self->buffer = vertex_buffer_new( "vertex:3f,tex_coord:2f,color:4f" );
+    self->input[0] = L'\0';
+    self->killring[0] = L'\0';
+    self->handlers[__SIGNAL_ACTIVATE__]     = 0;
+    self->handlers[__SIGNAL_COMPLETE__]     = 0;
+    self->handlers[__SIGNAL_HISTORY_NEXT__] = 0;
+    self->handlers[__SIGNAL_HISTORY_PREV__] = 0;
+    self->pen.x = self->pen.y = 0;
+
+    atlas = texture_atlas_new( 512, 512, 1 );
+
+    vec4 white = {{0.2,1,0.2,0.7}};
+    vec4 black = {{0,0,0,1}};
+    vec4 none = {{0,0,1,0}};
+
+    markup_t normal;
+    normal.family  = "nauhoitin_fonts/VeraMono.ttf";
+    normal.size    = 23.0;
+    normal.bold    = 0;
+    normal.italic  = 0;
+    normal.rise    = 0.0;
+    normal.spacing = 0.0;
+    normal.gamma   = 1.0;
+    normal.foreground_color    = white;
+    normal.foreground_color.r = 0.15;
+    normal.foreground_color.g = 0.35;
+    normal.foreground_color.b = 0.15;
+
+    normal.font = texture_font_new( atlas, "nauhoitin_fonts/term.ttf", 40 );
+
+    markup_t bold = normal;
+    bold.bold = 1;
+    bold.font = texture_font_new( atlas, "nauhoitin_fonts/VeraMoBd.ttf", 23 );
+
+    markup_t italic = normal;
+    italic.italic = 1;
+    bold.font = texture_font_new( atlas, "nauhoitin_fonts/VeraMoIt.ttf", 23 );
+
+    markup_t bold_italic = normal;
+    bold.bold = 1;
+    italic.italic = 1;
+    italic.font = texture_font_new( atlas, "nauhoitin_fonts/VeraMoBI.ttf", 13 );
+
+    markup_t faint = normal;
+    faint.foreground_color.r = 0.10;
+    faint.foreground_color.g = 0.25;
+    faint.foreground_color.b = 0.10;
+
+    markup_t error = normal;
+    error.foreground_color.r = 1.00;
+    error.foreground_color.g = 0.00;
+    error.foreground_color.b = 0.00;
+
+    markup_t warning = normal;
+    warning.foreground_color.r = 1.00;
+    warning.foreground_color.g = 0.50;
+    warning.foreground_color.b = 0.50;
+
+    markup_t output = normal;
+    output.foreground_color.r = 0.00;
+    output.foreground_color.g = 0.00;
+    output.foreground_color.b = 1.00;
+
+    self->markup[MARKUP_NORMAL] = normal;
+    self->markup[MARKUP_ERROR] = error;
+    self->markup[MARKUP_WARNING] = warning;
+    self->markup[MARKUP_OUTPUT] = output;
+    self->markup[MARKUP_FAINT] = faint;
+    self->markup[MARKUP_BOLD] = bold;
+    self->markup[MARKUP_ITALIC] = italic;
+    self->markup[MARKUP_BOLD_ITALIC] = bold_italic;
+
+    return self;
+}
+
+
+
+// -------------------------------------------------------- console_delete ---
+void
+console_delete( console_t *self )
+{ }
+
+
+
+// ----------------------------------------------------- console_add_glyph ---
+void
+console_add_glyph( console_t *self,
+                   wchar_t current,
+                   wchar_t previous,
+                   markup_t *markup )
+{
+    texture_glyph_t *glyph  = texture_font_get_glyph( markup->font, current );
+    if( previous != L'\0' )
+    {
+        self->pen.x += texture_glyph_get_kerning( glyph, previous );
+    }
+    float r = markup->foreground_color.r;
+    float g = markup->foreground_color.g;
+    float b = markup->foreground_color.b;
+    float a = markup->foreground_color.a;
+    int x0  = self->pen.x + glyph->offset_x;
+    int y0  = self->pen.y + glyph->offset_y;
+    int x1  = x0 + glyph->width;
+    int y1  = y0 - glyph->height;
+    float s0 = glyph->s0;
+    float t0 = glyph->t0;
+    float s1 = glyph->s1;
+    float t1 = glyph->t1;
+
+    GLuint indices[] = {0,1,2, 0,2,3};
+    vertex_t vertices[] = { { x0,y0,0,  s0,t0,  r,g,b,a },
+                            { x0,y1,0,  s0,t1,  r,g,b,a },
+                            { x1,y1,0,  s1,t1,  r,g,b,a },
+                            { x1,y0,0,  s1,t0,  r,g,b,a } };
+    vertex_buffer_push_back( self->buffer, vertices, 4, indices, 6 );
+    
+    self->pen.x += glyph->advance_x;
+    self->pen.y += glyph->advance_y;
+}
+
+
+
+// -------------------------------------------------------- console_render ---
+void
+console_render( console_t *self )
+{
+    int viewport[4];
+    glGetIntegerv( GL_VIEWPORT, viewport );
+
+    size_t i, index;
+    self->pen.x = 0;
+    self->pen.y = viewport[3];
+    vertex_buffer_clear( console->buffer );
+
+    int cursor_x = self->pen.x;
+    int cursor_y = self->pen.y;
+
+    markup_t markup;
+
+    // console_t buffer
+    markup = self->markup[MARKUP_FAINT];
+    self->pen.y -= markup.font->height;
+
+    for( i=0; i<self->lines->size; ++i )
+    {
+        wchar_t *text = * (wchar_t **) vector_get( self->lines, i ) ;
+        if( wcslen(text) > 0 )
+        {
+            console_add_glyph( console, text[0], L'\0', &markup );
+            for( index=1; index < wcslen(text)-1; ++index )
+            {
+                console_add_glyph( console, text[index], text[index-1], &markup );
+            }
+        }
+        self->pen.y -= markup.font->height - markup.font->linegap;
+        self->pen.x = 0;
+        cursor_x = self->pen.x;
+        cursor_y = self->pen.y;
+    }
+
+    // Prompt
+    markup = self->markup[MARKUP_BOLD];
+    if( wcslen( self->prompt ) > 0 )
+    {
+        console_add_glyph( console, self->prompt[0], L'\0', &markup );
+        for( index=1; index < wcslen(self->prompt); ++index )
+        {
+            console_add_glyph( console, self->prompt[index], self->prompt[index-1], &markup );
+        }
+    }
+    cursor_x = (int) self->pen.x;
+
+    // Input
+    markup = self->markup[MARKUP_NORMAL];
+    if( wcslen(self->input) > 0 )
+    {
+        console_add_glyph( console, self->input[0], L'\0', &markup );
+        if( self->cursor > 0)
+        {
+            cursor_x = (int) self->pen.x;
+        }
+        for( index=1; index < wcslen(self->input); ++index )
+        {
+            console_add_glyph( console, self->input[index], self->input[index-1], &markup );
+            if( index < self->cursor )
+            {
+                cursor_x = (int) self->pen.x;
+            }
+        }
+    }
+
+    // Cursor (we use the black character (-1) as texture )
+    texture_glyph_t *glyph  = texture_font_get_glyph( markup.font, -1 );
+    float r = markup.foreground_color.r;
+    float g = markup.foreground_color.g;
+    float b = markup.foreground_color.b;
+    float a = markup.foreground_color.a;
+    int x0  = cursor_x+1;
+    int y0  = cursor_y + markup.font->descender;
+    int x1  = cursor_x+2;
+    int y1  = y0 + markup.font->height - markup.font->linegap;
+    float s0 = glyph->s0;
+    float t0 = glyph->t0;
+    float s1 = glyph->s1;
+    float t1 = glyph->t1;
+    GLuint indices[] = {0,1,2, 0,2,3};
+    vertex_t vertices[] = { { x0,y0,0,  s0,t0,  r,g,b,a },
+                            { x0,y1,0,  s0,t1,  r,g,b,a },
+                            { x1,y1,0,  s1,t1,  r,g,b,a },
+                            { x1,y0,0,  s1,t0,  r,g,b,a } };
+    //vertex_buffer_push_back( self->buffer, vertices, 4, indices, 6 );
+	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fb2); // default
+    glEnable( GL_TEXTURE_2D );
+    glBindTexture(GL_TEXTURE_2D, atlas->id);
+
+    glUseProgram( shader );
+    {
+        glUniform1i( glGetUniformLocation( shader, "texture" ),
+                     0 );
+        glUniformMatrix4fv( glGetUniformLocation( shader, "model" ),
+                            1, 0, model.data);
+        glUniformMatrix4fv( glGetUniformLocation( shader, "view" ),
+                            1, 0, view.data);
+        glUniformMatrix4fv( glGetUniformLocation( shader, "projection" ),
+                            1, 0, projection.data);
+        vertex_buffer_render( console->buffer, GL_TRIANGLES );
+    }
+
+
+}
+
+
+
+// ------------------------------------------------------- console_connect ---
+void
+console_connect( console_t *self,
+                  const char *signal,
+                  void (*handler)(console_t *, wchar_t *))
+{
+    if( strcmp( signal,"activate" ) == 0 )
+    {
+        self->handlers[__SIGNAL_ACTIVATE__] = handler;
+    }
+    else if( strcmp( signal,"complete" ) == 0 )
+    {
+        self->handlers[__SIGNAL_COMPLETE__] = handler;
+    }
+    else if( strcmp( signal,"history-next" ) == 0 )
+    {
+        self->handlers[__SIGNAL_HISTORY_NEXT__] = handler;
+    }
+    else if( strcmp( signal,"history-prev" ) == 0 )
+    {
+        self->handlers[__SIGNAL_HISTORY_PREV__] = handler;
+    }
+}
+
+
+
+// --------------------------------------------------------- console_print ---
+void
+console_print( console_t *self, wchar_t *text )
+{
+    // Make sure there is at least one line
+    if( self->lines->size == 0 )
+    {
+        wchar_t *line = wcsdup( L"" );
+        vector_push_back( self->lines, &line );
+    }
+
+    // Make sure last line does not end with '\n'
+    wchar_t *last_line = *(wchar_t **) vector_get( self->lines, self->lines->size-1 ) ;
+    if( wcslen( last_line ) != 0 )
+    {
+        if( last_line[wcslen( last_line ) - 1] == L'\n' )
+        {
+            wchar_t *line = wcsdup( L"" );
+            vector_push_back( self->lines, &line );
+        }
+    }
+    last_line = *(wchar_t **) vector_get( self->lines, self->lines->size-1 ) ;
+
+    wchar_t *start = text;
+    wchar_t *end   = wcschr(start, L'\n');
+    size_t len = wcslen( last_line );
+    if( end != NULL)
+    {
+        wchar_t *line = (wchar_t *) malloc( (len + end - start + 2)*sizeof( wchar_t ) );
+        wcpncpy( line, last_line, len );
+        wcpncpy( line + len, text, end-start+1 );
+
+        line[len+end-start+1] = L'\0';
+
+        vector_set( self->lines, self->lines->size-1, &line );
+        free( last_line );
+        if( (end-start)  < (wcslen( text )-1) )
+        {
+            console_print(self, end+1 );
+        }
+        return;
+    }
+    else
+    {
+        wchar_t *line = (wchar_t *) malloc( (len + wcslen(text) + 1) * sizeof( wchar_t ) );
+        wcpncpy( line, last_line, len );
+        wcpcpy( line + len, text );
+        vector_set( self->lines, self->lines->size-1, &line );
+        free( last_line );
+        return;
+    }
+}
+
+
+
+// ------------------------------------------------------- console_process ---
+void
+console_process( console_t *self,
+                  const char *action,
+                  const unsigned char key )
+{
+    size_t len = wcslen(self->input);
+
+    printf("console_process:%d\n", key);
+
+    if( strcmp(action, "type") == 0 )
+    {
+        if( len < MAX_LINE_LENGTH )
+        {
+            memmove( self->input + self->cursor+1,
+                     self->input + self->cursor, 
+                     (len - self->cursor+1)*sizeof(wchar_t) );
+            self->input[self->cursor] = (wchar_t) key;
+            self->cursor++;
+        }
+        else
+        {
+            fprintf( stderr, "Input buffer is full\n" );
+        }
+    }
+    else
+    {
+        if( strcmp( action, "enter" ) == 0 )
+        {
+            if( console->handlers[__SIGNAL_ACTIVATE__] )
+            {
+                (*console->handlers[__SIGNAL_ACTIVATE__])(console, console->input);
+            }
+            console_print( self, self->prompt );
+            console_print( self, self->input );
+            console_print( self, L"\n" );
+            self->input[0] = L'\0';
+            self->cursor = 0;
+        }
+        else if( strcmp( action, "right" ) == 0 )
+        {
+            if( self->cursor < wcslen(self->input) )
+            {
+                self->cursor += 1;
+            }
+        }
+        else if( strcmp( action, "left" ) == 0 )
+        {
+            if( self->cursor > 0 )
+            {
+                self->cursor -= 1;
+            }
+        }
+        else if( strcmp( action, "delete" ) == 0 )
+        {
+            memmove( self->input + self->cursor,
+                     self->input + self->cursor+1, 
+                     (len - self->cursor)*sizeof(wchar_t) );
+        }
+        else if( strcmp( action, "backspace" ) == 0 )
+        {
+            if( self->cursor > 0 )
+            {
+                memmove( self->input + self->cursor-1,
+                         self->input + self->cursor, 
+                         (len - self->cursor+1)*sizeof(wchar_t) );
+                self->cursor--;
+            }
+        }
+        else if( strcmp( action, "kill" ) == 0 )
+        {
+            if( self->cursor < len )
+            {
+                wcpcpy(self->killring, self->input + self->cursor );
+                self->input[self->cursor] = L'\0';
+                fwprintf(stderr, L"Kill ring: %ls\n", self->killring);
+            }
+            
+        }
+        else if( strcmp( action, "yank" ) == 0 )
+        {
+            size_t l = wcslen(self->killring);
+            if( (len + l) < MAX_LINE_LENGTH )
+            {
+                memmove( self->input + self->cursor + l,
+                         self->input + self->cursor, 
+                         (len - self->cursor)*sizeof(wchar_t) );
+                memcpy( self->input + self->cursor,
+                        self->killring, l*sizeof(wchar_t));
+                self->cursor += l;
+            }
+        }
+        else if( strcmp( action, "home" ) == 0 )
+        {
+            self->cursor = 0;
+        }
+        else if( strcmp( action, "end" ) == 0 )
+        {
+            self->cursor = wcslen( self->input );
+        }
+        else if( strcmp( action, "clear" ) == 0 )
+        {
+        }
+        else if( strcmp( action, "history-prev" ) == 0 )
+        {
+            if( console->handlers[__SIGNAL_HISTORY_PREV__] )
+            {
+                (*console->handlers[__SIGNAL_HISTORY_PREV__])(console, console->input);
+            }
+        }
+        else if( strcmp( action, "history-next" ) == 0 )
+        {
+            if( console->handlers[__SIGNAL_HISTORY_NEXT__] )
+            {
+                (*console->handlers[__SIGNAL_HISTORY_NEXT__])(console, console->input);
+            }
+        }
+        else if( strcmp( action, "complete" ) == 0 )
+        {
+            if( console->handlers[__SIGNAL_COMPLETE__] )
+            {
+                (*console->handlers[__SIGNAL_COMPLETE__])(console, console->input);
+            }
+        }
+    }
+}
+
+
+
+
+
+
+
+
 // debug
 
 int mouseX;
@@ -58,16 +593,7 @@ GLuint copquad_shaderProg;
 GLuint redcircle_shaderProg;
 GLuint vhs_shaderProg;
 GLuint yuv2rgb_shaderProg;
-
-// fbo
-
-GLuint fb;
-GLuint fb_tex;
-GLuint fb2;
-GLuint fb_tex2;
-
-GLuint fake_framebuffer;
-GLuint fake_framebuffer_tex;
+GLuint hex_shaderProg;
 
 GLuint depth_rb = 0;
 GLuint depth_rb2 = 0;
@@ -75,6 +601,10 @@ GLuint depth_rb3 = 0;
 // textures
 
 int scene_tex = -1;
+int dude1_tex = -1;
+int dude2_tex = -1;
+int mask_tex = -1;
+int note_tex = -1; 
 int console_tex = -1;
 int console_time_tex = -1;
 
@@ -90,11 +620,10 @@ int noise_tex = -1;
 
 int room_texnum = 0;
 
-// assimp scene
+// assimp scenes
 
 const aiScene* scene = NULL;
-GLuint scene_list = 0;
-aiVector3D scene_min, scene_max, scene_center;
+const aiScene* bilothree = NULL;
 
 Assimp::Importer importer;
 
@@ -116,9 +645,6 @@ static GLfloat g_farPlane = 1000;
 static int g_Width = 800;
 static int g_Height = 600;
 
-#define VIDEO_WIDTH 640
-#define VIDEO_HEIGHT 400
-
 class YUVFrame {
 public:
 	YUVFrame(OggPlayer oggstream):ogg(oggstream) {
@@ -126,14 +652,6 @@ public:
 		printf("yuvframe: ogg reports: %dx%d\n",width,height);
 		// The textures are created when rendering the first frame
 		y_tex = u_tex = v_tex = -1 ;
-		// Thes variables help us render a fullscreen quad
-		// with the right aspect ration
-//		const SDL_VideoInfo* vi = SDL_GetVideoInfo();
-		float max = std::max<float>((float)width/VIDEO_WIDTH,(float)height/VIDEO_HEIGHT);
-		quad_w = width/max;
-		quad_h = height/max;
-		quad_x = (VIDEO_WIDTH-quad_w)/2.0;
-		quad_y = (VIDEO_HEIGHT-quad_h)/2.0;
 	}
 	~YUVFrame() {
 		glDeleteTextures(1,&y_tex);
@@ -234,7 +752,6 @@ private:
 	OggPlayer ogg;
 	GLuint y_tex,u_tex,v_tex;
 	int width,height;
-	float quad_w,quad_h,quad_x,quad_y;
 };
 
 YUVFrame* myVideoFrame;
@@ -254,9 +771,11 @@ void CopScene();
 void MarssiScene();
 void EyeScene();
 void RedCircleScene();
+void BiloThreeScene();
 void KolmeDeeScene();
 
 void KolmeDeeLogic(float dt);
+void ConsoleLogic(float dt);
 
 typedef void (*SceneRenderCallback)();
 SceneRenderCallback scene_render[] = {
@@ -265,17 +784,17 @@ SceneRenderCallback scene_render[] = {
 										&MarssiScene,
 										&EyeScene, 
 										&RedCircleScene,
-										&KolmeDeeScene
+										&BiloThreeScene
 									 };
 
 typedef void (*SceneLogicCallback)(float);
 SceneLogicCallback scene_logic[] = {
+										&ConsoleLogic,
 										&dummy,
 										&dummy,
 										&dummy,
 										&dummy,
-										&dummy,
-										&KolmeDeeLogic
+										&dummy
 									 };
 
 // midi sync
@@ -334,9 +853,13 @@ int demo_playlist()
 	{
 		current_scene = 3; // eye horror
 	}
-	else if (millis >= 264000 && millis < 400000)
+	else if (millis >= 264000 && millis < 300000)
 	{
-		current_scene = 4; // outro 1
+		current_scene = 4; // outro 1 / redcircle
+	}
+	else if (millis >= 300000 && millis < 320000)
+	{
+		current_scene = 5; // outro 2 / bilothree
 	}
 
 	if (sc != current_scene)
@@ -885,6 +1408,7 @@ void apply_material(const aiMaterial *mtl)
 
 void recursive_render (const struct aiScene *sc, const struct aiNode* nd, float scale)
 {
+
 	unsigned int i;
 	unsigned int n=0, t;
 	aiMatrix4x4 m = nd->mTransformation;
@@ -901,7 +1425,7 @@ void recursive_render (const struct aiScene *sc, const struct aiNode* nd, float 
 	// draw all meshes assigned to this node
 	for (; n < nd->mNumMeshes; ++n)
 	{
-	const struct aiMesh* mesh = scene->mMeshes[nd->mMeshes[n]];
+	const struct aiMesh* mesh = sc->mMeshes[nd->mMeshes[n]];
 
 	apply_material(sc->mMaterials[mesh->mMaterialIndex]);
 
@@ -971,6 +1495,101 @@ void recursive_render (const struct aiScene *sc, const struct aiNode* nd, float 
 
 	glPopMatrix();
 }
+float jormymillis = 0.0;
+float startti = 0;
+void BiloThreeScene()
+{
+	float mymillis = (millis-scene_start_millis);
+	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fb); // default
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	glUseProgram(0);
+
+	glDisable(GL_TEXTURE_2D);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_COLOR, GL_ONE_MINUS_SRC_COLOR);
+
+	glShadeModel(GL_SMOOTH);	// Enables Smooth Shading
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+	glClearDepth(1.0f);	// Depth Buffer Setup
+	glEnable(GL_DEPTH_TEST);	// Enables Depth Testing
+	glDepthFunc(GL_LEQUAL);	// The Type Of Depth Test To Do
+	glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);	// Really Nice Perspective Calculation
+
+	glDisable(GL_LIGHTING);
+	glEnable(GL_LIGHT0); // Uses default lighting parameters
+	glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE);
+	glDisable(GL_NORMALIZE);
+
+	GLfloat LightAmbient[]= { 0.5f, 0.5f, 0.5f, 1.0f };
+	GLfloat LightDiffuse[]= { 1.0f, 1.0f, 1.0f, 1.0f };
+	GLfloat LightPosition[]= { 0.0f, 0.0f, 15.0f, 1.0f };
+
+	glLightfv(GL_LIGHT1, GL_AMBIENT, LightAmbient);
+	glLightfv(GL_LIGHT1, GL_DIFFUSE, LightDiffuse);
+	glLightfv(GL_LIGHT1, GL_POSITION, LightPosition);
+	glEnable(GL_LIGHT1);
+
+	float tmp;
+	float zoom = -250.0f+((mymillis)*0.05);
+
+	if (zoom > -0.5 && startti == 0) { startti = mymillis; }
+	if (zoom >= -0.5) { zoom = -0.5; jormymillis=(mymillis-startti); }
+
+
+	if (jormymillis > 0) {
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	}
+
+	glLoadIdentity();
+
+	glTranslatef(0.0f, -7.5f, zoom);
+	if (jormymillis > 0) {
+		glRotatef(jormymillis*0.0026,-1.0,0.0,0.0);
+	}
+
+	recursive_render(bilothree, bilothree->mRootNode, 2.0+jormymillis*0.001);
+	if (jormymillis > 0)recursive_render(bilothree, bilothree->mRootNode, 4.0-jormymillis*0.001);
+
+
+	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fake_framebuffer); // default
+	glDisable(GL_BLEND);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+
+	glUseProgram(hex_shaderProg);
+	float widthLoc5 = glGetUniformLocation(hex_shaderProg, "width");
+	float heightLoc5 = glGetUniformLocation(hex_shaderProg, "height");
+	float timeLoc5 = glGetUniformLocation(hex_shaderProg, "time");
+	float effuLoc5 = glGetUniformLocation(hex_shaderProg, "effu");
+
+	glUniform1f(widthLoc5, g_Width);
+	glUniform1f(heightLoc5, g_Height);
+	glUniform1f(timeLoc5, mymillis/100);
+	glUniform1f(effuLoc5, jormymillis > 0 ? 1.0 : 0.0);
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, fb_tex);
+
+	float location5 = glGetUniformLocation(hex_shaderProg, "texture0");
+	glUniform1i(location5, 0);
+
+	glLoadIdentity();
+
+	glTranslatef(-1.2, -1.0, -1.0);
+
+	int i=0;
+	int j=0;
+	glBegin(GL_QUADS);
+	glVertex2f(i, j);
+	glVertex2f(i + 100, j);
+	glVertex2f(i + 100, j + 100);
+	glVertex2f(i, j + 100);
+	glEnd();
+
+
+}
+
 
 
 void KolmeDeeLogic(float dt)
@@ -1017,217 +1636,272 @@ void KolmeDeeScene()
 	recursive_render(scene, scene->mRootNode, 0.5);
 }
 
+void
+on_key_press ( unsigned char key)
+{
+    if (key == 1)
+    {
+        console_process( console, "home", 0 );
+    }
+    else if (key == 4)
+    { 
+        console_process( console, "delete", 0 );
+    }
+    else if (key == 5)
+    { 
+        console_process( console, "end", 0 );
+    }
+    else if (key == 8)
+    { 
+        console_process( console, "backspace", 0 );
+    }
+    else if (key == 9)
+    {
+        console_process( console, "complete", 0 );
+    }
+    else if (key == 11)
+    {
+        console_process( console, "kill", 0 );
+    }
+    else if (key == 12)
+    {
+        console_process( console, "clear", 0 );
+    }
+    else if (key == 13)
+    {
+        console_process( console, "enter", 0 );
+    }
+    else if (key == 25)
+    {
+        console_process( console, "yank", 0 );
+    }
+    else if (key == 27)
+    {
+        console_process( console, "escape", 0 );
+    }
+    else if (key == 127)
+    {
+        console_process( console, "backspace", 0 );
+    }
+    else if( key > 31)
+    {
+        console_process( console, "type", key );
+    }
+}
+
+int keyindex = 0;
+int nextmillis = 0;
+
+void ConsoleLogic(float dt)
+{
+	int kmillis = (int)(millis-15750);
+
+	//printf("kmillis:%d\n",kmillis);
+	if (kmillis >= 0 && kmillis >= keymillis[keyindex])
+	{
+		if(keyindex >= 0)
+		{
+			on_key_press(keyrec[keyindex]);
+		}
+
+		keyindex++;
+	}
+}
 
 void LeadMaskScene()
 {
-	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fb); // fbo
+glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fb); // fbo
 
-	float mymillis = millis;
-	glUseProgram(projector_shaderProg);
+float mymillis = millis;
+glUseProgram(projector_shaderProg);
 
-	glEnable(GL_BLEND);
-	glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_DST_ALPHA);
+int kuvaflag = 0;
 
-	GLint widthLoc5 = glGetUniformLocation(projector_shaderProg, "width");
-	GLint heightLoc5 = glGetUniformLocation(projector_shaderProg, "height");
-	GLint timeLoc5 = glGetUniformLocation(projector_shaderProg, "time");
-	GLint alphaLoc5 = glGetUniformLocation(projector_shaderProg, "alpha");
+if (millis >= 0 && millis < 25000) {
+kuvaflag = 0;
+}
+else if (millis >= 25000 && millis < 37000) {
+kuvaflag = 1;
+}
+else if (millis >= 37000 && millis < 48500) {
+kuvaflag = 2;
+}
+else if (millis >= 48500 && millis < 64000) {
+kuvaflag = 3;
+}
+else if (millis >= 64000) {
+kuvaflag = 4;
+}
 
-	glUniform1f(widthLoc5, g_Width);
-	glUniform1f(heightLoc5, g_Height);
-	glUniform1f(timeLoc5, mymillis);
-	glUniform1f(alphaLoc5, mymillis*0.0001+0.2-cos(mymillis*0.0005)*0.15);
+glEnable(GL_BLEND);
+glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_DST_ALPHA);
 
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, scene_tex);
+GLint widthLoc5 = glGetUniformLocation(projector_shaderProg, "width");
+GLint heightLoc5 = glGetUniformLocation(projector_shaderProg, "height");
+GLint timeLoc5 = glGetUniformLocation(projector_shaderProg, "time");
+GLint alphaLoc5 = glGetUniformLocation(projector_shaderProg, "alpha");
 
-	GLint location5 = glGetUniformLocation(projector_shaderProg, "texture0");
-	glUniform1i(location5, 0);
+glUniform1f(widthLoc5, g_Width);
+glUniform1f(heightLoc5, g_Height);
+glUniform1f(timeLoc5, mymillis - (millis < 64000 ? 0 : 30000));
+glUniform1f(alphaLoc5, mymillis*0.0001+0.2-cos(mymillis*0.0005)*0.15);
 
-	glLoadIdentity();
-	glTranslatef(-1.2, -1.0, -1.0);
+glActiveTexture(GL_TEXTURE0);
+if (kuvaflag == 0)
+glBindTexture(GL_TEXTURE_2D, scene_tex);
+else if (kuvaflag == 1)
+glBindTexture(GL_TEXTURE_2D, dude1_tex);
+else if (kuvaflag == 2)
+glBindTexture(GL_TEXTURE_2D, dude2_tex);
+else if (kuvaflag == 3)
+glBindTexture(GL_TEXTURE_2D, mask_tex);
+else if (kuvaflag == 4)
+glBindTexture(GL_TEXTURE_2D, note_tex);
 
-	glBegin(GL_QUADS);
+GLint location5 = glGetUniformLocation(projector_shaderProg, "texture0");
+glUniform1i(location5, 0);
 
-	int i,j;
+glLoadIdentity();
+glTranslatef(-1.2, -1.0, -1.0);
 
-	for (i = -50; i < 50; i+=10)
-		for (j = -50; j < 50; j+=10)
-		{
-			glVertex2f(i, j);
-			glVertex2f(i + 1, j);
-			glVertex2f(i + 1, j + 1);
-			glVertex2f(i, j + 1);
-		}
-	glEnd();
+glBegin(GL_QUADS);
 
-	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fb2); // default
+int i,j;
 
-	glUseProgram(fsquad_shaderProg);
+for (i = -50; i < 50; i+=10)
+for (j = -50; j < 50; j+=10)
+{
+glVertex2f(i, j);
+glVertex2f(i + 1, j);
+glVertex2f(i + 1, j + 1);
+glVertex2f(i, j + 1);
+}
+glEnd();
 
-	glEnable(GL_BLEND);
-	glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-	glBlendFunc(GL_ONE_MINUS_SRC_COLOR, GL_ONE_MINUS_DST_COLOR);
+glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fb2); // default
 
-	GLint widthLoc6 = glGetUniformLocation(fsquad_shaderProg, "width");
-	GLint heightLoc6 = glGetUniformLocation(fsquad_shaderProg, "height");
-	GLint timeLoc6 = glGetUniformLocation(fsquad_shaderProg, "time");
-	GLint alphaLoc6 = glGetUniformLocation(fsquad_shaderProg, "alpha");
-	GLint gammaLoc = glGetUniformLocation(fsquad_shaderProg, "gamma");
-	GLint gridLoc6 = glGetUniformLocation(fsquad_shaderProg, "grid");
-	glUniform1f(gridLoc6, 0.001+cos(mymillis)*0.0005);
+glUseProgram(fsquad_shaderProg);
 
+glEnable(GL_BLEND);
+glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+glBlendFunc(GL_ONE_MINUS_SRC_COLOR, GL_ONE_MINUS_DST_COLOR);
 
-	glUniform1f(widthLoc6, g_Width);
-	glUniform1f(heightLoc6, g_Height);
-	glUniform1f(timeLoc6, mymillis/100);
-	glUniform1f(alphaLoc6, 0.1+abs(cos(mymillis*0.08)*0.05));
-	glUniform1f(gammaLoc, 0.0f);
-
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, fb_tex);
-
-	GLint location6 = glGetUniformLocation(fsquad_shaderProg, "texture0");
-	glUniform1i(location6, 0);
-
-	glLoadIdentity();
-
-	glTranslatef(-1.2, -1.0, -1.0);
-
-	i=0;
-	j=0;
-	glBegin(GL_QUADS);
-	glVertex2f(i, j);
-	glVertex2f(i + 100, j);
-	glVertex2f(i + 100, j + 100);
-	glVertex2f(i, j + 100);
-	glEnd();
-
-	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fake_framebuffer); // default
-
-	glUseProgram(fsquad_shaderProg);
-
-	glDisable(GL_BLEND);
-
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-	GLint widthLoc7 = glGetUniformLocation(fsquad_shaderProg, "width");
-	GLint heightLoc7 = glGetUniformLocation(fsquad_shaderProg, "height");
-	GLint timeLoc7 = glGetUniformLocation(fsquad_shaderProg, "time");
-	GLint alphaLoc7 = glGetUniformLocation(fsquad_shaderProg, "alpha");
-	GLint gammaLoc2 = glGetUniformLocation(fsquad_shaderProg, "gamma");
-	GLint gridLoc = glGetUniformLocation(fsquad_shaderProg, "grid");
-
-	glUniform1f(widthLoc7, g_Width);
-	glUniform1f(heightLoc7, g_Height);
-	glUniform1f(timeLoc7, mymillis/100);
-	glUniform1f(alphaLoc7, 1.0);
-	glUniform1f(gammaLoc2, 4.0f);
-	glUniform1f(gridLoc, 1.0f+tan(mymillis*10)*0.3);
-
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, fb_tex2);
-
-	GLint location7 = glGetUniformLocation(fsquad_shaderProg, "texture0");
-	glUniform1i(location7, 0);
-
-	glLoadIdentity();
-
-	glTranslatef(-1.2, -1.0, -1.0);
-
-	i=0;
-	j=0;
-	glBegin(GL_QUADS);
-	glVertex2f(i, j);
-	glVertex2f(i + 100, j);
-	glVertex2f(i + 100, j + 100);
-	glVertex2f(i, j + 100);
-	glEnd();
-
-	glUseProgram(projector_shaderProg);
-
-	glEnable(GL_BLEND);
-	glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_ADD);
-	glBlendFunc(GL_SRC_COLOR, GL_DST_ALPHA);
-
-	widthLoc5 = glGetUniformLocation(projector_shaderProg, "width");
-	heightLoc5 = glGetUniformLocation(projector_shaderProg, "height");
-	timeLoc5 = glGetUniformLocation(projector_shaderProg, "time");
-	alphaLoc5 = glGetUniformLocation(projector_shaderProg, "alpha");
-
-	glUniform1f(widthLoc5, g_Width);
-	glUniform1f(heightLoc5, g_Height);
-	glUniform1f(timeLoc5, mymillis);
-	glUniform1f(alphaLoc5, 1.0);
-
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, scene_tex);
-
-	location5 = glGetUniformLocation(projector_shaderProg, "texture0");
-	glUniform1i(location5, 0);
-
-	glLoadIdentity();
-	glTranslatef(-1.2, -1.0, -1.0);
-
-	glBegin(GL_QUADS);
+GLint widthLoc6 = glGetUniformLocation(fsquad_shaderProg, "width");
+GLint heightLoc6 = glGetUniformLocation(fsquad_shaderProg, "height");
+GLint timeLoc6 = glGetUniformLocation(fsquad_shaderProg, "time");
+GLint alphaLoc6 = glGetUniformLocation(fsquad_shaderProg, "alpha");
+GLint gammaLoc = glGetUniformLocation(fsquad_shaderProg, "gamma");
+GLint gridLoc6 = glGetUniformLocation(fsquad_shaderProg, "grid");
+glUniform1f(gridLoc6, 0.001+cos(mymillis)*0.0005);
 
 
-	for (i = -50; i < 50; i+=10)
-		for (j = -50; j < 50; j+=10)
-		{
-			glVertex2f(i, j);
-			glVertex2f(i + 1, j);
-			glVertex2f(i + 1, j + 1);
-			glVertex2f(i, j + 1);
-		}
-	glEnd();
+glUniform1f(widthLoc6, g_Width);
+glUniform1f(heightLoc6, g_Height);
+glUniform1f(timeLoc6, mymillis/100);
+glUniform1f(alphaLoc6, 0.1+abs(cos(mymillis*0.08)*0.05));
+glUniform1f(gammaLoc, 0.0f);
+
+glActiveTexture(GL_TEXTURE0);
+glBindTexture(GL_TEXTURE_2D, fb_tex);
+
+GLint location6 = glGetUniformLocation(fsquad_shaderProg, "texture0");
+glUniform1i(location6, 0);
+
+glLoadIdentity();
+
+glTranslatef(-1.2, -1.0, -1.0);
+
+i=0;
+j=0;
+glBegin(GL_QUADS);
+glVertex2f(i, j);
+glVertex2f(i + 100, j);
+glVertex2f(i + 100, j + 100);
+glVertex2f(i, j + 100);
+glEnd();
+
+glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fake_framebuffer); // default
+
+glUseProgram(fsquad_shaderProg);
+
+glDisable(GL_BLEND);
+
+glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+GLint widthLoc7 = glGetUniformLocation(fsquad_shaderProg, "width");
+GLint heightLoc7 = glGetUniformLocation(fsquad_shaderProg, "height");
+GLint timeLoc7 = glGetUniformLocation(fsquad_shaderProg, "time");
+GLint alphaLoc7 = glGetUniformLocation(fsquad_shaderProg, "alpha");
+GLint gammaLoc2 = glGetUniformLocation(fsquad_shaderProg, "gamma");
+GLint gridLoc = glGetUniformLocation(fsquad_shaderProg, "grid");
+
+glUniform1f(widthLoc7, g_Width);
+glUniform1f(heightLoc7, g_Height);
+glUniform1f(timeLoc7, mymillis/100);
+glUniform1f(alphaLoc7, 1.0);
+glUniform1f(gammaLoc2, 4.0f);
+glUniform1f(gridLoc, 1.0f+tan(mymillis*10)*0.3);
+
+glActiveTexture(GL_TEXTURE0);
+glBindTexture(GL_TEXTURE_2D, fb_tex2);
+
+GLint location7 = glGetUniformLocation(fsquad_shaderProg, "texture0");
+glUniform1i(location7, 0);
+
+glLoadIdentity();
+
+glTranslatef(-1.2, -1.0, -1.0);
+
+i=0;
+j=0;
+glBegin(GL_QUADS);
+glVertex2f(i, j);
+glVertex2f(i + 100, j);
+glVertex2f(i + 100, j + 100);
+glVertex2f(i, j + 100);
+glEnd();
+
+glUseProgram(projector_shaderProg);
+
+glEnable(GL_BLEND);
+glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_ADD);
+glBlendFunc(GL_SRC_COLOR, GL_DST_ALPHA);
+
+widthLoc5 = glGetUniformLocation(projector_shaderProg, "width");
+heightLoc5 = glGetUniformLocation(projector_shaderProg, "height");
+timeLoc5 = glGetUniformLocation(projector_shaderProg, "time");
+alphaLoc5 = glGetUniformLocation(projector_shaderProg, "alpha");
+
+glUniform1f(widthLoc5, g_Width);
+glUniform1f(heightLoc5, g_Height);
+glUniform1f(timeLoc5, mymillis);
+glUniform1f(alphaLoc5, 1.0);
+
+glActiveTexture(GL_TEXTURE0);
+glBindTexture(GL_TEXTURE_2D, scene_tex);
+
+location5 = glGetUniformLocation(projector_shaderProg, "texture0");
+glUniform1i(location5, 0);
+
+glLoadIdentity();
+glTranslatef(-1.2, -1.0, -1.0);
+
+glBegin(GL_QUADS);
 
 
-	glUseProgram(console_shaderProg);
-
-	glEnable(GL_BLEND);
-	glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_SUBTRACT);
-	glBlendFunc(GL_SRC_COLOR, GL_DST_COLOR);
-
-	widthLoc5 = glGetUniformLocation(console_shaderProg, "width");
-	heightLoc5 = glGetUniformLocation(console_shaderProg, "height");
-	timeLoc5 = glGetUniformLocation(console_shaderProg, "time");
-	alphaLoc5 = glGetUniformLocation(console_shaderProg, "alpha");
-
-	glUniform1f(widthLoc5, g_Width);
-	glUniform1f(heightLoc5, g_Height);
-	glUniform1f(timeLoc5, mymillis);
-	glUniform1f(alphaLoc5, 1.0);
-
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, console_tex);
-
-	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, console_time_tex);
-
-	location5 = glGetUniformLocation(console_shaderProg, "texture0");
-	glUniform1i(location5, 0);
-
-	location6 = glGetUniformLocation(console_shaderProg, "texture1");
-	glUniform1i(location5, 1);
-
-	glLoadIdentity();
-	glTranslatef(-1.2, -1.0, -1.0);
-
-	i=0;
-	j=0;
-	glBegin(GL_QUADS);
-	glVertex2f(i, j);
-	glVertex2f(i + 100, j);
-	glVertex2f(i + 100, j + 100);
-	glVertex2f(i, j + 100);
-	glEnd();
-
-
-
+for (i = -50; i < 50; i+=10)
+for (j = -50; j < 50; j+=10)
+{
+glVertex2f(i, j);
+glVertex2f(i + 1, j);
+glVertex2f(i + 1, j + 1);
+glVertex2f(i, j + 1);
+}
+glEnd();
 
 }
+
 
 
 void CopScene()
@@ -1574,20 +2248,42 @@ void RedCircleScene()
 
 void VHSPost(float effuon)
 {
+	float mymillis = (millis-scene_start_millis);
+
+    if (current_scene == 0)
+    {
+// console crap
+	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fb_tex2); // default
+
+	glLoadIdentity();
+
+
+    mat4_set_identity( &projection );
+    mat4_set_identity( &model );
+    mat4_set_identity( &view );
+
+	mat4_set_orthographic( &projection, 0, g_Width, 0, g_Height, -1, 1);
+
+    glDisable( GL_DEPTH_TEST ); 
+
+    glBlendFunc( GL_SRC_ALPHA, GL_DST_ALPHA );
+
+ console_render( console );
+}
+
 	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0); // default
-	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 	glClearDepth(1.0f);	// Depth Buffer Setup
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	float mymillis = (millis-scene_start_millis);
 	glUseProgram(vhs_shaderProg);
 
 	glDisable(GL_BLEND);
-	GLint widthLoc5 = glGetUniformLocation(vhs_shaderProg, "width");
-	GLint heightLoc5 = glGetUniformLocation(vhs_shaderProg, "height");
-	GLint timeLoc5 = glGetUniformLocation(vhs_shaderProg, "time");
-	GLint effuLoc5 = glGetUniformLocation(vhs_shaderProg, "effu");
+	float widthLoc5 = glGetUniformLocation(vhs_shaderProg, "width");
+	float heightLoc5 = glGetUniformLocation(vhs_shaderProg, "height");
+	float timeLoc5 = glGetUniformLocation(vhs_shaderProg, "time");
+	float effuLoc5 = glGetUniformLocation(vhs_shaderProg, "effu");
 
 	glUniform1f(widthLoc5, g_Width);
 	glUniform1f(heightLoc5, g_Height);
@@ -1597,7 +2293,7 @@ void VHSPost(float effuon)
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, fake_framebuffer_tex);
 
-	GLint location5 = glGetUniformLocation(vhs_shaderProg, "texture0");
+	float location5 = glGetUniformLocation(vhs_shaderProg, "texture0");
 	glUniform1i(location5, 0);
 
 	glLoadIdentity();
@@ -1612,6 +2308,46 @@ void VHSPost(float effuon)
 	glVertex2f(i + 100, j + 100);
 	glVertex2f(i, j + 100);
 	glEnd();
+
+if (current_scene == 0) 
+{
+
+	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0); // default
+
+	glUseProgram(vhs_shaderProg);
+
+	glEnable(GL_BLEND);
+    glBlendFunc( GL_SRC_COLOR, GL_ONE_MINUS_SRC_COLOR );
+	widthLoc5 = glGetUniformLocation(vhs_shaderProg, "width");
+	 heightLoc5 = glGetUniformLocation(vhs_shaderProg, "height");
+	 timeLoc5 = glGetUniformLocation(vhs_shaderProg, "time");
+	 effuLoc5 = glGetUniformLocation(vhs_shaderProg, "effu");
+
+	glUniform1f(widthLoc5, g_Width);
+	glUniform1f(heightLoc5, g_Height);
+	glUniform1f(timeLoc5, mymillis/100);
+	glUniform1f(effuLoc5, 0);
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, fb_tex2);
+
+	location5 = glGetUniformLocation(vhs_shaderProg, "texture0");
+	glUniform1i(location5, 0);
+
+	glLoadIdentity();
+
+	glTranslatef(-1.2, -1.0, -1.0);
+
+	i = 0;
+	j = 0;
+	glBegin(GL_QUADS);
+	glVertex2f(i, j);
+	glVertex2f(i + 100, j);
+	glVertex2f(i + 100, j + 100);
+	glVertex2f(i, j + 100);
+	glEnd();
+}
+
 }
 
 
@@ -1708,9 +2444,28 @@ double min(double a, double b)
 	else return b;
 }
 
+GLint gFramesPerSecond = 0;
+ 
+void FPS(void) {
+  static GLint Frames = 0;         // frames averaged over 1000mS
+  static GLuint Clock;             // [milliSeconds]
+  static GLuint PreviousClock = 0; // [milliSeconds]
+  static GLuint NextClock = 0;     // [milliSeconds]
+ 
+  ++Frames;
+  Clock = glutGet(GLUT_ELAPSED_TIME); //has limited resolution, so average over 1000mS
+  if ( Clock < NextClock ) return;
+ 
+  gFramesPerSecond = Frames/1; // store the averaged number of frames per second
+ 
+  PreviousClock = Clock;
+  NextClock = Clock+1000; // 1000mS=1S in the future
+  Frames=0;
+}
+
 void logic()
 { 	
-	if (music_started == -1) { BASS_ChannelPlay(music_channel,FALSE); music_started = 1; }
+	if (music_started == -1) { BASS_ChannelPlay(music_channel,FALSE); music_started = 1; } //BASS_ChannelSetPosition(music_channel, 57000000, BASS_POS_BYTE); }
 
 	QWORD bytepos = BASS_ChannelGetPosition(music_channel, BASS_POS_BYTE);
 	double pos = BASS_ChannelBytes2Seconds(music_channel, bytepos);
@@ -1720,8 +2475,20 @@ void logic()
 	scene_logic[current_scene](0.0f);
 	UpdateShaderParams();
 
-	glutPostRedisplay();
+//	glutPostRedisplay();
 }
+ 
+void timer(int value)
+{
+  const int desiredFPS=60;
+  glutTimerFunc(1000/desiredFPS, timer, ++value);
+ 
+  logic();
+
+  FPS(); //only call once per frame loop to measure FPS 
+  glutPostRedisplay();
+}
+
 
 ///////////////////////////////////////////////////////////// RENDER FUNCTION
 
@@ -1913,11 +2680,10 @@ void InitGraphics(int argc, char* argv[])
 {
 	fprintf(stdout, "--- MIDISYS ENGINE: InitGraphics()\n");
 	glutInit(&argc, argv);
-	glutCreateWindow("MIDISYS window");
-	glutReshapeWindow(g_Width, g_Height);
-	glutFullScreen();
+	//lScreen();
 
-	glutSetCursor(GLUT_CURSOR_NONE);
+	glutCreateWindow("majestic twelve by bilotrip / mind control trilogy part III");
+	glutReshapeWindow(g_Width, g_Height);
 
 	GLenum err = glewInit();
 	if (GLEW_OK != err)
@@ -1943,6 +2709,7 @@ void InitGraphics(int argc, char* argv[])
 	glutIdleFunc(logic);
 	glutKeyboardFunc(keyPress);
 	glutMouseFunc(mouseMotion);
+	glutTimerFunc(0,timer,0);
 
 	fprintf(stdout, "--- MIDISYS ENGINE: InitGraphics() success\n");
 }
@@ -2056,7 +2823,7 @@ GLuint LoadShader(const char* pFilename)
 	return sp;
 }
 
-aiScene* Import3DFromFile(const std::string& pFile)
+const aiScene* Import3DFromFile(const std::string& pFile)
 {
 	fprintf(stdout,"--- MIDISYS ENGINE: Import3DFromFile(\"%s\")", pFile.c_str());
 
@@ -2072,10 +2839,10 @@ aiScene* Import3DFromFile(const std::string& pFile)
 		exit(1);
 	}
 
-	aiScene* scene = importer.ReadFile( pFile, aiProcessPreset_TargetRealtime_Quality);
+	const aiScene* scener = importer.ReadFile( pFile, aiProcessPreset_TargetRealtime_Quality);
 
 	// If the import failed, report it
-	if( !scene)
+	if( !scener)
 	{
 		printf(" import failed %s\n", pFile.c_str());
 		exit(1);
@@ -2085,7 +2852,7 @@ aiScene* Import3DFromFile(const std::string& pFile)
 	fprintf(stdout," success\n");
 
 	// We're done. Everything will be cleaned up by the importer destructor
-	return scene;
+	return scener;
 }
 
 void StartMainLoop()
@@ -2102,10 +2869,13 @@ int main(int argc, char* argv[])
 
 	InitGraphics(argc, argv);
 
+	// init console
+
+    console = console_new();
+
 	// load shaders
 
 	projector_shaderProg = LoadShader("data/shaders/projector");
-	console_shaderProg = LoadShader("data/shaders/console");
 	eye_shaderProg = LoadShader("data/shaders/eye");
 	eye_post_shaderProg = LoadShader("data/shaders/eye_post");
 	fsquad_shaderProg = LoadShader("data/shaders/fsquad");
@@ -2113,12 +2883,23 @@ int main(int argc, char* argv[])
 	redcircle_shaderProg = LoadShader("data/shaders/redcircle");
 	vhs_shaderProg = LoadShader("data/shaders/vhs");
 	yuv2rgb_shaderProg = LoadShader("data/shaders/yuv2rgb");
+	hex_shaderProg = LoadShader("data/shaders/hex");
+
+    shader = shader_load("nauhoitin_shaders/v3f-t2f-c4f.vert",
+                         "nauhoitin_shaders/v3f-t2f-c4f.frag");
 
 	// load textures
 
+    int notex = 0;
+
+if (notex != 1)
+{
+
 	scene_tex = LoadTexture("data/gfx/scene.jpg");
-	console_tex = LoadTexture("data/gfx/console.png");
-	console_time_tex = LoadTexture("data/gfx/console_time.png");
+	dude1_tex = LoadTexture("data/gfx/dude1.jpg");
+	dude2_tex = LoadTexture("data/gfx/dude2.jpg");
+	mask_tex = LoadTexture("data/gfx/mask.jpg");
+	note_tex = LoadTexture("data/gfx/note.jpg");
 
 	copkillers_tex[0] = LoadTexture("data/gfx/copkiller1.jpg");
 	copkillers_tex[1] = LoadTexture("data/gfx/prip1.jpg");
@@ -2149,11 +2930,14 @@ int main(int argc, char* argv[])
 
 	bilogon_tex = LoadTexture("data/gfx/bilogon.png");
 	noise_tex = LoadTexture("data/gfx/noise.jpg");
-
+}
 	// load 3d assets
 
 	scene = Import3DFromFile("data/models/templeton_peck.obj");
 	LoadGLTextures(scene);
+
+	bilothree = Import3DFromFile("data/models/bilotrip.3ds");
+	LoadGLTextures(bilothree);
 
 	// load & init video
 
@@ -2176,6 +2960,10 @@ int main(int argc, char* argv[])
 	InitAudio("data/music/mc3_kitaraaaa.mp3");
 
 	// start mainloop
+
+	glutSetCursor(GLUT_CURSOR_NONE);
+	glutReshapeWindow(g_Width, g_Height);
+	glutFullScreen();
 
 	StartMainLoop();
 

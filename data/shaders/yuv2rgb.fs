@@ -14,5 +14,5 @@ void main (void)
 	float r = y + 1.13983*v;
 	float g = y - 0.39465*u-0.58060*v;
 	float b = y + 2.03211*u;
-	gl_FragColor  = vec4(r,g,b,1);
+	gl_FragColor  = vec4(r,g,b,1.0);
 }

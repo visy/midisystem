@@ -65,9 +65,14 @@ GLuint fake_framebuffer_tex;
 
 
 
-#define KEYEVENTS_COUNT 417
-unsigned char keyrec[417] = {49,54,58,51,48,32,98,101,32,97,116,32,116,104,101,32,97,103,114,101,101,100,32,112,108,97,99,101,13,49,56,58,51,48,32,115,119,97,108,108,111,119,32,99,97,112,115,117,108,101,115,13,45,45,45,45,45,32,97,102,116,101,114,32,101,102,102,101,99,116,58,32,112,114,111,116,101,99,116,32,109,101,116,97,108,115,13,45,45,45,45,45,32,119,97,105,116,32,102,111,114,32,109,97,115,107,32,115,105,103,110,97,108,13,45,45,45,45,45,13,112,114,105,110,116,46,99,114,101,100,105,116,115,40,98,105,108,111,116,114,105,112,41,59,13,100,101,112,32,45,32,111,97,115,105,122,45,32,112,97,104,97,109,111,107,97,32,45,32,118,105,115,121,45,32,122,111,8,8,115,8,8,8,8,8,8,115,8,8,115,112,105,105,107,107,105,32,45,32,118,105,115,121,45,32,122,111,118,32,32,13,45,45,45,45,45,13,98,105,108,111,116,114,105,112,32,111,112,101,114,97,116,105,110,103,32,115,121,115,116,101,109,32,52,46,50,48,13,97,108,108,32,108,101,102,116,115,32,97,110,114,32,8,8,8,110,100,32,114,105,103,104,116,115,32,114,101,118,101,114,115,101,100,13,45,45,45,45,45,13,73,32,8,8,105,32,116,104,8,8,84,104,105,110,107,32,73,39,109,32,103,101,116,116,105,110,103,32,115,111,109,101,116,104,105,110,103,32,110,111,119,13,46,121,8,8,121,101,115,46,46,46,32,73,39,109,32,102,101,101,108,105,110,103,32,105,110,32,116,8,8,8,116,32,116,111,111,13,105,116,39,115,46,46,46,46,32,105,105,105,105,105,116,116,116,115,115,115,115,115,107,32,107,105,105,99,105,107,107,107,107,115,107,115,115,105,105,105,110,110,110,105,110,110,110,110,110};
-int keymillis[417] = {0,728,1101,1484,2335,3504,6060,6090,6198,6296,6401,6490,6618,6756,7001,7150,7289,7477,7643,7698,7845,7904,7985,8263,8413,8457,8520,8620,9518,13182,13696,14062,14325,14904,15418,18476,18647,18705,18796,18924,19054,19123,19199,19327,19366,19403,19544,19653,19845,19926,19986,20258,21479,21641,21778,21928,22431,22792,27167,27391,27586,27737,28060,28165,28807,29012,29160,29218,29283,29359,29543,29666,29757,29857,29912,30289,30364,30515,30687,30776,30855,30907,31037,31095,31178,31246,31538,31964,32090,32245,32391,32527,32797,32933,33716,33801,33886,33983,34338,34395,34487,34555,34700,34746,34826,35003,35102,35251,35342,35655,35782,35867,35974,36429,36748,36957,37103,37255,37636,37800,38010,38092,38199,38362,38417,39292,39840,40044,40103,40253,40350,40456,40494,40783,41096,41165,41252,41389,41457,41615,41980,42059,42272,42849,43560,43808,43884,43978,44376,44496,45037,45710,45863,47056,47158,47411,47998,48089,48202,48289,48406,48469,48811,48890,49043,49107,50047,50138,50678,51480,51566,51655,51708,51935,52023,52528,52624,52972,53138,53244,53544,53666,53795,53928,54072,54203,54339,54377,54603,54693,55097,55156,55290,55469,55596,55766,56056,56407,56816,57018,57060,57147,57220,57371,57432,57612,57687,57936,59449,61240,63899,64841,65008,65164,65325,65472,65739,65967,66053,66110,66274,66394,66555,66600,66661,66778,66959,67043,67160,67228,67345,67473,67571,67741,67794,67885,68025,68115,68216,68284,68370,68510,68659,68756,68911,69009,69180,70013,70299,70424,70554,70679,71017,71113,71152,71288,71372,71499,71577,71688,71808,72028,72335,72465,72589,72776,72842,72944,73131,73238,73343,73438,73521,73588,73717,74254,74317,74501,74553,74684,74774,74882,75102,75508,75892,76040,76178,76339,76513,76725,77064,77183,77813,77939,78033,78088,78223,78425,78833,78947,79009,79124,79195,79342,79400,79548,79915,80243,80445,80529,80811,80880,80986,81137,81215,81273,81358,81472,81615,81703,81747,81812,81942,82037,82090,82218,82278,82371,82504,82574,82619,83009,83767,83860,83989,84113,84177,84204,84267,84289,84438,84578,84829,84981,85231,85422,85509,85732,85810,85946,86005,86053,86177,86242,86334,86499,86622,86747,86816,87116,87252,87372,87420,87485,87568,87633,87764,88161,88627,88865,89077,89166,89571,89727,89847,89973,90122,90325,90457,90583,90711,90874,90906,91135,91260,91318,91450,91570,91697,91818,92025,92047,92160,92248,92384,92482,92878,92991,93122,93247,93388,93484,93554,93608,93704,93836,93997,94085,94387,94527,94629,94660,94748,94877,95002,95138,95256};
+#define KEYEVENTS_COUNT 419
+unsigned char keyrec[418] = {49,54,58,51,48,32,98,101,32,97,116,32,116,104,101,32,97,103,114,101,101,100,32,112,108,97,99,101,13,49,56,58,51,48,32,115,119,97,108,108,111,119,32,99,97,112,115,117,108,101,115,13,45,45,45,45,45,32,97,102,116,101,114,32,101,102,102,101,99,116,58,32,112,114,111,116,101,99,116,32,109,101,116,97,108,115,13,45,45,45,45,45,32,119,97,105,116,32,102,111,114,32,109,97,115,107,32,115,105,103,110,97,108,13,45,45,45,45,45,13,112,114,105,110,116,46,99,114,101,100,105,116,115,40,98,105,108,111,116,114,105,112,41,59,13,100,101,112,32,45,32,111,97,115,105,122,45,32,112,97,104,97,109,111,107,97,32,45,32,118,105,115,121,45,32,122,111,8,8,115,8,8,8,8,8,8,115,8,8,115,112,105,105,107,107,105,32,45,32,118,105,115,121,45,32,122,111,118,32,32,13,45,45,45,45,45,13,98,105,108,111,116,114,105,112,32,111,112,101,114,97,116,105,110,103,32,115,121,115,116,101,109,32,52,46,50,48,13,97,108,108,32,108,101,102,116,115,32,97,110,114,32,8,8,8,110,100,32,114,105,103,104,116,115,32,114,101,118,101,114,115,101,100,13,45,45,45,45,45,13,73,32,8,8,105,32,116,104,8,8,84,104,105,110,107,32,73,39,109,32,103,101,116,116,105,110,103,32,115,111,109,101,116,104,105,110,103,32,110,111,119,13,46,121,8,8,121,101,115,46,46,46,32,73,39,109,32,102,101,101,108,105,110,103,32,105,110,32,116,8,8,8,116,32,116,111,111,13,105,116,39,115,46,46,46,46,32,105,105,105,105,105,116,116,116,115,115,115,115,115,107,32,107,105,105,99,105,107,107,107,107,115,107,115,115,105,105,105,110,110,110,105,110,110,110,110,110,13};
+int keymillis[418] = {0,728,1101,1484,2335,3504,6060,6090,6198,6296,6401,6490,6618,6756,7001,7150,7289,7477,7643,7698,7845,7904,7985,8263,8413,8457,8520,8620,9518,13182,13696,14062,14325,14904,15418,18476,18647,18705,18796,18924,19054,19123,19199,19327,19366,19403,19544,19653,19845,19926,19986,20258,21479,21641,21778,21928,22431,22792,27167,27391,27586,27737,28060,28165,28807,29012,29160,29218,29283,29359,29543,29666,29757,29857,29912,30289,30364,30515,30687,30776,30855,30907,31037,31095,31178,31246,31538,31964,32090,32245,32391,32527,32797,32933,33716,33801,33886,33983,34338,34395,34487,34555,34700,34746,34826,35003,35102,35251,35342,35655,35782,35867,35974,36429,36748,36957,37103,37255,37636,37800,38010,38092,38199,38362,38417,39292,39840,40044,40103,40253,40350,40456,40494,40783,41096,41165,41252,41389,41457,41615,41980,42059,42272,42849,43560,43808,43884,43978,44376,44496,45037,45710,45863,47056,47158,47411,47998,48089,48202,48289,48406,48469,48811,48890,49043,49107,50047,50138,50678,51480,51566,51655,51708,51935,52023,52528,52624,52972,53138,53244,53544,53666,53795,53928,54072,54203,54339,54377,54603,54693,55097,55156,55290,55469,55596,55766,56056,56407,56816,57018,57060,57147,57220,57371,57432,57612,57687,57936,59449,61240,63899,64841,65008,65164,65325,65472,65739,65967,66053,66110,66274,66394,66555,66600,66661,66778,66959,67043,67160,67228,67345,67473,67571,67741,67794,67885,68025,68115,68216,68284,68370,68510,68659,68756,68911,69009,69180,70013,70299,70424,70554,70679,71017,71113,71152,71288,71372,71499,71577,71688,71808,72028,72335,72465,72589,72776,72842,72944,73131,73238,73343,73438,73521,73588,73717,74254,74317,74501,74553,74684,74774,74882,75102,75508,75892,76040,76178,76339,76513,76725,77064,77183,77813,77939,78033,78088,78223,78425,78833,78947,79009,79124,79195,79342,79400,79548,79915,80243,80445,80529,80811,80880,80986,81137,81215,81273,81358,81472,81615,81703,81747,81812,81942,82037,82090,82218,82278,82371,82504,82574,82619,83009,83767,83860,83989,84113,84177,84204,84267,84289,84438,84578,84829,84981,85231,85422,85509,85732,85810,85946,86005,86053,86177,86242,86334,86499,86622,86747,86816,87116,87252,87372,87420,87485,87568,87633,87764,88161,88627,88865,89077,89166,89571,89727,89847,89973,90122,90325,90457,90583,90711,90874,90906,91135,91260,91318,91450,91570,91697,91818,92025,92047,92160,92248,92384,92482,92878,92991,93122,93247,93388,93484,93554,93608,93704,93836,93997,94085,94387,94527,94629,94660,94748,94877,95002,95138,95256,95256};
+
+#define KEYEVENTS_COUNT2 209
+unsigned char keyrec2[209] = {85,115,32,104,105,103,104,32,112,114,101,99,105,115,105,111,110,32,116,111,111,115,108,44,32,101,8,8,8,8,8,108,115,32,44,8,8,44,32,101,110,103,105,110,101,101,114,101,100,32,116,111,32,101,120,101,99,117,116,101,13,116,104,101,32,115,104,111,114,116,45,115,105,103,8,103,104,116,101,100,32,105,100,101,111,108,111,103,105,99,97,108,32,102,108,97,118,111,117,114,32,111,102,32,116,111,100,97,121,13,65,115,32,108,111,110,103,32,97,115,32,116,104,101,114,101,32,105,115,32,97,32,99,111,109,109,111,110,32,101,118,8,110,121,8,101,109,121,32,116,111,32,117,110,105,116,101,32,117,115,13,119,101,39,108,108,32,107,101,101,108,8,112,32,109,97,114,99,104,105,110,103,44,32,108,105,107,101,32,97,32,119,101,108,108,45,111,105,108,101,100,32,109,97,99,104,105,110,101};
+int keymillis2[209] = {0,157,253,413,518,573,654,794,940,1045,1110,1315,1406,1502,1599,1666,2283,2362,2972,3058,3189,3358,3459,3677,3747,3859,4049,4184,4320,4475,4589,4628,4677,4762,4907,5201,5327,5375,5456,5556,5802,5911,6008,6244,6380,6536,6855,6920,7061,7142,7254,7338,7535,8560,8680,8812,9067,9201,9284,9357,10544,11841,11961,12027,12091,12216,12402,12514,12634,12791,12933,13357,13472,13589,13857,14062,14490,14688,14751,15278,15395,15707,15812,15893,15953,16162,16316,16359,16463,16577,16632,16762,16899,17085,17180,17643,17815,17911,17972,18791,18888,19011,19219,19303,19516,19628,19771,19876,19895,20575,21102,21344,21518,21926,22072,22158,22208,22559,22659,22756,22866,23123,23290,23374,23457,23539,23605,23691,23767,23859,23955,24060,24357,24433,24502,24651,24700,24839,24981,25542,25672,25903,26080,26194,26632,26738,26835,26920,27000,27101,27164,27233,27448,27785,27899,27969,28050,28118,28234,28355,28892,29245,29372,29555,29730,29871,29973,30140,30219,30360,30476,30773,30817,30886,31118,31193,31264,31454,31494,31542,31893,31955,32193,32267,32405,32485,32638,32661,32745,32834,32927,33070,33166,33273,33401,33648,33995,34047,34253,34327,34421,34500,34629,34725,34861,34936,34999,35231,35315};
+
 
 
 const int __SIGNAL_ACTIVATE__     = 0;
@@ -152,9 +157,9 @@ console_new( void )
     normal.spacing = 0.0;
     normal.gamma   = 1.0;
     normal.foreground_color    = white;
-    normal.foreground_color.r = 0.15;
-    normal.foreground_color.g = 0.35;
-    normal.foreground_color.b = 0.15;
+    normal.foreground_color.r = 0.35;
+    normal.foreground_color.g = 0.55;
+    normal.foreground_color.b = 0.35;
 
     normal.font = texture_font_new( atlas, "nauhoitin_fonts/term.ttf", 40 );
 
@@ -172,9 +177,9 @@ console_new( void )
     italic.font = texture_font_new( atlas, "nauhoitin_fonts/VeraMoBI.ttf", 13 );
 
     markup_t faint = normal;
-    faint.foreground_color.r = 0.10;
-    faint.foreground_color.g = 0.25;
-    faint.foreground_color.b = 0.10;
+    faint.foreground_color.r = 0.25;
+    faint.foreground_color.g = 0.45;
+    faint.foreground_color.b = 0.25;
 
     markup_t error = normal;
     error.foreground_color.r = 1.00;
@@ -339,8 +344,10 @@ console_render( console_t *self )
                             { x1,y1,0,  s1,t1,  r,g,b,a },
                             { x1,y0,0,  s1,t0,  r,g,b,a } };
     //vertex_buffer_push_back( self->buffer, vertices, 4, indices, 6 );
-	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fb2); // default
     glEnable( GL_TEXTURE_2D );
+    glEnable(GL_BLEND);
+	glActiveTexture(GL_TEXTURE0);
+    glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
     glBindTexture(GL_TEXTURE_2D, atlas->id);
 
     glUseProgram( shader );
@@ -642,8 +649,10 @@ int beatmode = -1;
 
 static GLfloat g_nearPlane = 0.001;
 static GLfloat g_farPlane = 1000;
-static int g_Width = 800;
-static int g_Height = 600;
+static int c_Width = 640;
+static int c_Height = 360;
+static int g_Width = 1280;
+static int g_Height = 720;
 
 class YUVFrame {
 public:
@@ -766,6 +775,7 @@ int current_scene;
 
 void dummy(float dt) {}
 
+void Loader();
 void LeadMaskScene();
 void CopScene();
 void MarssiScene();
@@ -776,10 +786,11 @@ void KolmeDeeScene();
 
 void KolmeDeeLogic(float dt);
 void ConsoleLogic(float dt);
+void ConsoleLogic2(float dt);
 
 typedef void (*SceneRenderCallback)();
 SceneRenderCallback scene_render[] = {
-										&LeadMaskScene,
+                                        &LeadMaskScene,
 										&CopScene,
 										&MarssiScene,
 										&EyeScene, 
@@ -789,9 +800,9 @@ SceneRenderCallback scene_render[] = {
 
 typedef void (*SceneLogicCallback)(float);
 SceneLogicCallback scene_logic[] = {
-										&ConsoleLogic,
+                                        &ConsoleLogic,
 										&dummy,
-										&dummy,
+										&ConsoleLogic2,
 										&dummy,
 										&dummy,
 										&dummy
@@ -865,6 +876,7 @@ int demo_playlist()
 	if (sc != current_scene)
 	{
 		scene_start_millis = millis;
+		vector_clear(console->lines);
 	}
 }
 
@@ -1699,13 +1711,176 @@ void ConsoleLogic(float dt)
 	//printf("kmillis:%d\n",kmillis);
 	if (kmillis >= 0 && kmillis >= keymillis[keyindex])
 	{
-		if(keyindex >= 0)
+		if(keyindex >= 0 && keyindex < KEYEVENTS_COUNT)
 		{
 			on_key_press(keyrec[keyindex]);
 		}
 
 		keyindex++;
 	}
+}
+
+int keyindex2 = 0;
+
+void ConsoleLogic2(float dt)
+{
+	int kmillis = (int)(millis-scene_start_millis);
+
+	//printf("kmillis:%d\n",kmillis);
+	if (kmillis >= 0 && kmillis >= keymillis2[keyindex2])
+	{
+		if(keyindex2 >= 0 && keyindex2 < KEYEVENTS_COUNT2)
+		{
+			on_key_press(keyrec2[keyindex2]);
+		}
+
+		keyindex2++;
+	}
+}
+
+GLuint LoadShader(const char* pFilename)
+{
+    fprintf(stdout,"--- MIDISYS ENGINE: LoadShader(\"%s\")", pFilename);
+
+    #ifdef SUPERVERBOSE
+    printf("\n");
+    #endif
+
+    char vsName[256] = "";
+    strcpy(vsName, pFilename);
+    strcat(vsName, ".vs");
+
+    char fsName[256] = "";
+    strcpy(fsName, pFilename);
+    strcat(fsName, ".fs");
+
+    #ifdef SUPERVERBOSE 
+    fprintf(stdout,"\tLoadShader(\"%s\") vertex shader source file: \"%s\"\n", pFilename, vsName);
+    #endif
+
+    GLchar *vsSource = File2String(vsName);
+
+    #ifdef SUPERVERBOSE 
+    fprintf(stdout,"\tLoadShader(\"%s\") vertex shader source:\n----------------------------------------------------\n%s\n----------------------------------------------------\n", pFilename, vsSource);
+    #endif
+
+    #ifdef SUPERVERBOSE 
+    fprintf(stdout,"\tLoadShader(\"%s\") fragment shader source file: \"%s\"\n", pFilename, fsName);
+    #endif
+
+    GLchar *fsSource = File2String(fsName);
+
+    #ifdef SUPERVERBOSE 
+    fprintf(stdout,"\tLoadShader(\"%s\") fragment shader source:\n----------------------------------------------------\n%s\n----------------------------------------------------\n", pFilename, fsSource);
+    #endif
+
+    GLuint vs, fs, sp;
+
+    #ifdef SUPERVERBOSE 
+    printf("\tLoadShader(): vs glCreateShader\n");
+    #endif
+    vs = glCreateShader(GL_VERTEX_SHADER);
+    PrintShaderLog(vs);
+    #ifdef SUPERVERBOSE 
+    printf("\tLoadShader(): vs glShaderSource\n");
+    #endif
+    glShaderSource(vs, 1, (const GLchar**)&vsSource, NULL);
+    PrintShaderLog(vs);
+    #ifdef SUPERVERBOSE 
+    printf("\tLoadShader(): vs glCompileShader\n");
+    #endif
+    glCompileShader(vs);
+    PrintShaderLog(vs);
+    #ifdef SUPERVERBOSE 
+    printf("\tLoadShader(): vs compiled\n");
+    #endif
+
+    #ifdef SUPERVERBOSE 
+    printf("\tLoadShader(): fs glCreateShader\n");
+    #endif
+    fs = glCreateShader(GL_FRAGMENT_SHADER);
+    PrintShaderLog(fs);
+    #ifdef SUPERVERBOSE 
+    printf("\tLoadShader(): fs glShaderSource\n");
+    #endif
+    glShaderSource(fs, 1, (const GLchar**)&fsSource, NULL);
+    PrintShaderLog(fs);
+    #ifdef SUPERVERBOSE 
+    printf("\tLoadShader(): fs glCompileShader\n");
+    #endif
+    glCompileShader(fs);
+    PrintShaderLog(fs);
+    #ifdef SUPERVERBOSE 
+    printf("\tLoadShader(): fs compiled\n");
+    #endif
+
+    free(vsSource);
+    free(fsSource);
+
+    #ifdef SUPERVERBOSE 
+    printf("\tLoadShader(): glCreateProgram\n");
+    #endif
+    sp = glCreateProgram();
+    PrintShaderLog(sp);
+    #ifdef SUPERVERBOSE 
+    printf("\tLoadShader(): glAttachShader vs\n");
+    #endif
+    glAttachShader(sp, vs);
+    PrintShaderLog(sp);
+    #ifdef SUPERVERBOSE 
+    printf("\tLoadShader(): glAttachShader fs\n");
+    #endif
+    glAttachShader(sp, fs);
+    PrintShaderLog(sp);
+    #ifdef SUPERVERBOSE 
+    printf("\tLoadShader(): glLinkProgram\n");
+    #endif
+    glLinkProgram(sp);
+    PrintShaderLog(sp);
+
+    #ifdef SUPERVERBOSE
+    fprintf(stdout,"--- MIDISYS ENGINE: LoadShader(\"%s\") success\n", pFilename);
+    #else
+    printf(" success\n");
+    #endif
+
+    return sp;
+}
+
+const aiScene* Import3DFromFile(const std::string& pFile)
+{
+    fprintf(stdout,"--- MIDISYS ENGINE: Import3DFromFile(\"%s\")", pFile.c_str());
+
+    //check if file exists
+    std::ifstream fin(pFile.c_str());
+    if(!fin.fail())
+    {
+        fin.close();
+    }
+    else
+    {
+        printf(" could not open file %s\n", pFile.c_str());
+        exit(1);
+    }
+
+    const aiScene* scener = importer.ReadFile( pFile, aiProcessPreset_TargetRealtime_Quality);
+
+    // If the import failed, report it
+    if( !scener)
+    {
+        printf(" import failed %s\n", pFile.c_str());
+        exit(1);
+    }
+
+
+    fprintf(stdout," success\n");
+
+    // We're done. Everything will be cleaned up by the importer destructor
+    return scener;
+}
+
+void Loader()
+{
 }
 
 void LeadMaskScene()
@@ -1965,6 +2140,8 @@ static int video_started = 0;
 void MarssiScene()
 {
 	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fake_framebuffer); // default
+	glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+	glDisable(GL_BLEND);
 
 	if (video_started == 0)
 	{
@@ -2250,29 +2427,25 @@ void VHSPost(float effuon)
 {
 	float mymillis = (millis-scene_start_millis);
 
-    if (current_scene == 0)
+    if (current_scene == 0 || current_scene == 2) 
     {
 // console crap
-	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fb_tex2); // default
+		glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fake_framebuffer); // default
 
-	glLoadIdentity();
+		glLoadIdentity();
 
+	    mat4_set_identity( &projection );
+	    mat4_set_identity( &model );
+	    mat4_set_identity( &view );
 
-    mat4_set_identity( &projection );
-    mat4_set_identity( &model );
-    mat4_set_identity( &view );
+		mat4_set_orthographic( &projection, 0, g_Width, 0, g_Height, -1, 1);
 
-	mat4_set_orthographic( &projection, 0, g_Width, 0, g_Height, -1, 1);
+		console_render( console );
+	}	
 
-    glDisable( GL_DEPTH_TEST ); 
-
-    glBlendFunc( GL_SRC_ALPHA, GL_DST_ALPHA );
-
- console_render( console );
-}
 
 	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0); // default
-	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 	glClearDepth(1.0f);	// Depth Buffer Setup
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -2309,44 +2482,6 @@ void VHSPost(float effuon)
 	glVertex2f(i, j + 100);
 	glEnd();
 
-if (current_scene == 0) 
-{
-
-	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0); // default
-
-	glUseProgram(vhs_shaderProg);
-
-	glEnable(GL_BLEND);
-    glBlendFunc( GL_SRC_COLOR, GL_ONE_MINUS_SRC_COLOR );
-	widthLoc5 = glGetUniformLocation(vhs_shaderProg, "width");
-	 heightLoc5 = glGetUniformLocation(vhs_shaderProg, "height");
-	 timeLoc5 = glGetUniformLocation(vhs_shaderProg, "time");
-	 effuLoc5 = glGetUniformLocation(vhs_shaderProg, "effu");
-
-	glUniform1f(widthLoc5, g_Width);
-	glUniform1f(heightLoc5, g_Height);
-	glUniform1f(timeLoc5, mymillis/100);
-	glUniform1f(effuLoc5, 0);
-
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, fb_tex2);
-
-	location5 = glGetUniformLocation(vhs_shaderProg, "texture0");
-	glUniform1i(location5, 0);
-
-	glLoadIdentity();
-
-	glTranslatef(-1.2, -1.0, -1.0);
-
-	i = 0;
-	j = 0;
-	glBegin(GL_QUADS);
-	glVertex2f(i, j);
-	glVertex2f(i + 100, j);
-	glVertex2f(i + 100, j + 100);
-	glVertex2f(i, j + 100);
-	glEnd();
-}
 
 }
 
@@ -2465,7 +2600,7 @@ void FPS(void) {
 
 void logic()
 { 	
-	if (music_started == -1) { BASS_ChannelPlay(music_channel,FALSE); music_started = 1; } //BASS_ChannelSetPosition(music_channel, 57000000, BASS_POS_BYTE); }
+	if (music_started == -1) { BASS_ChannelPlay(music_channel,FALSE); music_started = 1; } //BASS_ChannelSetPosition(music_channel, 27000000, BASS_POS_BYTE); }
 
 	QWORD bytepos = BASS_ChannelGetPosition(music_channel, BASS_POS_BYTE);
 	double pos = BASS_ChannelBytes2Seconds(music_channel, bytepos);
@@ -2495,7 +2630,7 @@ void timer(int value)
 void display(void)
 {
 	scene_render[current_scene]();
-	VHSPost(current_scene < 2 ? 1.0 : 0.0);
+	VHSPost(current_scene > 0 && current_scene < 3 ? 1.0 : 0.0);
 
 	glutSwapBuffers();
 	frame++;
@@ -2715,147 +2850,6 @@ void InitGraphics(int argc, char* argv[])
 	fprintf(stdout, "--- MIDISYS ENGINE: InitGraphics() success\n");
 }
 
-GLuint LoadShader(const char* pFilename)
-{
-	fprintf(stdout,"--- MIDISYS ENGINE: LoadShader(\"%s\")", pFilename);
-
-	#ifdef SUPERVERBOSE
-	printf("\n");
-	#endif
-
-	char vsName[256] = "";
-	strcpy(vsName, pFilename);
-	strcat(vsName, ".vs");
-
-	char fsName[256] = "";
-	strcpy(fsName, pFilename);
-	strcat(fsName, ".fs");
-
-	#ifdef SUPERVERBOSE 
-	fprintf(stdout,"\tLoadShader(\"%s\") vertex shader source file: \"%s\"\n", pFilename, vsName);
-	#endif
-
-	GLchar *vsSource = File2String(vsName);
-
-	#ifdef SUPERVERBOSE 
-	fprintf(stdout,"\tLoadShader(\"%s\") vertex shader source:\n----------------------------------------------------\n%s\n----------------------------------------------------\n", pFilename, vsSource);
-	#endif
-
-	#ifdef SUPERVERBOSE 
-	fprintf(stdout,"\tLoadShader(\"%s\") fragment shader source file: \"%s\"\n", pFilename, fsName);
-	#endif
-
-	GLchar *fsSource = File2String(fsName);
-
-	#ifdef SUPERVERBOSE 
-	fprintf(stdout,"\tLoadShader(\"%s\") fragment shader source:\n----------------------------------------------------\n%s\n----------------------------------------------------\n", pFilename, fsSource);
-	#endif
-
-	GLuint vs, fs, sp;
-
-	#ifdef SUPERVERBOSE 
-	printf("\tLoadShader(): vs glCreateShader\n");
-	#endif
-	vs = glCreateShader(GL_VERTEX_SHADER);
-	PrintShaderLog(vs);
-	#ifdef SUPERVERBOSE 
-	printf("\tLoadShader(): vs glShaderSource\n");
-	#endif
-	glShaderSource(vs, 1, (const GLchar**)&vsSource, NULL);
-	PrintShaderLog(vs);
-	#ifdef SUPERVERBOSE 
-	printf("\tLoadShader(): vs glCompileShader\n");
-	#endif
-	glCompileShader(vs);
-	PrintShaderLog(vs);
-	#ifdef SUPERVERBOSE 
-	printf("\tLoadShader(): vs compiled\n");
-	#endif
-
-	#ifdef SUPERVERBOSE 
-	printf("\tLoadShader(): fs glCreateShader\n");
-	#endif
-	fs = glCreateShader(GL_FRAGMENT_SHADER);
-	PrintShaderLog(fs);
-	#ifdef SUPERVERBOSE 
-	printf("\tLoadShader(): fs glShaderSource\n");
-	#endif
-	glShaderSource(fs, 1, (const GLchar**)&fsSource, NULL);
-	PrintShaderLog(fs);
-	#ifdef SUPERVERBOSE 
-	printf("\tLoadShader(): fs glCompileShader\n");
-	#endif
-	glCompileShader(fs);
-	PrintShaderLog(fs);
-	#ifdef SUPERVERBOSE 
-	printf("\tLoadShader(): fs compiled\n");
-	#endif
-
-	free(vsSource);
-	free(fsSource);
-
-	#ifdef SUPERVERBOSE 
-	printf("\tLoadShader(): glCreateProgram\n");
-	#endif
-	sp = glCreateProgram();
-	PrintShaderLog(sp);
-	#ifdef SUPERVERBOSE 
-	printf("\tLoadShader(): glAttachShader vs\n");
-	#endif
-	glAttachShader(sp, vs);
-	PrintShaderLog(sp);
-	#ifdef SUPERVERBOSE 
-	printf("\tLoadShader(): glAttachShader fs\n");
-	#endif
-	glAttachShader(sp, fs);
-	PrintShaderLog(sp);
-	#ifdef SUPERVERBOSE 
-	printf("\tLoadShader(): glLinkProgram\n");
-	#endif
-	glLinkProgram(sp);
-	PrintShaderLog(sp);
-
-	#ifdef SUPERVERBOSE
-	fprintf(stdout,"--- MIDISYS ENGINE: LoadShader(\"%s\") success\n", pFilename);
-	#else
-	printf(" success\n");
-	#endif
-
-	return sp;
-}
-
-const aiScene* Import3DFromFile(const std::string& pFile)
-{
-	fprintf(stdout,"--- MIDISYS ENGINE: Import3DFromFile(\"%s\")", pFile.c_str());
-
-	//check if file exists
-	std::ifstream fin(pFile.c_str());
-	if(!fin.fail())
-	{
-		fin.close();
-	}
-	else
-	{
-		printf(" could not open file %s\n", pFile.c_str());
-		exit(1);
-	}
-
-	const aiScene* scener = importer.ReadFile( pFile, aiProcessPreset_TargetRealtime_Quality);
-
-	// If the import failed, report it
-	if( !scener)
-	{
-		printf(" import failed %s\n", pFile.c_str());
-		exit(1);
-	}
-
-
-	fprintf(stdout," success\n");
-
-	// We're done. Everything will be cleaned up by the importer destructor
-	return scener;
-}
-
 void StartMainLoop()
 {
 	printf("--- MIDISYS ENGINE: StartMainLoop()\n");
@@ -2954,6 +2948,7 @@ if (notex != 1)
 
 	myVideoFrame = &yuv_frame;
 
+
 	// init MIDI sync and audio
 
 	LoadMIDIEventList("data/music/music.mid");
@@ -2962,6 +2957,7 @@ if (notex != 1)
 
 	// start mainloop
 
+	glutFullScreen();
 	StartMainLoop();
 
 	return 0;
