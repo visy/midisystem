@@ -458,7 +458,7 @@ console_process( console_t *self,
 {
     size_t len = wcslen(self->input);
 
-    printf("console_process:%d\n", key);
+    //printf("console_process:%d\n", key);
 
     if( strcmp(action, "type") == 0 )
     {
@@ -615,6 +615,7 @@ const char* texturess[] = {"data/gfx/scene.jpg",
                     "data/gfx/dude2.jpg",
                     "data/gfx/mask.jpg",
                     "data/gfx/note.jpg",
+                    "data/gfx/exit.jpg",
 
                     "data/gfx/copkiller1.jpg",
                     "data/gfx/prip1.jpg",
@@ -645,7 +646,7 @@ const char* texturess[] = {"data/gfx/scene.jpg",
 
                     "data/gfx/bilogon.png",
                     "data/gfx/noise.jpg"};
-enum texturi { tex_scene, tex_dude, tex_dude2, tex_mask, tex_note,
+enum texturi { tex_scene, tex_dude, tex_dude2, tex_mask, tex_note, tex_exit,
                 tex_copkiller, tex_prip,
                 tex_copkiller2, tex_prip2,
                 tex_copkiller3, tex_prip3,
@@ -666,10 +667,8 @@ int room_texnum = 0;
 
 // assimp scenes
 
-const aiScene* scene = NULL;
-const aiScene* bilothree = NULL;
-
-Assimp::Importer importer;
+aiScene* kapsule = NULL;
+aiScene* bilothree = NULL;
 
 std::map<std::string, GLuint*> textureIdMap; // map image filenames to textureIds
 GLuint*	textureIds;	// pointer to texture array
@@ -1765,12 +1764,13 @@ void KolmeDeeLogic(float dt)
 	kujalla_angle += dt*0.01;
 }
 
-void KolmeDeeScene()
+void kapsule_render()
 {
+
+    glEnable(GL_BLEND);
+    glUseProgram(0);
 	glEnable(GL_TEXTURE_2D);
 	glShadeModel(GL_SMOOTH);	// Enables Smooth Shading
-	glClearColor(1.0f, 1.0f, 1.0f, 0.0f);
-	glClearDepth(1.0f);	// Depth Buffer Setup
 	glEnable(GL_DEPTH_TEST);	// Enables Depth Testing
 	glDepthFunc(GL_LEQUAL);	// The Type Of Depth Test To Do
 	glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);	// Really Nice Perspective Calculation
@@ -1791,17 +1791,15 @@ void KolmeDeeScene()
 
 	float tmp;
 
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
 	glLoadIdentity();
 
-	glTranslatef(0.0f, -10.0f, -50.0f);	// Move 40 Units And Into The Screen
+	glTranslatef(0.0f, 0.0f, -50.0f+cos(millis*0.05)*25);	// Move 40 Units And Into The Screen
+    glRotatef(millis*0.01,1.0,0,0);
 
-	glRotatef(kujalla_angle, 1.0f, 0.0f, 0.0f);
-	glRotatef(kujalla_angle, 0.0f, 1.0f, 0.0f);
-	glRotatef(kujalla_angle, 0.0f, 0.0f, 1.0f);
-
-	recursive_render(scene, scene->mRootNode, 0.5);
+	recursive_render(kapsule, kapsule->mRootNode, 2.5);
+    glDisable(GL_DEPTH_TEST);
+    glDisable(GL_LIGHTING);
+    glDisable(GL_NORMALIZE);
 }
 
 void
@@ -1862,7 +1860,7 @@ int nextmillis = 0;
 
 void ConsoleLogicLoader(float dt)
 {
-    printf("ConsoleLogicLoader: %f", dt);
+ //   printf("ConsoleLogicLoader: %f", dt);
     int kmillis = (int)(millis);
 
     //printf("kmillis:%d\n",kmillis);
@@ -1911,7 +1909,11 @@ void ConsoleLogic2(float dt)
 	}
 }
 
-const aiScene* Import3DFromFile(const std::string& pFile)
+int kolmedeeindex = 0;
+
+Assimp::Importer importer[3];
+
+aiScene* Import3DFromFile(const std::string& pFile)
 {
     fprintf(stdout,"--- MIDISYS ENGINE: Import3DFromFile(\"%s\")", pFile.c_str());
 
@@ -1927,7 +1929,7 @@ const aiScene* Import3DFromFile(const std::string& pFile)
         exit(1);
     }
 
-    const aiScene* scener = importer.ReadFile( pFile, aiProcessPreset_TargetRealtime_Quality);
+    aiScene* scener = importer[kolmedeeindex].ReadFile( pFile, aiProcessPreset_TargetRealtime_Quality);
 
     // If the import failed, report it
     if( !scener)
@@ -1936,6 +1938,7 @@ const aiScene* Import3DFromFile(const std::string& pFile)
         exit(1);
     }
 
+    kolmedeeindex++;
 
     fprintf(stdout," success\n");
 
@@ -1963,8 +1966,8 @@ bool LoadTextures()
 }
 bool Load3DAssets()
 {
-    scene = Import3DFromFile("data/models/templeton_peck.obj");
-    LoadGLTextures(scene);
+    kapsule = Import3DFromFile("data/models/kapsule.obj");
+    LoadGLTextures(kapsule);
     bilothree = Import3DFromFile("data/models/bilotrip.3ds");
     LoadGLTextures(bilothree);
 
@@ -2024,8 +2027,11 @@ kuvaflag = 2;
 else if (millis >= 48500 && millis < 64000) {
 kuvaflag = 3;
 }
-else if (millis >= 64000) {
+else if (millis >= 64000 && millis < 76100) {
 kuvaflag = 4;
+}
+else if (millis >= 76100) {
+kuvaflag = 5;
 }
 
 glEnable(GL_BLEND);
@@ -2053,6 +2059,8 @@ else if (kuvaflag == 3)
 glBindTexture(GL_TEXTURE_2D, textures[tex_mask]);
 else if (kuvaflag == 4)
 glBindTexture(GL_TEXTURE_2D, textures[tex_note]);
+else if (kuvaflag == 5)
+glBindTexture(GL_TEXTURE_2D, textures[tex_exit]);
 
 GLint location5 = glGetUniformLocation(shaders[projector], "texture0");
 glUniform1i(location5, 0);
@@ -2194,6 +2202,9 @@ glVertex2f(i + 1, j + 1);
 glVertex2f(i, j + 1);
 }
 glEnd();
+
+
+if (millis > 37400 && millis < 37600) kapsule_render();
 
 }
 
@@ -2651,11 +2662,15 @@ void UpdateShaderParams()
 		int trigVal = -1;
 		int paramVal = -1;
 
+        printf("UpdateShaderParams: millis:%d - ", millis);
+        DebugPrintEvent(ev,currentMsg); 
+
 		switch(mapping_type[i])
 		{
 			// trig
 			case 0:
 			{
+
 				if (ev == msgNoteOn)
 				{
 					trigVal = currentMsg.MsgData.NoteOn.iNote;
