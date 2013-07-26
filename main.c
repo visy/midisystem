@@ -1978,13 +1978,6 @@ clock_t t_loader_begin = NULL, t_loader_d;
 void Loader()
 {
     if(t_loader_begin == NULL) { t_loader_begin = clock(); }
-    // format bilotrip terminal 1.6.2.0
-
-    glClearColor (1.0,1.0,0.96,1.0);
-    glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glFlush();
-    glutSwapBuffers();
-    glutPostRedisplay();
 
     skip_frames_count++;
     if(skip_frames_count == skip_frames) {
@@ -1999,6 +1992,14 @@ void Loader()
                 assets_loaded = true;
             }   
         }
+    } else {
+        // format bilotrip terminal 1.6.2.0
+
+        glClearColor (1.0,1.0,0.96,1.0);
+        glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glFlush();
+        glutSwapBuffers();
+        glutPostRedisplay();
     }
 }
 
@@ -2231,7 +2232,8 @@ void CopScene()
 	glBindTexture(GL_TEXTURE_2D, textures[tex_copkiller + texind]);
 
 	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, textures[texind == 0 ? 17 : texind-1]);
+	glBindTexture(GL_TEXTURE_2D, textures[texind == tex_copkiller ? tex_copkiller+17 :
+              tex_copkiller + (texind-1)]);
 
 	GLint location5 = glGetUniformLocation(shaders[copquad], "texture0");
 	glUniform1i(location5, 0);
