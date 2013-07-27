@@ -7,7 +7,7 @@ uniform float height;
 
 void main (void)
 {
-	vec2 p = vec2((gl_FragCoord.x/width), 1.0-(gl_FragCoord.y/height));
+	vec2 p = vec2(((gl_FragCoord.x+(width*0.11))/(width*1.21)), 1.0-(gl_FragCoord.y/height));
 	float y = texture2D(y_tex, p).r;
 	float u = texture2D(u_tex, p).r-0.5;
 	float v = texture2D(v_tex, p).r-0.5;
