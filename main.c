@@ -2302,8 +2302,9 @@ void MarssiScene()
 void LongScene()
 {
     glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fake_framebuffer); // default
-    glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
     glDisable(GL_BLEND);
+    glClearColor(0,0,0,0);
+    glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 
     glUseProgram(shaders[fsquad]);
     float mymillis = (((millis)-scene_start_millis));
@@ -2312,11 +2313,15 @@ void LongScene()
     GLint heightLoc5 = glGetUniformLocation(shaders[fsquad], "height");
     GLint timeLoc5 = glGetUniformLocation(shaders[fsquad], "time");
     GLint alphaLoc5 = glGetUniformLocation(shaders[fsquad], "alpha");
+    GLint gammaLoc = glGetUniformLocation(shaders[fsquad], "gamma");
+    GLint gridLoc6 = glGetUniformLocation(shaders[fsquad], "grid");
+    glUniform1f(gridLoc6, 0.0f);
+    glUniform1f(gammaLoc, 0.0f);
 
     glUniform1f(widthLoc5, g_Width);
     glUniform1f(heightLoc5, g_Height);
     glUniform1f(timeLoc5, mymillis/100);
-    glUniform1f(alphaLoc5, 1.0);
+    glUniform1f(alphaLoc5, 0.0);
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, textures[tex_aegis]);
@@ -2833,7 +2838,7 @@ void FPS(void) {
 void logic()
 { 	
     if (assets_loaded) {
-        if (music_started == -1) { BASS_ChannelPlay(music_channel,FALSE); music_started = 1; }// BASS_ChannelSetPosition(music_channel, 34500000, BASS_POS_BYTE); }
+        if (music_started == -1) { BASS_ChannelPlay(music_channel,FALSE); music_started = 1; } // BASS_ChannelSetPosition(music_channel, 34500000, BASS_POS_BYTE); }
 
 	    QWORD bytepos = BASS_ChannelGetPosition(music_channel, BASS_POS_BYTE);
 	    double pos = BASS_ChannelBytes2Seconds(music_channel, bytepos);
