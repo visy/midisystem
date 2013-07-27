@@ -27,6 +27,33 @@
 #include "midifile.h"
 #include "midiutil.h"
 
+
+// midi sync
+
+MIDI_MSG timeline[64][100000] = {NULL};
+char timeline_trackname[64][512] = {-1};
+int timeline_trackindex[64] = { 0 };
+int timeline_tracklength[64] = { -1 };
+int timeline_trackcount = 0;
+
+// midi track number of mapping data
+int mapping_tracknum[1000] = {-1};
+// midi to shader param map from mapping.txt
+int mapping_paramnum[1000] = {-1};
+// track to map from
+char mapping_trackname[1000][512] = {-1};
+// map type: 0 == trig (noteon / off), 1 == param (modwheel / cc value)
+int mapping_type[1000] = {-1};
+// number of active mappings from midi to shader param
+int mapping_count = 0;
+
+// current shader param values 
+int scene_shader_params[16] = {-1};
+int scene_shader_param_type[16] = {-1};
+
+
+
+
 #ifdef __APPLE__
 	#include "glew.h"
 	#include <OpenGL/OpenGL.h>
@@ -858,29 +885,6 @@ SceneLogicCallback scene_logic[] = {
 										&dummy
 									 };
 
-// midi sync
-
-MIDI_MSG timeline[64][100000];
-char timeline_trackname[64][512];
-int timeline_trackindex[64] = { 0 };
-int timeline_tracklength[64] = { -1 };
-int timeline_trackcount = 0;
-
-// midi track number of mapping data
-int mapping_tracknum[1000];
-// midi to shader param map from mapping.txt
-int mapping_paramnum[1000];
-// track to map from
-char mapping_trackname[1000][512];
-// map type: 0 == trig (noteon / off), 1 == param (modwheel / cc value)
-int mapping_type[1000];
-// number of active mappings from midi to shader param
-int mapping_count = 0;
-
-// current shader param values 
-int scene_shader_params[16] = {-1};
-int scene_shader_param_type[16] = {-1};
-
 // audio
 
 float millis = 0;
@@ -1308,8 +1312,6 @@ void ParseMIDITimeline(const char* mappingFile)
 GLuint LoadTexture(const char* pFilename, int invert)
 {
 	if (strcmp(pFilename,"") == 0) return 99999;
-
-    return;
 
 	printf("--- MIDISYS ENGINE: LoadTexture(\"%s\")", pFilename);
 	GLuint tex_2d;
@@ -2113,6 +2115,9 @@ GLint timeLoc6 = glGetUniformLocation(shaders[fsquad], "time");
 GLint alphaLoc6 = glGetUniformLocation(shaders[fsquad], "alpha");
 GLint gammaLoc = glGetUniformLocation(shaders[fsquad], "gamma");
 GLint gridLoc6 = glGetUniformLocation(shaders[fsquad], "grid");
+GLint alphamodeLoc5 = glGetUniformLocation(shaders[fsquad], "alphamode");
+glUniform1f(alphamodeLoc5, 0.0f);
+
 glUniform1f(gridLoc6, 0.001+cos(mymillis)*0.0005);
 
 
@@ -2155,6 +2160,8 @@ GLint timeLoc7 = glGetUniformLocation(shaders[fsquad], "time");
 GLint alphaLoc7 = glGetUniformLocation(shaders[fsquad], "alpha");
 GLint gammaLoc2 = glGetUniformLocation(shaders[fsquad], "gamma");
 GLint gridLoc = glGetUniformLocation(shaders[fsquad], "grid");
+GLint alphamodeLoc7 = glGetUniformLocation(shaders[fsquad], "alphamode");
+glUniform1f(alphamodeLoc7, 0.0f);
 
 glUniform1f(widthLoc7, g_Width);
 glUniform1f(heightLoc7, g_Height);
@@ -2319,6 +2326,8 @@ void LongScene()
     GLint gridLoc6 = glGetUniformLocation(shaders[fsquad], "grid");
     glUniform1f(gridLoc6, 0.0f);
     glUniform1f(gammaLoc, 0.0f);
+    GLint alphamodeLoc5 = glGetUniformLocation(shaders[fsquad], "alphamode");
+    glUniform1f(alphamodeLoc5, 0.0f);
 
     glUniform1f(widthLoc5, g_Width);
     glUniform1f(heightLoc5, g_Height);
@@ -2581,6 +2590,8 @@ void EyeScene()
 		GLint heightLoc5 = glGetUniformLocation(shaders[fsquad], "height");
 		GLint timeLoc5 = glGetUniformLocation(shaders[fsquad], "time");
 		GLint alphaLoc5 = glGetUniformLocation(shaders[fsquad], "alpha");
+        GLint alphamodeLoc5 = glGetUniformLocation(shaders[fsquad], "alphamode");
+        glUniform1f(alphamodeLoc5, 0.0f);
 
 		glUniform1f(widthLoc5, g_Width);
 		glUniform1f(heightLoc5, g_Height);
@@ -2765,9 +2776,6 @@ void UpdateShaderParams()
 		int trigVal = -1;
 		int paramVal = -1;
 
-        printf("UpdateShaderParams: millis:%d - ", millis);
-        DebugPrintEvent(ev,currentMsg); 
-
 		switch(mapping_type[i])
 		{
 			// trig
@@ -2840,7 +2848,7 @@ void FPS(void) {
 void logic()
 { 	
     if (assets_loaded) {
-        if (music_started == -1) { BASS_ChannelPlay(music_channel,FALSE); music_started = 1; BASS_ChannelSetPosition(music_channel, 31000000, BASS_POS_BYTE); }
+        if (music_started == -1) { BASS_ChannelPlay(music_channel,FALSE); music_started = 1; } // BASS_ChannelSetPosition(music_channel, 31000000, BASS_POS_BYTE); }
 
 	    QWORD bytepos = BASS_ChannelGetPosition(music_channel, BASS_POS_BYTE);
 	    double pos = BASS_ChannelBytes2Seconds(music_channel, bytepos);
@@ -3143,7 +3151,7 @@ int main(int argc, char* argv[])
 
 	LoadMIDIEventList("data/music/music.mid");
 	ParseMIDITimeline("data/music/mapping.txt");
-	InitAudio("data/music/mc3_kitaraaaa.mp3");
+	InitAudio("data/music/EhkaValmisMC3.mp3");
 
 	// start mainloop
 
