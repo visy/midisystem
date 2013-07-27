@@ -857,7 +857,7 @@ void BiloThreeScene();
 void KolmeDeeScene();
 
 void KolmeDeeLogic(float dt);
-void ConsoleLogicLoader(float dt);
+//void LoaderLogic(float dt);
 void ConsoleLogic(float dt);
 void ConsoleLogic2(float dt);
 
@@ -875,7 +875,7 @@ SceneRenderCallback scene_render[] = {
 
 typedef void (*SceneLogicCallback)(float);
 SceneLogicCallback scene_logic[] = {
-                                        &ConsoleLogicLoader,
+                                        &dummy,
                                         &ConsoleLogic,
 										&dummy,
 										&ConsoleLogic2,
@@ -962,7 +962,7 @@ void InitAudio(const char *pFilename)
 
 	printf("--- MIDISYS-ENGINE: InitAudio()\n");
 
-	if (!BASS_Init(-1,44100,0,0,NULL)) BassError("InitAudio() - can't initialize device");
+	if (!BASS_Init(-1,44100,0,0,NULL)) BassError("InitAudio() - can't initialize device\n");
 
 	printf("\tInitAudio() - loading soundtrack from file \"%s\"\n", pFilename);
 
@@ -996,7 +996,7 @@ void InitAudio(const char *pFilename)
 	}
 	else
 	{
-		printf("InitAudio() error! could not load file.");
+		printf("InitAudio() error! could not load file.\n");
 		exit(1);
 	}
 }
@@ -1313,7 +1313,7 @@ GLuint LoadTexture(const char* pFilename, int invert)
 {
 	if (strcmp(pFilename,"") == 0) return 99999;
 
-	printf("--- MIDISYS ENGINE: LoadTexture(\"%s\")", pFilename);
+	printf(" : LoadTexture(\"%s\")", pFilename);
 	GLuint tex_2d;
 
 	if (invert == 1) 
@@ -1384,7 +1384,7 @@ int LoadGLTextures(const aiScene* scene) {
 
 GLuint LoadShader(const char* pFilename)
 {
-    fprintf(stdout,"--- MIDISYS ENGINE: LoadShader(\"%s\")", pFilename);
+    fprintf(stdout," : LoadShader(\"%s\")", pFilename);
 
     #ifdef SUPERVERBOSE
     printf("\n");
@@ -1874,26 +1874,23 @@ on_key_press ( unsigned char key)
     }
 }
 
+/*void LoaderLogic(float dt)
+{
+    printf("DEBUG: LoaderLogic(%f)\n", dt);
+
+    srand( (unsigned)time( NULL ) );
+    float phase = rand();
+    printf("!!!%f\n", phase);
+
+    glClearColor (phase,phase,phase,1.0);
+    glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glFlush();
+    glutSwapBuffers();
+    glutPostRedisplay();
+}*/
+    
 int keyindex = 0;
 int nextmillis = 0;
-
-void ConsoleLogicLoader(float dt)
-{
- //   printf("ConsoleLogicLoader: %f", dt);
-    int kmillis = (int)(millis);
-
-    //printf("kmillis:%d\n",kmillis);
-    /*if (kmillis >= 0 && kmillis >= keymillis[keyindex])
-    {
-        if(keyindex >= 0 && keyindex < KEYEVENTS_COUNT)
-        {
-            on_key_press(keyrec[keyindex]);
-        }
-
-        keyindex++;
-    }*/
-}
-
 void ConsoleLogic(float dt)
 {
 	int kmillis = (int)(millis-15750);
@@ -1934,7 +1931,7 @@ Assimp::Importer importer[3];
 
 aiScene* Import3DFromFile(const std::string& pFile)
 {
-    fprintf(stdout,"--- MIDISYS ENGINE: Import3DFromFile(\"%s\")", pFile.c_str());
+    fprintf(stdout," : Import3DFromFile(\"%s\")", pFile.c_str());
 
     //check if file exists
     std::ifstream fin(pFile.c_str());
@@ -1983,6 +1980,7 @@ bool LoadTextures()
 
     return true;
 }
+int assets_3dmodel_total = 2;
 bool Load3DAssets()
 {
     kapsule = Import3DFromFile("data/models/kapsule.obj");
@@ -1997,18 +1995,49 @@ bool assets_loaded = false;
 int skip_frames = 10;
 int skip_frames_count = 0;
 clock_t t_loader_begin = NULL, t_loader_d;
+int assets_index = -1, assets_total = -1;
 void Loader()
 {
-    if(t_loader_begin == NULL) { t_loader_begin = clock(); }
+    if(t_loader_begin == NULL) { current_scene = 0; t_loader_begin = clock(); assets_total = ((sizeof(shaders) / sizeof(shaders[0])) + (sizeof(textures) / sizeof(textures[0])) + assets_3dmodel_total ); }
+    if(assets_total == -1) {
+        printf('ERROR: Loader(): No assets to load and/or something is just terribly wrong! Terminating...');
+        exit(1);
+    }
+
+    float phase = (float)((float)(assets_index) / (float)(assets_total));
+
+    glClearColor (phase,phase,phase,1.0);
+    glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glFlush();
+    glutSwapBuffers();
+    glutPostRedisplay();
+    /*glEnable(GL_BLEND);
+    glLoadIdentity();
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_DST_ALPHA);
+    glTranslatef(-1.2, -1.0, -1.0);
+    glColor4f(0.0,1.0,0.0,1.0);
+    glBegin(GL_TRIANGLES);
+    glVertex2f(0.0,0.0);
+    glVertex2f(-100.0,0.0);
+    glVertex2f(0.0,100.0);
+    glEnd();
+    /*glClearColor (0.0,0.0,0.0,1.0);
+    glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glFlush();
+    glutSwapBuffers();
+    glutPostRedisplay();*/
 
     skip_frames_count++;
     if(skip_frames_count == skip_frames) {
         skip_frames_count = 0;
+        assets_index++;
+        printf("--- MIDISYS-ENGINE: Loading Asset(s) # %i", assets_index);
 
         // begin loading animation
 
         if(!LoadShaders()) {
             if(!LoadTextures()) {
+                printf("..%i", assets_total);
                 // load all 3d models; after that all asset loading is done
                 Load3DAssets();
                 assets_loaded = true;
@@ -2017,7 +2046,7 @@ void Loader()
     } else {
         // format bilotrip terminal 1.6.2.0
 
-        glClearColor (1.0,1.0,0.96,1.0);
+        glClearColor (0.5,0.5,0.5,1.0);
         glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glFlush();
         glutSwapBuffers();
@@ -2848,7 +2877,10 @@ void FPS(void) {
 void logic()
 { 	
     if (assets_loaded) {
-        if (music_started == -1) { BASS_ChannelPlay(music_channel,FALSE); music_started = 1; } // BASS_ChannelSetPosition(music_channel, 31000000, BASS_POS_BYTE); }
+        if (music_started == -1) {
+            printf("--- MIDISYS-ENGINE: Total Loading Time: %f\n", (float)((((float)t_loader_d - (float)t_loader_begin) / 1000000.0F ) * 1000));
+            BASS_ChannelPlay(music_channel,FALSE); music_started = 1;
+        } // BASS_ChannelSetPosition(music_channel, 31000000, BASS_POS_BYTE); }
 
 	    QWORD bytepos = BASS_ChannelGetPosition(music_channel, BASS_POS_BYTE);
 	    double pos = BASS_ChannelBytes2Seconds(music_channel, bytepos);
@@ -2859,7 +2891,7 @@ void logic()
 	    UpdateShaderParams();
     } else {
         t_loader_d = clock();
-        ConsoleLogicLoader((float)((((float)t_loader_begin - (float)t_loader_d) / 1000000.0F ) * 1000));
+        //scene_logic[current_scene]((float)((float)(assets_index) / (float)(assets_total)));
     }
 
 //	glutPostRedisplay();
@@ -3138,7 +3170,7 @@ int main(int argc, char* argv[])
 
 	OggPlayer ogg("data/video/video.ogg",AF_S16,2,44100,VF_BGRA);
 	if(ogg.fail()) {
-		printf("could not open video file \"%s\"\n", "data/video/video.ogg");
+		printf("could not open video file \"%s\"\n", "data/video/video.ogg\n");
 		return -2;
 	}
 	
