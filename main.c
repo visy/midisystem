@@ -458,7 +458,7 @@ console_process( console_t *self,
 {
     size_t len = wcslen(self->input);
 
-    printf("console_process:%d\n", key);
+    //printf("console_process:%d\n", key);
 
     if( strcmp(action, "type") == 0 )
     {
@@ -609,12 +609,13 @@ GLuint depth_rb2 = 0;
 GLuint depth_rb3 = 0;
 // textures
 
-int textures[30] = {-1};
+int textures[36] = {-1};
 const char* texturess[] = {"data/gfx/scene.jpg",
                     "data/gfx/dude1.jpg",
                     "data/gfx/dude2.jpg",
                     "data/gfx/mask.jpg",
                     "data/gfx/note.jpg",
+                    "data/gfx/exit.jpg",
 
                     "data/gfx/copkiller1.jpg",
                     "data/gfx/prip1.jpg",
@@ -635,6 +636,13 @@ const char* texturess[] = {"data/gfx/scene.jpg",
                     "data/gfx/copkiller9.jpg",
                     "data/gfx/prip9.jpg",
 
+                    "data/gfx/aegis.jpg",
+                    "data/gfx/ll1.png",
+                    "data/gfx/ll2.png",
+                    "data/gfx/ll3.png",
+                    "data/gfx/ll4.png",
+                    "data/gfx/ll5.png",
+
                     "data/gfx/grayeye.jpg",
 
                     "data/gfx/room1.jpg",
@@ -645,7 +653,7 @@ const char* texturess[] = {"data/gfx/scene.jpg",
 
                     "data/gfx/bilogon.png",
                     "data/gfx/noise.jpg"};
-enum texturi { tex_scene, tex_dude, tex_dude2, tex_mask, tex_note,
+enum texturi { tex_scene, tex_dude, tex_dude2, tex_mask, tex_note, tex_exit,
                 tex_copkiller, tex_prip,
                 tex_copkiller2, tex_prip2,
                 tex_copkiller3, tex_prip3,
@@ -655,6 +663,7 @@ enum texturi { tex_scene, tex_dude, tex_dude2, tex_mask, tex_note,
                 tex_copkiller7, tex_prip7,
                 tex_copkiller8, tex_prip8,
                 tex_copkiller9, tex_prip9,
+                tex_aegis, tex_ll1,tex_ll2,tex_ll3,tex_ll4,tex_ll5,
                 tex_grayeye, tex_room, tex_room2, tex_room3,
                 tex_majestictext,
                 tex_bilogon,
@@ -666,10 +675,8 @@ int room_texnum = 0;
 
 // assimp scenes
 
-const aiScene* scene = NULL;
-const aiScene* bilothree = NULL;
-
-Assimp::Importer importer;
+aiScene* kapsule = NULL;
+aiScene* bilothree = NULL;
 
 std::map<std::string, GLuint*> textureIdMap; // map image filenames to textureIds
 GLuint*	textureIds;	// pointer to texture array
@@ -816,6 +823,7 @@ void Loader();
 void LeadMaskScene();
 void CopScene();
 void MarssiScene();
+void LongScene();
 void EyeScene();
 void RedCircleScene();
 void BiloThreeScene();
@@ -832,6 +840,7 @@ SceneRenderCallback scene_render[] = {
                                         &LeadMaskScene,
 										&CopScene,
 										&MarssiScene,
+                                        &LongScene,
 										&EyeScene, 
 										&RedCircleScene,
 										&BiloThreeScene
@@ -843,6 +852,7 @@ SceneLogicCallback scene_logic[] = {
                                         &ConsoleLogic,
 										&dummy,
 										&ConsoleLogic2,
+                                        &dummy,
 										&dummy,
 										&dummy,
 										&dummy
@@ -896,21 +906,25 @@ int demo_playlist()
 	{
 		current_scene = 2; // cops
 	}
-	else if (millis >= 148800 && millis < 188737)
+	else if (millis >= 148800 && millis < 184000)
 	{
 		current_scene = 3; // marssi
 	}
+    else if (millis >= 184000 && millis < 188737)
+    {
+        current_scene = 4; // "long live the new flesh"
+    }
 	else if (millis >= 188737 && millis < 264000)
 	{
-		current_scene = 4; // eye horror
+		current_scene = 5; // eye horror
 	}
 	else if (millis >= 264000 && millis < 300000)
 	{
-		current_scene = 5; // outro 1 / redcircle
+		current_scene = 6; // outro 1 / redcircle
 	}
 	else if (millis >= 300000 && millis < 320000)
 	{
-		current_scene = 6; // outro 2 / bilothree
+		current_scene = 7; // outro 2 / bilothree
 	}
 
 	if (sc != current_scene)
@@ -1765,12 +1779,13 @@ void KolmeDeeLogic(float dt)
 	kujalla_angle += dt*0.01;
 }
 
-void KolmeDeeScene()
+void kapsule_render()
 {
+
+    glEnable(GL_BLEND);
+    glUseProgram(0);
 	glEnable(GL_TEXTURE_2D);
 	glShadeModel(GL_SMOOTH);	// Enables Smooth Shading
-	glClearColor(1.0f, 1.0f, 1.0f, 0.0f);
-	glClearDepth(1.0f);	// Depth Buffer Setup
 	glEnable(GL_DEPTH_TEST);	// Enables Depth Testing
 	glDepthFunc(GL_LEQUAL);	// The Type Of Depth Test To Do
 	glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);	// Really Nice Perspective Calculation
@@ -1791,17 +1806,15 @@ void KolmeDeeScene()
 
 	float tmp;
 
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
 	glLoadIdentity();
 
-	glTranslatef(0.0f, -10.0f, -50.0f);	// Move 40 Units And Into The Screen
+	glTranslatef(0.0f, 0.0f, -50.0f+cos(millis*0.05)*25);	// Move 40 Units And Into The Screen
+    glRotatef(millis*0.01,1.0,0,0);
 
-	glRotatef(kujalla_angle, 1.0f, 0.0f, 0.0f);
-	glRotatef(kujalla_angle, 0.0f, 1.0f, 0.0f);
-	glRotatef(kujalla_angle, 0.0f, 0.0f, 1.0f);
-
-	recursive_render(scene, scene->mRootNode, 0.5);
+	recursive_render(kapsule, kapsule->mRootNode, 2.5);
+    glDisable(GL_DEPTH_TEST);
+    glDisable(GL_LIGHTING);
+    glDisable(GL_NORMALIZE);
 }
 
 void
@@ -1862,7 +1875,7 @@ int nextmillis = 0;
 
 void ConsoleLogicLoader(float dt)
 {
-    printf("ConsoleLogicLoader: %f", dt);
+ //   printf("ConsoleLogicLoader: %f", dt);
     int kmillis = (int)(millis);
 
     //printf("kmillis:%d\n",kmillis);
@@ -1911,7 +1924,11 @@ void ConsoleLogic2(float dt)
 	}
 }
 
-const aiScene* Import3DFromFile(const std::string& pFile)
+int kolmedeeindex = 0;
+
+Assimp::Importer importer[3];
+
+aiScene* Import3DFromFile(const std::string& pFile)
 {
     fprintf(stdout,"--- MIDISYS ENGINE: Import3DFromFile(\"%s\")", pFile.c_str());
 
@@ -1927,7 +1944,7 @@ const aiScene* Import3DFromFile(const std::string& pFile)
         exit(1);
     }
 
-    const aiScene* scener = importer.ReadFile( pFile, aiProcessPreset_TargetRealtime_Quality);
+    aiScene* scener = importer[kolmedeeindex].ReadFile( pFile, aiProcessPreset_TargetRealtime_Quality);
 
     // If the import failed, report it
     if( !scener)
@@ -1936,6 +1953,7 @@ const aiScene* Import3DFromFile(const std::string& pFile)
         exit(1);
     }
 
+    kolmedeeindex++;
 
     fprintf(stdout," success\n");
 
@@ -1963,8 +1981,8 @@ bool LoadTextures()
 }
 bool Load3DAssets()
 {
-    scene = Import3DFromFile("data/models/templeton_peck.obj");
-    LoadGLTextures(scene);
+    kapsule = Import3DFromFile("data/models/kapsule.obj");
+    LoadGLTextures(kapsule);
     bilothree = Import3DFromFile("data/models/bilotrip.3ds");
     LoadGLTextures(bilothree);
 
@@ -2024,8 +2042,11 @@ kuvaflag = 2;
 else if (millis >= 48500 && millis < 64000) {
 kuvaflag = 3;
 }
-else if (millis >= 64000) {
+else if (millis >= 64000 && millis < 76100) {
 kuvaflag = 4;
+}
+else if (millis >= 76100) {
+kuvaflag = 5;
 }
 
 glEnable(GL_BLEND);
@@ -2053,6 +2074,8 @@ else if (kuvaflag == 3)
 glBindTexture(GL_TEXTURE_2D, textures[tex_mask]);
 else if (kuvaflag == 4)
 glBindTexture(GL_TEXTURE_2D, textures[tex_note]);
+else if (kuvaflag == 5)
+glBindTexture(GL_TEXTURE_2D, textures[tex_exit]);
 
 GLint location5 = glGetUniformLocation(shaders[projector], "texture0");
 glUniform1i(location5, 0);
@@ -2195,6 +2218,9 @@ glVertex2f(i, j + 1);
 }
 glEnd();
 
+
+if (millis > 37400 && millis < 37600) kapsule_render();
+
 }
 
 
@@ -2271,6 +2297,87 @@ void MarssiScene()
 	}
 
 	myVideoFrame->render();
+}
+
+void LongScene()
+{
+    glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fake_framebuffer); // default
+    glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+    glDisable(GL_BLEND);
+
+    glUseProgram(shaders[fsquad]);
+    float mymillis = (((millis)-scene_start_millis));
+
+    GLint widthLoc5 = glGetUniformLocation(shaders[fsquad], "width");
+    GLint heightLoc5 = glGetUniformLocation(shaders[fsquad], "height");
+    GLint timeLoc5 = glGetUniformLocation(shaders[fsquad], "time");
+    GLint alphaLoc5 = glGetUniformLocation(shaders[fsquad], "alpha");
+
+    glUniform1f(widthLoc5, g_Width);
+    glUniform1f(heightLoc5, g_Height);
+    glUniform1f(timeLoc5, mymillis/100);
+    glUniform1f(alphaLoc5, 1.0);
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, textures[tex_aegis]);
+
+    GLint location5 = glGetUniformLocation(shaders[fsquad], "texture0");
+    glUniform1i(location5, 0);
+
+    glLoadIdentity();
+
+    glTranslatef(-1.2, -1.0, -1.0);
+
+    int i=0;
+    int j=0;
+    glBegin(GL_QUADS);
+    glVertex2f(i, j);
+    glVertex2f(i + 100, j);
+    glVertex2f(i + 100, j + 100);
+    glVertex2f(i, j + 100);
+    glEnd();
+
+//
+    if (mymillis > 2500) {
+        int plussati = 0;
+        if (mymillis > 2800)plussati=400;
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
+        int lloff = (int)(((plussati+mymillis)-2500)*0.0025);
+        if (lloff >= 4) lloff = 4;
+        widthLoc5 = glGetUniformLocation(shaders[fsquad], "width");
+        heightLoc5 = glGetUniformLocation(shaders[fsquad], "height");
+        timeLoc5 = glGetUniformLocation(shaders[fsquad], "time");
+        alphaLoc5 = glGetUniformLocation(shaders[fsquad], "alpha");
+        float alphamodeLoc = glGetUniformLocation(shaders[fsquad], "alphamode");
+
+        glUniform1f(widthLoc5, g_Width);
+        glUniform1f(heightLoc5, g_Height);
+        glUniform1f(timeLoc5, mymillis/100);
+        glUniform1f(alphaLoc5, 1.0);
+        glUniform1f(alphamodeLoc, 1.0);
+
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, textures[tex_ll1+lloff]);
+
+        GLint location5 = glGetUniformLocation(shaders[fsquad], "texture0");
+        glUniform1i(location5, 0);
+
+        glLoadIdentity();
+
+        glTranslatef(-1.2, -1.0, -1.0);
+
+        int i=0;
+        int j=0;
+        glBegin(GL_QUADS);
+        glVertex2f(i, j);
+        glVertex2f(i + 100, j);
+        glVertex2f(i + 100, j + 100);
+        glVertex2f(i, j + 100);
+        glEnd();
+
+    }
+
 }
 
 
@@ -2651,11 +2758,15 @@ void UpdateShaderParams()
 		int trigVal = -1;
 		int paramVal = -1;
 
+        printf("UpdateShaderParams: millis:%d - ", millis);
+        DebugPrintEvent(ev,currentMsg); 
+
 		switch(mapping_type[i])
 		{
 			// trig
 			case 0:
 			{
+
 				if (ev == msgNoteOn)
 				{
 					trigVal = currentMsg.MsgData.NoteOn.iNote;
@@ -2722,7 +2833,7 @@ void FPS(void) {
 void logic()
 { 	
     if (assets_loaded) {
-        if (music_started == -1) { BASS_ChannelPlay(music_channel,FALSE); music_started = 1; } //BASS_ChannelSetPosition(music_channel, 57000000, BASS_POS_BYTE); }
+        if (music_started == -1) { BASS_ChannelPlay(music_channel,FALSE); music_started = 1; }// BASS_ChannelSetPosition(music_channel, 34500000, BASS_POS_BYTE); }
 
 	    QWORD bytepos = BASS_ChannelGetPosition(music_channel, BASS_POS_BYTE);
 	    double pos = BASS_ChannelBytes2Seconds(music_channel, bytepos);
