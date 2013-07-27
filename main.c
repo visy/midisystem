@@ -609,7 +609,7 @@ GLuint depth_rb2 = 0;
 GLuint depth_rb3 = 0;
 // textures
 
-int textures[30] = {-1};
+int textures[36] = {-1};
 const char* texturess[] = {"data/gfx/scene.jpg",
                     "data/gfx/dude1.jpg",
                     "data/gfx/dude2.jpg",
@@ -636,6 +636,13 @@ const char* texturess[] = {"data/gfx/scene.jpg",
                     "data/gfx/copkiller9.jpg",
                     "data/gfx/prip9.jpg",
 
+                    "data/gfx/aegis.jpg",
+                    "data/gfx/ll1.png",
+                    "data/gfx/ll2.png",
+                    "data/gfx/ll3.png",
+                    "data/gfx/ll4.png",
+                    "data/gfx/ll5.png",
+
                     "data/gfx/grayeye.jpg",
 
                     "data/gfx/room1.jpg",
@@ -656,6 +663,7 @@ enum texturi { tex_scene, tex_dude, tex_dude2, tex_mask, tex_note, tex_exit,
                 tex_copkiller7, tex_prip7,
                 tex_copkiller8, tex_prip8,
                 tex_copkiller9, tex_prip9,
+                tex_aegis, tex_ll1,tex_ll2,tex_ll3,tex_ll4,tex_ll5,
                 tex_grayeye, tex_room, tex_room2, tex_room3,
                 tex_majestictext,
                 tex_bilogon,
@@ -815,6 +823,7 @@ void Loader();
 void LeadMaskScene();
 void CopScene();
 void MarssiScene();
+void LongScene();
 void EyeScene();
 void RedCircleScene();
 void BiloThreeScene();
@@ -831,6 +840,7 @@ SceneRenderCallback scene_render[] = {
                                         &LeadMaskScene,
 										&CopScene,
 										&MarssiScene,
+                                        &LongScene,
 										&EyeScene, 
 										&RedCircleScene,
 										&BiloThreeScene
@@ -842,6 +852,7 @@ SceneLogicCallback scene_logic[] = {
                                         &ConsoleLogic,
 										&dummy,
 										&ConsoleLogic2,
+                                        &dummy,
 										&dummy,
 										&dummy,
 										&dummy
@@ -895,21 +906,25 @@ int demo_playlist()
 	{
 		current_scene = 2; // cops
 	}
-	else if (millis >= 148800 && millis < 188737)
+	else if (millis >= 148800 && millis < 184000)
 	{
 		current_scene = 3; // marssi
 	}
+    else if (millis >= 184000 && millis < 188737)
+    {
+        current_scene = 4; // "long live the new flesh"
+    }
 	else if (millis >= 188737 && millis < 264000)
 	{
-		current_scene = 4; // eye horror
+		current_scene = 5; // eye horror
 	}
 	else if (millis >= 264000 && millis < 300000)
 	{
-		current_scene = 5; // outro 1 / redcircle
+		current_scene = 6; // outro 1 / redcircle
 	}
 	else if (millis >= 300000 && millis < 320000)
 	{
-		current_scene = 6; // outro 2 / bilothree
+		current_scene = 7; // outro 2 / bilothree
 	}
 
 	if (sc != current_scene)
@@ -2284,6 +2299,87 @@ void MarssiScene()
 	myVideoFrame->render();
 }
 
+void LongScene()
+{
+    glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fake_framebuffer); // default
+    glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+    glDisable(GL_BLEND);
+
+    glUseProgram(shaders[fsquad]);
+    float mymillis = (((millis)-scene_start_millis));
+
+    GLint widthLoc5 = glGetUniformLocation(shaders[fsquad], "width");
+    GLint heightLoc5 = glGetUniformLocation(shaders[fsquad], "height");
+    GLint timeLoc5 = glGetUniformLocation(shaders[fsquad], "time");
+    GLint alphaLoc5 = glGetUniformLocation(shaders[fsquad], "alpha");
+
+    glUniform1f(widthLoc5, g_Width);
+    glUniform1f(heightLoc5, g_Height);
+    glUniform1f(timeLoc5, mymillis/100);
+    glUniform1f(alphaLoc5, 1.0);
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, textures[tex_aegis]);
+
+    GLint location5 = glGetUniformLocation(shaders[fsquad], "texture0");
+    glUniform1i(location5, 0);
+
+    glLoadIdentity();
+
+    glTranslatef(-1.2, -1.0, -1.0);
+
+    int i=0;
+    int j=0;
+    glBegin(GL_QUADS);
+    glVertex2f(i, j);
+    glVertex2f(i + 100, j);
+    glVertex2f(i + 100, j + 100);
+    glVertex2f(i, j + 100);
+    glEnd();
+
+//
+    if (mymillis > 2500) {
+        int plussati = 0;
+        if (mymillis > 2800)plussati=400;
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
+        int lloff = (int)(((plussati+mymillis)-2500)*0.0025);
+        if (lloff >= 4) lloff = 4;
+        widthLoc5 = glGetUniformLocation(shaders[fsquad], "width");
+        heightLoc5 = glGetUniformLocation(shaders[fsquad], "height");
+        timeLoc5 = glGetUniformLocation(shaders[fsquad], "time");
+        alphaLoc5 = glGetUniformLocation(shaders[fsquad], "alpha");
+        float alphamodeLoc = glGetUniformLocation(shaders[fsquad], "alphamode");
+
+        glUniform1f(widthLoc5, g_Width);
+        glUniform1f(heightLoc5, g_Height);
+        glUniform1f(timeLoc5, mymillis/100);
+        glUniform1f(alphaLoc5, 1.0);
+        glUniform1f(alphamodeLoc, 1.0);
+
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, textures[tex_ll1+lloff]);
+
+        GLint location5 = glGetUniformLocation(shaders[fsquad], "texture0");
+        glUniform1i(location5, 0);
+
+        glLoadIdentity();
+
+        glTranslatef(-1.2, -1.0, -1.0);
+
+        int i=0;
+        int j=0;
+        glBegin(GL_QUADS);
+        glVertex2f(i, j);
+        glVertex2f(i + 100, j);
+        glVertex2f(i + 100, j + 100);
+        glVertex2f(i, j + 100);
+        glEnd();
+
+    }
+
+}
+
 
 int noclearframes = 0;
 void EyeScene()
@@ -2737,7 +2833,7 @@ void FPS(void) {
 void logic()
 { 	
     if (assets_loaded) {
-        if (music_started == -1) { BASS_ChannelPlay(music_channel,FALSE); music_started = 1; } //BASS_ChannelSetPosition(music_channel, 57000000, BASS_POS_BYTE); }
+        if (music_started == -1) { BASS_ChannelPlay(music_channel,FALSE); music_started = 1; }// BASS_ChannelSetPosition(music_channel, 34500000, BASS_POS_BYTE); }
 
 	    QWORD bytepos = BASS_ChannelGetPosition(music_channel, BASS_POS_BYTE);
 	    double pos = BASS_ChannelBytes2Seconds(music_channel, bytepos);

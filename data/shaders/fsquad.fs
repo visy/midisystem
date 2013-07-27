@@ -11,11 +11,13 @@ uniform float gamma;
 uniform float grid;
 uniform float tvmode;
 
+uniform float alphamode;
+
 void main()
 {
     vec4 color = texture2D(texture0, vec2(gl_FragCoord.x/width, gl_FragCoord.y/height));
 
-    color.a = alpha;
+    if (alphamode == 0) color.a = alpha;
 
     if (gamma > 0.0) color.rgb*=gamma;
 
