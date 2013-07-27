@@ -1771,7 +1771,7 @@ void BiloThreeScene()
     glUniform1f(heightLoc5, g_Height);
     glUniform1f(timeLoc5, mymillis/100);
     glUniform1f(effuLoc5, 0.0);
-    glUniform1f(effuLoc5, jormymillis > 0 ? 1.0 : 0.0);
+    glUniform1f(effuLoc5, 0.0);
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, fb_tex);
