@@ -1309,6 +1309,8 @@ GLuint LoadTexture(const char* pFilename, int invert)
 {
 	if (strcmp(pFilename,"") == 0) return 99999;
 
+    return;
+
 	printf("--- MIDISYS ENGINE: LoadTexture(\"%s\")", pFilename);
 	GLuint tex_2d;
 
@@ -2838,7 +2840,7 @@ void FPS(void) {
 void logic()
 { 	
     if (assets_loaded) {
-        if (music_started == -1) { BASS_ChannelPlay(music_channel,FALSE); music_started = 1; } // BASS_ChannelSetPosition(music_channel, 34500000, BASS_POS_BYTE); }
+        if (music_started == -1) { BASS_ChannelPlay(music_channel,FALSE); music_started = 1; BASS_ChannelSetPosition(music_channel, 31000000, BASS_POS_BYTE); }
 
 	    QWORD bytepos = BASS_ChannelGetPosition(music_channel, BASS_POS_BYTE);
 	    double pos = BASS_ChannelBytes2Seconds(music_channel, bytepos);
@@ -3067,9 +3069,9 @@ void InitGraphics(int argc, char* argv[])
     // start fullscreen game mode
     glutEnterGameMode();
 
-//	glutCreateWindow("MIDISYS window");
-//	glutReshapeWindow(c_Width, c_Height);
-	//lScreen();
+	//glutCreateWindow("MIDISYS window");	
+    //glutReshapeWindow(c_Width, c_Height);
+	//glutFullScreen();
 
 	glutSetCursor(GLUT_CURSOR_NONE);
 
