@@ -11,7 +11,7 @@ float kernel[9];
 vec2 offset[9];
 
 uniform float effu;
-
+uniform float beat;
 
 float hash(float x)
 {
@@ -184,7 +184,7 @@ void main()
     pos = uv = (gl_FragCoord.xy - vec2(0.0, 0.5)) / vec2(width,height);
     uv.y = floor(uv.y * linecount) / linecount;
 
-    if (effu > 0.0) gl_FragColor = vignette(gradient(scanline(0.2, 1.5+tan(time*0.1)))) + vec4(displace.rgb+color.rgb,color.a);
+    if (effu > 0.0) gl_FragColor = vignette(gradient(scanline(0.2, 1.5-atan(beat)*6.0))) + vec4(displace.rgb+color.rgb,color.a);
     else gl_FragColor = vec4(displace.rgb+color.rgb,color.a);
 
     //gl_FragColor = color;

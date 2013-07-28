@@ -1,2 +1,4 @@
-0,Tomikuvi,trig
-1,ModWheel,param
+0,tomctrll,trig
+1,modctrll,param
+2,basariaa,trig
+3,metrowat,trig

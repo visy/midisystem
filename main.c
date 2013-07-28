@@ -32,6 +32,9 @@ int quitflag = 0;
 // GLUT window handle (1 for windowed display, 0 for fullscreen gamemode)
 GLuint window = 0;
 
+// remove for non-debug build
+int debugmode = 0;
+
 // midi sync
 
 MIDI_MSG timeline[64][100000] = {NULL};
@@ -645,7 +648,7 @@ GLuint depth_rb2 = 0;
 GLuint depth_rb3 = 0;
 // textures
 
-int textures[36] = {-1};
+int textures[40] = {-1};
 const char* texturess[] = {"data/gfx/scene.jpg",
                     "data/gfx/dude1.jpg",
                     "data/gfx/dude2.jpg",
@@ -1269,6 +1272,7 @@ void LoadMIDIEventList(const char *pFilename)
 
 		timeline_trackcount = track_index;
 		midiReadFreeMessage(&msg);
+
 		midiFileClose(mf);
 	}
 
@@ -2396,8 +2400,8 @@ if (millis > 37400 && millis < 37600) kapsule_render();
 
 }
 
-
-
+int copbeatcounter = -1;
+int coptexid = 0;
 void CopScene()
 {
 	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fake_framebuffer); // default
@@ -2424,7 +2428,11 @@ void CopScene()
 	glUniform1f(timeLoc5, mymillis/100);
 	glUniform1f(alphaLoc5, cos(mymillis*0.1)*0.01);
 
-	int texind = (int)(mymillis*(0.001/2));
+    if (scene_shader_params[2] == 36) { copbeatcounter++; }
+    if (copbeatcounter > 0) { coptexid++; copbeatcounter = 0;}
+
+	//int texind = (int)(mymillis*(0.001/2));
+    int texind = coptexid;
 	if (texind > 17) texind = 17;
 
 	glActiveTexture(GL_TEXTURE0);
@@ -2836,6 +2844,9 @@ void RedCircleScene()
 
 }
 
+float vhsbeat = 0.0;
+float vhsbeat_start = 0;
+
 void VHSPost(float effuon)
 {
 	float mymillis = (millis-scene_start_millis);
@@ -2871,10 +2882,25 @@ void VHSPost(float effuon)
 	float timeLoc5 = glGetUniformLocation(shaders[vhs], "time");
 	float effuLoc5 = glGetUniformLocation(shaders[vhs], "effu");
 
+    float beatLoc = glGetUniformLocation(shaders[vhs], "beat");
+
+    if ((current_scene == 2 || current_scene == 1) && millis > 55000)
+    {
+        if (scene_shader_params[2] == 36) { vhsbeat = 1.0f; vhsbeat_start = mymillis; }
+        vhsbeat-=((mymillis-vhsbeat_start)*0.00005);
+        if (vhsbeat <= (current_scene == 2 ? 0.2 : 0.1)) vhsbeat = (current_scene == 2 ? 0.2 : 0.1);
+    }
+    else{
+        vhsbeat = 0.0;
+    }
+
+    //printf("vhsbeat:%f\n", vhsbeat);
+
 	glUniform1f(widthLoc5, g_Width);
 	glUniform1f(heightLoc5, g_Height);
 	glUniform1f(timeLoc5, mymillis/100);
 	glUniform1f(effuLoc5, effuon);
+    glUniform1f(beatLoc, vhsbeat);
 
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, fake_framebuffer_tex);
@@ -2926,19 +2952,34 @@ void UpdateShaderParams()
 		int dw = (int)currentMsg.dwAbsPos;
 		int tarkistus = (int)(dw)*1.212;
 
-		//if (intmillis+155520 < tarkistus*1.212) break;
-		if (intmillis < tarkistus) break;
+        // flush midi to correct position if debugging
+        if (debugmode == 1)
+        {
+            while (tarkistus < intmillis)
+            {
+                timeline_trackindex[tracknum]++;
+                trackidx = timeline_trackindex[tracknum];
+                MIDI_MSG currentMsg2 = timeline[tracknum][trackidx];
+                dw = (int)currentMsg2.dwAbsPos;
+                tarkistus = (int)(dw)*1.212;
+            }
+            printf("DEBUG: midi track %d flushed to position: %d\n", tracknum, tarkistus);
+        }
 
-		// reset trigs
-		if (scene_shader_param_type[mapping_paramnum[i]] == 0) scene_shader_params[mapping_paramnum[i]] = -1;
+        // reset trigs
+        if (scene_shader_param_type[mapping_paramnum[i]] == 0) scene_shader_params[mapping_paramnum[i]] = -1;
+
+		//if (intmillis+155520 < tarkistus*1.212) break;
+		if (intmillis < tarkistus) continue;
 
 		timeline_trackindex[tracknum]++;
-
 
 		int ev = 0;
 
 		if (currentMsg.bImpliedMsg) { ev = currentMsg.iImpliedMsg; }
 		else { ev = currentMsg.iType; }
+
+//        DebugPrintEvent(ev, currentMsg);
 
 		int trigVal = -1;
 		int paramVal = -1;
@@ -2952,7 +2993,8 @@ void UpdateShaderParams()
 				if (ev == msgNoteOn)
 				{
 					trigVal = currentMsg.MsgData.NoteOn.iNote;
-					printf("track #%d, len %d, pos %d: dwAbsPos: %d (millis: %d) -> noteon: %d\n", tracknum, timeline_tracklength[tracknum], timeline_trackindex[tracknum], currentMsg.dwAbsPos, intmillis, trigVal);
+//					printf("track #%d (%s), len %d, pos %d: dwAbsPos: %d (millis: %d) -> noteon: %d (shadermap num %d)\n", tracknum, timeline_trackname[tracknum], timeline_tracklength[tracknum], timeline_trackindex[tracknum], currentMsg.dwAbsPos, intmillis, trigVal, mapping_paramnum[i]);
+//                    printf("shader param %d trig: %d\n", mapping_paramnum[i], trigVal);
 				}
 				else if (ev == msgNoteOff)
 				{
@@ -2961,7 +3003,7 @@ void UpdateShaderParams()
 
 				scene_shader_params[mapping_paramnum[i]] = trigVal;
 				scene_shader_param_type[mapping_paramnum[i]] = 0;
-				//printf("sync: trig #%d to: %d\n", mapping_paramnum[i], trigVal);
+				if (ev == msgNoteOn) printf("sync (%s): %d: trig %d to: %d\n", timeline_trackname[tracknum], intmillis, mapping_paramnum[i], trigVal);
 				break;
 			}
 
@@ -2977,12 +3019,12 @@ void UpdateShaderParams()
 				scene_shader_params[mapping_paramnum[i]] = paramVal;
 				scene_shader_param_type[mapping_paramnum[i]] = 1;
 
-				//printf("sync: param #%d to: %d\n", mapping_paramnum[i], trigVal);
+				printf("sync (%s): %d: param %d to: %d\n", timeline_trackname[tracknum], intmillis, mapping_paramnum[i], paramVal);
 				break;
 			}
 		}
 	}
-
+    debugmode = 0;
 
 }
 ///////////////////////////////////////////////////////////////// MAIN LOGIC
@@ -3032,7 +3074,7 @@ void logic()
             printf("--- MIDISYS-ENGINE: total loading time: %f\n", (float)((((float)t_loader_d - (float)t_loader_begin) / 1000000.0F ) * 1000));
             printf("--- MIDISYS-ENGINE: demo startup\n");
             BASS_ChannelPlay(music_channel,FALSE); music_started = 1;
-            //BASS_ChannelSetPosition(music_channel, 48000000, BASS_POS_BYTE);
+            //BASS_ChannelSetPosition(music_channel, 20000000, BASS_POS_BYTE);
         } 
 
 	    QWORD bytepos = BASS_ChannelGetPosition(music_channel, BASS_POS_BYTE);
@@ -3043,7 +3085,6 @@ void logic()
 
 	    demo_playlist();
 	    scene_logic[current_scene](0.0f);
-	    UpdateShaderParams();
     } else {
         t_loader_d = clock();
         //scene_logic[current_scene]((float)((float)(assets_index) / (float)(assets_total)));
@@ -3068,6 +3109,7 @@ void timer(int value)
 
 void display(void)
 {
+    UpdateShaderParams();
 	scene_render[current_scene]();
 	VHSPost(assets_loaded && current_scene < 4 ? 1.0 : 0.0);
 
@@ -3330,7 +3372,7 @@ int main(int argc, char* argv[])
 
 	// init MIDI sync and audio
 
-	LoadMIDIEventList("data/music/music.mid");
+	LoadMIDIEventList("data/music/testi.mid");
 	ParseMIDITimeline("data/music/mapping.txt");
 	InitAudio("data/music/EhkaValmisMC3.mp3");
 
