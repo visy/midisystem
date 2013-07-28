@@ -2140,6 +2140,7 @@ void Loader()
     glutSwapBuffers();
     glutPostRedisplay();*/
 
+
     skip_frames_count++;
     if(skip_frames_count == skip_frames) {
         skip_frames_count = 0;
@@ -2165,12 +2166,21 @@ void Loader()
         glutSwapBuffers();
         glutPostRedisplay();
     }
+
+    glDisable(GL_DEPTH_TEST);    // Enables Depth Testing
+    glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fb); // default
+    glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+    glDepthFunc(GL_LEQUAL); // The Type Of Depth Test To Do
+    glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);  // Really Nice Perspective Calculation
+    glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0); // default
+    glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+
 }
 
 void LeadMaskScene()
 {
 glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fb); // fbo
-
+glClear(GL_DEPTH_BUFFER_BIT);
 float mymillis = millis;
 glUseProgram(shaders[projector]);
 
