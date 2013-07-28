@@ -2808,6 +2808,7 @@ void EyeScene()
 
 }
 
+int redcounter = 1;
 
 void RedCircleScene()
 {
@@ -2816,7 +2817,8 @@ void RedCircleScene()
 	glUseProgram(shaders[redcircle]);
 	float mymillis = (millis-scene_start_millis)*160;
 
-	if (frame % 500 == 1) glClear(GL_COLOR_BUFFER_BIT);
+    if (scene_shader_params[2] == 36) { redcounter++; }
+    if (redcounter > 4) { redcounter = 0; glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); }
 
 	glEnable(GL_BLEND);
 	glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
@@ -3087,14 +3089,14 @@ void logic()
             printf("--- MIDISYS-ENGINE: total loading time: %f\n", (float)((((float)t_loader_d - (float)t_loader_begin) / 1000000.0F ) * 1000));
             printf("--- MIDISYS-ENGINE: demo startup\n");
             BASS_ChannelPlay(music_channel,FALSE); music_started = 1;
-            BASS_ChannelSetPosition(music_channel, 20000000, BASS_POS_BYTE);
+            //BASS_ChannelSetPosition(music_channel, 50000000, BASS_POS_BYTE);
         } 
 
 	    QWORD bytepos = BASS_ChannelGetPosition(music_channel, BASS_POS_BYTE);
 	    double pos = BASS_ChannelBytes2Seconds(music_channel, bytepos);
 	    millis = (float)pos*1000;
 
-        if (millis > 372000) quit();
+        if (millis > 367000) quit();
 
 	    demo_playlist();
 	    scene_logic[current_scene](0.0f);
