@@ -1695,51 +1695,51 @@ float startti2 = 0;
 float pantime = 0;
 void BiloThreeScene()
 {
-    float mymillis = (millis-scene_start_millis);
-    glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fb); // default
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+float mymillis = (millis-scene_start_millis);
+glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fb); // default
+glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    glUseProgram(0);
+glUseProgram(0);
 
-    glDisable(GL_TEXTURE_2D);
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_COLOR, GL_ONE_MINUS_SRC_COLOR);
+glDisable(GL_TEXTURE_2D);
+glEnable(GL_BLEND);
+glBlendFunc(GL_SRC_COLOR, GL_ONE_MINUS_SRC_COLOR);
 
-    glShadeModel(GL_SMOOTH);    // Enables Smooth Shading
-    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-    glClearDepth(1.0f); // Depth Buffer Setup
-    glEnable(GL_DEPTH_TEST);    // Enables Depth Testing
-    glDepthFunc(GL_LEQUAL); // The Type Of Depth Test To Do
-    glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);  // Really Nice Perspective Calculation
+glShadeModel(GL_SMOOTH);    // Enables Smooth Shading
+glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+glClearDepth(1.0f); // Depth Buffer Setup
+glEnable(GL_DEPTH_TEST);    // Enables Depth Testing
+glDepthFunc(GL_LEQUAL); // The Type Of Depth Test To Do
+glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);  // Really Nice Perspective Calculation
 
-    glEnable(GL_LIGHTING);
-    glEnable(GL_LIGHT0); // Uses default lighting parameters
-    glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE);
-    glDisable(GL_NORMALIZE);
+glEnable(GL_LIGHTING);
+glEnable(GL_LIGHT0); // Uses default lighting parameters
+glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE);
+glDisable(GL_NORMALIZE);
 
-    GLfloat LightAmbient[]= { 0.4f, 0.4f, 0.4f, 1.0f };
-    GLfloat LightDiffuse[]= { 0.4f, 0.4f, 0.4f, 1.0f };
-    GLfloat LightPosition[]= { sin(mymillis*0.02), cos(mymillis*0.02), 15.0f*cos(mymillis*0.01), 1.0f };
+GLfloat LightAmbient[]= { startti == 0 ? 0.25 : 0.4f, startti == 0 ? 0.25 : 0.4f, startti == 0 ? 0.25 : 0.4f, 1.0f };
+GLfloat LightDiffuse[]= { startti == 0 ? 0.25 : 0.4f, startti == 0 ? 0.25 : 0.4f, startti == 0 ? 0.25 : 0.4f, 1.0f };
+GLfloat LightPosition[]= { sin(mymillis*0.02), cos(mymillis*0.02), 15.0f*cos(mymillis*0.01), 1.0f };
 
-    glLightfv(GL_LIGHT1, GL_AMBIENT, LightAmbient);
-    glLightfv(GL_LIGHT1, GL_DIFFUSE, LightDiffuse);
-    glLightfv(GL_LIGHT1, GL_POSITION, LightPosition);
-    glEnable(GL_LIGHT1);
+glLightfv(GL_LIGHT1, GL_AMBIENT, LightAmbient);
+glLightfv(GL_LIGHT1, GL_DIFFUSE, LightDiffuse);
+glLightfv(GL_LIGHT1, GL_POSITION, LightPosition);
+glEnable(GL_LIGHT1);
 
-    float tmp;
-    float zoom = -300.0f+(((mymillis-jormymillis)*atan(mymillis*0.005))*0.05);
+float tmp;
+float zoom = -300.0f+(((mymillis-jormymillis)*atan(mymillis*0.005))*0.05);
 
-    if (zoom > -0.5 && startti == 0) { startti = mymillis; }
-    if (zoom >= -0.5) { zoom = -0.5; jormymillis+=290;}
+if (zoom > -0.5 && startti == 0) { startti = mymillis; }
+if (zoom >= -0.5) { zoom = -0.5; jormymillis+=290;}
 
 
-    if (jormymillis > 0) {
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    }
+if (jormymillis > 0) {
+glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+}
 
-    glLoadIdentity();
+glLoadIdentity();
 
-    if (jormymillis > 300*60 && startti2 == 0) 
+    if (jormymillis > 300*60 && startti2 == 0)
     {
         startti2 = mymillis;
     }
@@ -1749,59 +1749,61 @@ void BiloThreeScene()
         pantime = mymillis-startti2;
     }
 
-    glTranslatef(0.0f, -7.5f, zoom+pantime*0.001*atan(pantime*0.005));
-    if (jormymillis > 0) {
-        glRotatef(jormymillis*0.00026,-1.0,0.0,0.0);
-        glRotatef(cos(mymillis*0.0010)*(sin(mymillis*0.002)*360),0.0,1.0,0.0);
-    }
+glTranslatef(0.0f, startti2 > 0 ? -5.5f-pantime*0.0008 : startti == 0 ? -11.5f : -5.5, zoom+pantime*0.001*atan(pantime*0.005));
+if (jormymillis > 0) {
+glRotatef(jormymillis*0.0026,-1.0,0.0,0.0);
+}
 
 
     float zoomfactor = 2.0+jormymillis*0.0001;
     if (zoomfactor > 4.0) zoomfactor = 4.0;
 
     if (startti > 0) recursive_render(bilothree, bilothree->mRootNode, zoomfactor-0.5);
-    recursive_render(bilothree, bilothree->mRootNode, zoomfactor);
+recursive_render(bilothree, bilothree->mRootNode, zoomfactor);
     recursive_render(bilothree, bilothree->mRootNode, 6.0-zoomfactor);
 
 
-    glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fake_framebuffer); // default
-    glDisable(GL_BLEND);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fake_framebuffer); // default
+glEnable(GL_BLEND);
 
+    if (jormymillis > 0) glBlendFunc(GL_SRC_COLOR,GL_ONE_MINUS_DST_COLOR);
+    else glBlendFunc(GL_SRC_COLOR,GL_DST_ALPHA);
+if (startti == mymillis) glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    glUseProgram(shaders[hex]);
-    float widthLoc5 = glGetUniformLocation(shaders[hex], "width");
-    float heightLoc5 = glGetUniformLocation(shaders[hex], "height");
-    float timeLoc5 = glGetUniformLocation(shaders[hex], "time");
-    float effuLoc5 = glGetUniformLocation(shaders[hex], "effu");
+glUseProgram(shaders[hex]);
+float widthLoc5 = glGetUniformLocation(shaders[hex], "width");
+float heightLoc5 = glGetUniformLocation(shaders[hex], "height");
+float timeLoc5 = glGetUniformLocation(shaders[hex], "time");
+float effuLoc5 = glGetUniformLocation(shaders[hex], "effu");
 
-    glUniform1f(widthLoc5, g_Width);
-    glUniform1f(heightLoc5, g_Height);
-    glUniform1f(timeLoc5, mymillis/100);
+glUniform1f(widthLoc5, g_Width);
+glUniform1f(heightLoc5, g_Height);
+glUniform1f(timeLoc5, mymillis/100);
     glUniform1f(effuLoc5, 0.0);
-    glUniform1f(effuLoc5, 0.0);
+glUniform1f(effuLoc5, 0.0);
 
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, fb_tex);
+glActiveTexture(GL_TEXTURE0);
+glBindTexture(GL_TEXTURE_2D, fb_tex);
 
-    float location5 = glGetUniformLocation(shaders[hex], "texture0");
-    glUniform1i(location5, 0);
+float location5 = glGetUniformLocation(shaders[hex], "texture0");
+glUniform1i(location5, 0);
 
-    glLoadIdentity();
+glLoadIdentity();
 
-    glTranslatef(-1.2, -1.0, -1.0);
+glTranslatef(-1.2, -1.0, -1.0);
 
-    int i=0;
-    int j=0;
-    glBegin(GL_QUADS);
-    glVertex2f(i, j);
-    glVertex2f(i + 100, j);
-    glVertex2f(i + 100, j + 100);
-    glVertex2f(i, j + 100);
-    glEnd();
+int i=0;
+int j=0;
+glBegin(GL_QUADS);
+glVertex2f(i, j);
+glVertex2f(i + 100, j);
+glVertex2f(i + 100, j + 100);
+glVertex2f(i, j + 100);
+glEnd();
 
 
 }
+
 
 
 
@@ -3003,7 +3005,8 @@ void logic()
         if (music_started == -1) {
             printf("--- MIDISYS-ENGINE: Total Loading Time: %f\n", (float)((((float)t_loader_d - (float)t_loader_begin) / 1000000.0F ) * 1000));
             BASS_ChannelPlay(music_channel,FALSE); music_started = 1;
-        } // BASS_ChannelSetPosition(music_channel, 31000000, BASS_POS_BYTE); }
+            BASS_ChannelSetPosition(music_channel, 57000000, BASS_POS_BYTE);
+        } 
 
 	    QWORD bytepos = BASS_ChannelGetPosition(music_channel, BASS_POS_BYTE);
 	    double pos = BASS_ChannelBytes2Seconds(music_channel, bytepos);
