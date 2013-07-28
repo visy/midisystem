@@ -52,6 +52,14 @@ int mapping_count = 0;
 int scene_shader_params[16] = {-1};
 int scene_shader_param_type[16] = {-1};
 
+// audio
+float millis = 0;
+float scene_start_millis = 0;
+
+int music_started = -1;
+
+DWORD music_channel = 0;
+
 
 
 #ifdef __APPLE__
@@ -835,39 +843,6 @@ SceneLogicCallback scene_logic[] = {
 										&dummy,
 										&KolmeDeeLogic
 									 };
-
-// midi sync
-
-MIDI_MSG timeline[64][100000];
-char timeline_trackname[64][512];
-int timeline_trackindex[64] = { 0 };
-int timeline_tracklength[64] = { -1 };
-int timeline_trackcount = 0;
-
-// midi track number of mapping data
-int mapping_tracknum[1000];
-// midi to shader param map from mapping.txt
-int mapping_paramnum[1000];
-// track to map from
-char mapping_trackname[1000][512];
-// map type: 0 == trig (noteon / off), 1 == param (modwheel / cc value)
-int mapping_type[1000];
-// number of active mappings from midi to shader param
-int mapping_count = 0;
-
-// current shader param values 
-int scene_shader_params[16] = {-1};
-int scene_shader_param_type[16] = {-1};
-
-// audio
-
-float millis = 0;
-float scene_start_millis = 0;
-
-int music_started = -1;
-
-DWORD music_channel = 0;
-
 
 /////////////////////////////////////////////////////////
 //////////////////////// PLAYLIST ////////////////////////
