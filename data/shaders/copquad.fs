@@ -50,7 +50,7 @@ void main()
         col.g += clamp(ceil(mod(gl_FragCoord.y+off, 30.0)) - 29.0, 0.0, (1.0*grid));
         col.g = clamp(col.g, 0.0, (1.0*grid));
 
-        if (color.g > 0.70 && color.r > 0.70 && color.b < 0.70)
+        if (color.g > 0.70 && color.r > 0.70 && color.b < 0.60)
         {
             color.g = col.g;
         }

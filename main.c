@@ -674,6 +674,8 @@ const char* texturess[] = {"data/gfx/scene.jpg",
                     "data/gfx/prip8.jpg",
                     "data/gfx/copkiller9.jpg",
                     "data/gfx/prip9.jpg",
+                    "data/gfx/copkiller9.jpg",
+                    "data/gfx/prip10.jpg",
 
                     "data/gfx/aegis.jpg",
                     "data/gfx/ll1.png",
@@ -705,6 +707,8 @@ enum texturi { tex_scene, tex_dude, tex_dude2, tex_mask, tex_note, tex_exit,
                 tex_copkiller7, tex_prip7,
                 tex_copkiller8, tex_prip8,
                 tex_copkiller9, tex_prip9,
+                tex_copkiller10,tex_prip10,
+
                 tex_aegis, tex_ll1,tex_ll2,tex_ll3,tex_ll4,tex_ll5,
                 tex_grayeye, tex_room, tex_room2, tex_room3,
                 tex_majestic1, tex_majestic2, tex_majestic3, tex_majestic4,
@@ -2433,7 +2437,7 @@ void CopScene()
 
 	//int texind = (int)(mymillis*(0.001/2));
     int texind = coptexid;
-	if (texind > 17) texind = 17;
+	if (texind > 19) texind = 19;
 
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, textures[tex_copkiller + texind]);
@@ -3074,7 +3078,7 @@ void logic()
             printf("--- MIDISYS-ENGINE: total loading time: %f\n", (float)((((float)t_loader_d - (float)t_loader_begin) / 1000000.0F ) * 1000));
             printf("--- MIDISYS-ENGINE: demo startup\n");
             BASS_ChannelPlay(music_channel,FALSE); music_started = 1;
-            //BASS_ChannelSetPosition(music_channel, 20000000, BASS_POS_BYTE);
+            BASS_ChannelSetPosition(music_channel, 20000000, BASS_POS_BYTE);
         } 
 
 	    QWORD bytepos = BASS_ChannelGetPosition(music_channel, BASS_POS_BYTE);
