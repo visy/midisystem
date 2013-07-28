@@ -702,8 +702,12 @@ int room_texnum = 0;
 
 // assimp scenes
 
+Assimp::Importer importer[4];
+
 aiScene* kapsule = NULL;
 aiScene* bilothree = NULL;
+aiScene* bilothorn = NULL;
+aiScene* biloflat = NULL;
 
 std::map<std::string, GLuint*> textureIdMap; // map image filenames to textureIds
 GLuint*	textureIds;	// pointer to texture array
@@ -1907,7 +1911,7 @@ on_key_press ( unsigned char key)
     glutSwapBuffers();
     glutPostRedisplay();
 }*/
-    
+
 int keyindex = 0;
 int nextmillis = 0;
 void ConsoleLogic(float dt)
@@ -1945,8 +1949,6 @@ void ConsoleLogic2(float dt)
 }
 
 int kolmedeeindex = 0;
-
-Assimp::Importer importer[3];
 
 aiScene* Import3DFromFile(const std::string& pFile)
 {
@@ -1999,13 +2001,11 @@ bool LoadTextures()
 
     return true;
 }
-int assets_3dmodel_total = 2;
+int assets_3dmodel_total = 1;
 bool Load3DAssets()
 {
     kapsule = Import3DFromFile("data/models/kapsule.obj");
     LoadGLTextures(kapsule);
-    bilothree = Import3DFromFile("data/models/bilotrip.3ds");
-    LoadGLTextures(bilothree);
 
     return true;
 }
@@ -2025,8 +2025,98 @@ void Loader()
 
     float phase = (float)((float)(assets_index) / (float)(assets_total));
 
-    glClearColor (phase,phase,phase,1.0);
+    //glClearColor (phase,phase,phase,1.0);
     glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    float mymillis = phase*5400;
+    glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fb); // default
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    glUseProgram(0);
+
+    glDisable(GL_TEXTURE_2D);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_COLOR, GL_ONE_MINUS_SRC_COLOR);
+
+    glShadeModel(GL_SMOOTH);    // Enables Smooth Shading
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    glClearDepth(1.0f); // Depth Buffer Setup
+    glEnable(GL_DEPTH_TEST);    // Enables Depth Testing
+    glDepthFunc(GL_LEQUAL); // The Type Of Depth Test To Do
+    glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);  // Really Nice Perspective Calculation
+
+    glDisable(GL_LIGHTING);
+    glEnable(GL_LIGHT0); // Uses default lighting parameters
+    glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE);
+    glDisable(GL_NORMALIZE);
+
+    GLfloat LightAmbient[]= { 0.0f, 1.0f, 0.0f, 1.0f };
+    GLfloat LightDiffuse[]= { 0.0f, 1.0f, 0.0f, 1.0f };
+    GLfloat LightPosition[]= { 0.0f, 0.0f, 15.0f, 1.0f };
+
+    glLightfv(GL_LIGHT1, GL_AMBIENT, LightAmbient);
+    glLightfv(GL_LIGHT1, GL_DIFFUSE, LightDiffuse);
+    glLightfv(GL_LIGHT1, GL_POSITION, LightPosition);
+    glEnable(GL_LIGHT1);
+
+    float tmp;
+    float zoom = -250.0f+((mymillis)*0.05);
+
+    if (zoom > -0.5 && startti == 0) { startti = mymillis; }
+    if (zoom >= -0.5) { zoom = -0.5; jormymillis=(mymillis-startti); }
+
+
+    if (jormymillis > 0) {
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    }
+
+    glLoadIdentity();
+
+    glTranslatef(0.0f, -7.5f, zoom);
+    if (jormymillis > 0) {
+        glRotatef(jormymillis*0.0026,-1.0,0.0,0.0);
+    }
+
+    aiScene* loaderscene = biloflat;
+    recursive_render(loaderscene, loaderscene->mRootNode, 2.0+jormymillis*0.001);
+    if (jormymillis > 0)recursive_render(loaderscene, loaderscene->mRootNode, 4.0-jormymillis*0.001);
+
+
+    glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fake_framebuffer); // default
+    glDisable(GL_BLEND);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+
+    glUseProgram(shaders[hex]);
+    float widthLoc5 = glGetUniformLocation(shaders[hex], "width");
+    float heightLoc5 = glGetUniformLocation(shaders[hex], "height");
+    float timeLoc5 = glGetUniformLocation(shaders[hex], "time");
+    float effuLoc5 = glGetUniformLocation(shaders[hex], "effu");
+
+    glUniform1f(widthLoc5, g_Width);
+    glUniform1f(heightLoc5, g_Height);
+    glUniform1f(timeLoc5, mymillis/100);
+    glUniform1f(effuLoc5, jormymillis > 0 ? 1.0 : 0.0);
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, fb_tex);
+
+    float location5 = glGetUniformLocation(shaders[hex], "texture0");
+    glUniform1i(location5, 0);
+
+    glLoadIdentity();
+
+    glTranslatef(-1.2, -1.0, -1.0);
+
+    int i=0;
+    int j=0;
+    glBegin(GL_QUADS);
+    glVertex2f(i, j);
+    glVertex2f(i + 100, j);
+    glVertex2f(i + 100, j + 100);
+    glVertex2f(i, j + 100);
+    glEnd();
+
     glFlush();
     glutSwapBuffers();
     glutPostRedisplay();
@@ -2065,7 +2155,7 @@ void Loader()
     } else {
         // format bilotrip terminal 1.6.2.0
 
-        glClearColor (0.5,0.5,0.5,1.0);
+        glClearColor (0.28,0.28,0.28,1.0);
         glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glFlush();
         glutSwapBuffers();
@@ -3203,6 +3293,15 @@ int main(int argc, char* argv[])
 	LoadMIDIEventList("data/music/music.mid");
 	ParseMIDITimeline("data/music/mapping.txt");
 	InitAudio("data/music/EhkaValmisMC3.mp3");
+
+    // Loader assets
+
+    bilothorn = Import3DFromFile("data/models/bilotrip_logo_thorn.3ds");
+    LoadGLTextures(bilothorn);
+    biloflat = Import3DFromFile("data/models/bilotrip_logo_flat.3ds");
+    LoadGLTextures(biloflat);
+    bilothree = Import3DFromFile("data/models/bilotrip.3ds");
+    LoadGLTextures(bilothree);
 
 	// start mainloop
 
