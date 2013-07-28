@@ -648,14 +648,13 @@ GLuint depth_rb2 = 0;
 GLuint depth_rb3 = 0;
 // textures
 
-int textures[40] = {-1};
+int textures[52] = {-1};
 const char* texturess[] = {"data/gfx/scene.jpg",
                     "data/gfx/dude1.jpg",
                     "data/gfx/dude2.jpg",
                     "data/gfx/mask.jpg",
                     "data/gfx/note.jpg",
                     "data/gfx/exit.jpg",
-
                     "data/gfx/copkiller1.jpg",
                     "data/gfx/prip1.jpg",
                     "data/gfx/copkiller2.jpg",
@@ -674,27 +673,32 @@ const char* texturess[] = {"data/gfx/scene.jpg",
                     "data/gfx/prip8.jpg",
                     "data/gfx/copkiller9.jpg",
                     "data/gfx/prip9.jpg",
-                    "data/gfx/copkiller9.jpg",
+                    "data/gfx/copkiller10.jpg",
                     "data/gfx/prip10.jpg",
-
+                    "data/gfx/copkiller11.jpg",
+                    "data/gfx/prip11.jpg",
+                    "data/gfx/copkiller12.jpg",
+                    "data/gfx/prip12.jpg",
+                    "data/gfx/copkiller13.jpg",
+                    "data/gfx/prip13.jpg",
+                    "data/gfx/copkiller14.jpg",
+                    "data/gfx/prip14.jpg",
+                    "data/gfx/copkiller15.jpg",
+                    "data/gfx/prip15.jpg",
                     "data/gfx/aegis.jpg",
                     "data/gfx/ll1.png",
                     "data/gfx/ll2.png",
                     "data/gfx/ll3.png",
                     "data/gfx/ll4.png",
                     "data/gfx/ll5.png",
-
                     "data/gfx/grayeye.jpg",
-
                     "data/gfx/room1.jpg",
                     "data/gfx/room2.jpg",
                     "data/gfx/room3.jpg",
-
                     "data/gfx/majic1.jpg",
                     "data/gfx/majic2.jpg",
                     "data/gfx/majic3.jpg",
                     "data/gfx/majic4.jpg",
-
                     "data/gfx/bilogon.png",
                     "data/gfx/noise.jpg"};
 enum texturi { tex_scene, tex_dude, tex_dude2, tex_mask, tex_note, tex_exit,
@@ -708,6 +712,11 @@ enum texturi { tex_scene, tex_dude, tex_dude2, tex_mask, tex_note, tex_exit,
                 tex_copkiller8, tex_prip8,
                 tex_copkiller9, tex_prip9,
                 tex_copkiller10,tex_prip10,
+                tex_copkiller11,tex_prip11,
+                tex_copkiller12,tex_prip12,
+                tex_copkiller13,tex_prip13,
+                tex_copkiller14,tex_prip14,
+                tex_copkiller15,tex_prip15,
 
                 tex_aegis, tex_ll1,tex_ll2,tex_ll3,tex_ll4,tex_ll5,
                 tex_grayeye, tex_room, tex_room2, tex_room3,
@@ -2437,7 +2446,7 @@ void CopScene()
 
 	//int texind = (int)(mymillis*(0.001/2));
     int texind = coptexid;
-	if (texind > 19) texind = 19;
+	if (texind > 30) texind = 30;
 
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, textures[tex_copkiller + texind]);
