@@ -28,6 +28,9 @@
 #include "midiutil.h"
 
 
+// GLUT window handle (1 for windowed display, 0 for fullscreen gamemode)
+GLuint window = 1;
+
 // midi sync
 
 MIDI_MSG timeline[64][100000] = {NULL};
@@ -702,12 +705,13 @@ int room_texnum = 0;
 
 // assimp scenes
 
-Assimp::Importer importer[4];
+Assimp::Importer importer[5];
 
 aiScene* kapsule = NULL;
 aiScene* bilothree = NULL;
 aiScene* bilothorn = NULL;
 aiScene* biloflat = NULL;
+aiScene* bilotetra = NULL;
 
 std::map<std::string, GLuint*> textureIdMap; // map image filenames to textureIds
 GLuint*	textureIds;	// pointer to texture array
@@ -2077,7 +2081,7 @@ void Loader()
         glRotatef(jormymillis*0.0026,-1.0,0.0,0.0);
     }
 
-    aiScene* loaderscene = biloflat;
+    aiScene* loaderscene = bilothree;
     recursive_render(loaderscene, loaderscene->mRootNode, 2.0+jormymillis*0.001);
     if (jormymillis > 0)recursive_render(loaderscene, loaderscene->mRootNode, 4.0-jormymillis*0.001);
 
@@ -3067,8 +3071,12 @@ void reshape(GLint width, GLint height)
 void quit()
 {
 	printf("--- MIDISYS ENGINE: time to quit()\n");
-	glutLeaveGameMode();
-	glutLeaveMainLoop();
+    if(!window) {
+    	glutLeaveGameMode();
+	    glutLeaveMainLoop();
+    } else {
+        glutDestroyWindow(window);
+    }
 }
 
 void keyPress(unsigned char key, int x, int y)
@@ -3211,16 +3219,17 @@ void InitGraphics(int argc, char* argv[])
 	glutInit(&argc, argv);
 
 
-	glutInitDisplayMode( GLUT_RGBA | GLUT_DOUBLE | GLUT_DEPTH );
-    // 1280x720, 32bit pixel depth, 60Hz refresh rate
-    glutGameModeString( "1280x720:32@60" );
+    if(!window) {
+	    glutInitDisplayMode( GLUT_RGBA | GLUT_DOUBLE | GLUT_DEPTH );
+        // 1280x720, 32bit pixel depth, 60Hz refresh rate
+        glutGameModeString( "1280x720:32@60" );
 
-    // start fullscreen game mode
-    glutEnterGameMode();
-
-	//glutCreateWindow("MIDISYS window");	
-    //glutReshapeWindow(c_Width, c_Height);
-	//glutFullScreen();
+        // start fullscreen game mode
+        glutEnterGameMode();
+    } else {
+        window = glutCreateWindow("MIDISYS window");   
+        glutReshapeWindow(c_Width, c_Height);
+    }
 
 	glutSetCursor(GLUT_CURSOR_NONE);
 
@@ -3296,12 +3305,14 @@ int main(int argc, char* argv[])
 
     // Loader assets
 
-    bilothorn = Import3DFromFile("data/models/bilotrip_logo_thorn.3ds");
-    LoadGLTextures(bilothorn);
+    /*bilothorn = Import3DFromFile("data/models/bilotrip_logo_thorn.3ds");
+    LoadGLTextures(bilothorn);*/
     biloflat = Import3DFromFile("data/models/bilotrip_logo_flat.3ds");
     LoadGLTextures(biloflat);
     bilothree = Import3DFromFile("data/models/bilotrip.3ds");
     LoadGLTextures(bilothree);
+    bilotetra = Import3DFromFile("data/models/bilotrip_logo_tetra.3ds");
+    LoadGLTextures(bilotetra);
 
 	// start mainloop
 
