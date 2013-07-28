@@ -29,7 +29,7 @@
 
 
 // GLUT window handle (1 for windowed display, 0 for fullscreen gamemode)
-GLuint window = 1;
+GLuint window = 0;
 
 // midi sync
 
