@@ -184,7 +184,8 @@ void main()
     pos = uv = (gl_FragCoord.xy - vec2(0.0, 0.5)) / vec2(width,height);
     uv.y = floor(uv.y * linecount) / linecount;
 
-    if (effu > 0.0) gl_FragColor = vignette(gradient(scanline(0.2, 1.5-atan(beat)*6.0))) + vec4(displace.rgb+color.rgb,color.a);
+    if (effu == 1.0) gl_FragColor = vignette(gradient(scanline(0.2, 1.5-atan(beat)*6.0))) + vec4(displace.rgb+color.rgb,color.a);
+    else if (effu == 2.0) gl_FragColor = vec4(color.r-beat*0.2,color.g-beat*0.2,color.b-beat*0.2,color.a-beat*0.2)-vignette(gradient(scanline(1.2*beat, 1.0*beat)));
     else gl_FragColor = vec4(displace.rgb+color.rgb,color.a);
 
     //gl_FragColor = color;

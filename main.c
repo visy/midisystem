@@ -748,10 +748,11 @@ int room_texnum = 0;
 
 // assimp scenes
 
-Assimp::Importer importer[5];
+Assimp::Importer importer[7];
 
 aiScene* kapsule = NULL;
 aiScene* bilothree = NULL;
+aiScene* brieflycase = NULL;
 aiScene* bilothorn = NULL;
 aiScene* biloflat = NULL;
 aiScene* bilotetra = NULL;
@@ -1363,7 +1364,6 @@ void ParseMIDITimeline(const char* mappingFile)
 GLuint LoadTexture(const char* pFilename, int invert)
 {
 	if (strcmp(pFilename,"") == 0) return 99999;
-
 	printf(" - LoadTexture(\"%s\")", pFilename);
 	GLuint tex_2d;
 
@@ -1739,18 +1739,18 @@ float pantime = 0;
 void BiloThreeScene()
 {
 float mymillis = (millis-scene_start_millis);
-glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fb); // default
-glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fb2); // default
+glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+glClearDepth(1.0f); // Depth Buffer Setup
+//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 glUseProgram(0);
 
 glDisable(GL_TEXTURE_2D);
-glEnable(GL_BLEND);
-glBlendFunc(GL_SRC_COLOR, GL_ONE_MINUS_SRC_COLOR);
+glDisable(GL_BLEND);
+glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_DST_COLOR);
 
 glShadeModel(GL_SMOOTH);    // Enables Smooth Shading
-glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-glClearDepth(1.0f); // Depth Buffer Setup
 glEnable(GL_DEPTH_TEST);    // Enables Depth Testing
 glDepthFunc(GL_LEQUAL); // The Type Of Depth Test To Do
 glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);  // Really Nice Perspective Calculation
@@ -1758,7 +1758,7 @@ glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);  // Really Nice Perspective C
 glEnable(GL_LIGHTING);
 glEnable(GL_LIGHT0); // Uses default lighting parameters
 glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE);
-glDisable(GL_NORMALIZE);
+glEnable(GL_NORMALIZE);
 
 GLfloat LightAmbient[]= { startti == 0 ? 0.25 : 0.6f, startti == 0 ? 0.25 : 0.6f, startti == 0 ? 0.25 : 0.6f, 1.0f };
 GLfloat LightDiffuse[]= { startti == 0 ? 0.25 : 0.6f, startti == 0 ? 0.25 : 0.6f, startti == 0 ? 0.25 : 0.6f, 1.0f };
@@ -1806,9 +1806,9 @@ recursive_render(bilothree, bilothree->mRootNode, zoomfactor);
     recursive_render(bilothree, bilothree->mRootNode, 6.0-zoomfactor);
 
 
-glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fake_framebuffer); // default
-glEnable(GL_BLEND);
-
+glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0); // default
+glDisable(GL_BLEND);
+glEnable(GL_TEXTURE_2D);
     if (jormymillis > 0) glBlendFunc(GL_SRC_COLOR,GL_ONE_MINUS_DST_COLOR);
     else glBlendFunc(GL_SRC_COLOR,GL_DST_ALPHA);
 if (startti == mymillis) glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -1822,11 +1822,10 @@ float effuLoc5 = glGetUniformLocation(shaders[hex], "effu");
 glUniform1f(widthLoc5, g_Width);
 glUniform1f(heightLoc5, g_Height);
 glUniform1f(timeLoc5, mymillis/100);
-    glUniform1f(effuLoc5, 0.0);
 glUniform1f(effuLoc5, 0.0);
 
 glActiveTexture(GL_TEXTURE0);
-glBindTexture(GL_TEXTURE_2D, fb_tex);
+glBindTexture(GL_TEXTURE_2D, fb_tex2);
 
 float location5 = glGetUniformLocation(shaders[hex], "texture0");
 glUniform1i(location5, 0);
@@ -1894,6 +1893,73 @@ void kapsule_render()
     glDisable(GL_LIGHTING);
     glDisable(GL_NORMALIZE);
 }
+
+float brimillis = 0.0;
+float bristart = 0.0;
+float brixrot = 0.0;
+float briyrot = 0.0;
+
+void brieflycase_render()
+{
+    if (bristart == 0) {bristart = millis;}
+    brimillis = millis-bristart;
+
+    glEnable(GL_BLEND);
+    glUseProgram(0);
+    glEnable(GL_TEXTURE_2D);
+    glShadeModel(GL_SMOOTH);    // Enables Smooth Shading
+    glEnable(GL_DEPTH_TEST);    // Enables Depth Testing
+    glDepthFunc(GL_LEQUAL); // The Type Of Depth Test To Do
+    glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);  // Really Nice Perspective Calculation
+
+    glEnable(GL_LIGHTING);
+    glEnable(GL_LIGHT0); // Uses default lighting parameters
+    glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE);
+    glEnable(GL_NORMALIZE);
+
+    float brifade = 1.0f;
+
+    if (brimillis <= 1000) {
+        brifade = brimillis*0.001;
+        if (brifade > 1.0f) brifade = 1.0f;
+    }
+    GLfloat LightAmbient[]= { 0.5f*brifade, 0.5f*brifade, 0.5f*brifade, 1.0f*brifade };
+    GLfloat LightDiffuse[]= { 1.0f*brifade, 1.0f*brifade, 1.0f*brifade, 1.0f*brifade };
+    GLfloat LightPosition[]= { 0.0f, 0.0f, 15.0f*brifade, 1.0f*brifade };
+
+    glLightfv(GL_LIGHT1, GL_AMBIENT, LightAmbient);
+    glLightfv(GL_LIGHT1, GL_DIFFUSE, LightDiffuse);
+    glLightfv(GL_LIGHT1, GL_POSITION, LightPosition);
+    glEnable(GL_LIGHT1);
+
+    float tmp;
+
+    glLoadIdentity();
+
+    //nosto
+    if (brimillis > 1000 && brimillis < 3000)
+    {
+        briyrot=(brimillis-1000)*0.047*atan(brimillis);
+        if (briyrot > 90.0f) briyrot = 90.0f;
+    }
+
+    if (brimillis > 5000)
+    {
+        brixrot=(brimillis-5000)*0.047*2*atan(brimillis-4000);
+//        if (brixrot > 180.0f) brixrot = 180.0f;
+    }
+
+    glTranslatef(0.0f, 0.0f, -50.0f+brixrot*0.2);   // Move 40 Units And Into The Screen
+    //glRotatef(millis*0.001,1.0,0,0);
+    glRotatef(-briyrot,1.0,0.0,0.0);
+    glRotatef(brixrot,0.0,0.0,1.0);
+
+    recursive_render(brieflycase, brieflycase->mRootNode, 2.5);
+    glDisable(GL_DEPTH_TEST);
+    glDisable(GL_LIGHTING);
+    glDisable(GL_NORMALIZE);
+}
+
 
 void
 on_key_press ( unsigned char key)
@@ -2441,6 +2507,7 @@ glEnd();
 
 if (millis > 37400 && millis < 37600) kapsule_render();
 
+
 }
 
 int copbeatcounter = -1;
@@ -2894,7 +2961,13 @@ float vhsbeat_start = 0;
 
 void VHSPost(float effuon)
 {
+    if (current_scene == 6) effuon = 2.0f;
 	float mymillis = (millis-scene_start_millis);
+
+    if (current_scene == 1 || current_scene == 2)
+    {
+        if (millis > 105000 && millis < 113000) brieflycase_render();
+    }
 
     if (current_scene == 1 || current_scene == 3) 
     {
@@ -2929,17 +3002,35 @@ void VHSPost(float effuon)
 
     float beatLoc = glGetUniformLocation(shaders[vhs], "beat");
 
-    if ((current_scene == 2 || current_scene == 1) && millis > 55000)
+    if ((current_scene == 2 || current_scene == 1 || current_scene == 4) && (millis > 55000 && millis < 186000))
     {
         if (scene_shader_params[2] == 36) { vhsbeat = 1.0f; vhsbeat_start = mymillis; }
         vhsbeat-=((mymillis-vhsbeat_start)*0.00005);
         if (vhsbeat <= (current_scene == 2 ? 0.2 : 0.1)) vhsbeat = (current_scene == 2 ? 0.2 : 0.1);
     }
+    else if (current_scene == 3) {
+        if (millis >= 182500 && vhsbeat_start < 182500) { 
+            vhsbeat_start = millis;
+            //printf("START!\n");
+        }
+
+        if (vhsbeat_start >= 182500)
+        {
+            vhsbeat = (millis-vhsbeat_start)*(0.02/30);
+            //printf("vhsbeat:%f\n", vhsbeat);
+        }
+    }
+    else if (current_scene == 6)
+    {
+       if (scene_shader_params[2] == 36) { vhsbeat = 1.0f; vhsbeat_start = mymillis; }
+        vhsbeat-=((mymillis-vhsbeat_start)*0.0005);
+        if (vhsbeat < 0.0) vhsbeat = 0.0;
+
+    }
     else{
         vhsbeat = 0.0;
     }
 
-    //printf("vhsbeat:%f\n", vhsbeat);
 
 	glUniform1f(widthLoc5, g_Width);
 	glUniform1f(heightLoc5, g_Height);
@@ -3119,7 +3210,7 @@ void logic()
             printf("--- MIDISYS-ENGINE: total loading time: %f\n", (float)((((float)t_loader_d - (float)t_loader_begin) / 1000000.0F ) * 1000));
             printf("--- MIDISYS-ENGINE: demo startup\n");
             BASS_ChannelPlay(music_channel,FALSE); music_started = 1;
-            //BASS_ChannelSetPosition(music_channel, 50000000, BASS_POS_BYTE);
+            //BASS_ChannelSetPosition(music_channel, 37000000, BASS_POS_BYTE);
         } 
 
 	    QWORD bytepos = BASS_ChannelGetPosition(music_channel, BASS_POS_BYTE);
@@ -3156,7 +3247,7 @@ void display(void)
 {
     UpdateShaderParams();
 	scene_render[current_scene]();
-	VHSPost(assets_loaded && current_scene < 4 ? 1.0 : 0.0);
+	if (current_scene != 7) VHSPost(assets_loaded && current_scene <= 4 ? 1.0 : 0.0);
 
 	glutSwapBuffers();
 	frame++;
@@ -3431,6 +3522,8 @@ int main(int argc, char* argv[])
     LoadGLTextures(bilothree);
     bilotetra = Import3DFromFile("data/models/bilotrip_logo_tetra.3ds");
     LoadGLTextures(bilotetra);
+    brieflycase = Import3DFromFile("data/models/brieflycase.obj");
+    LoadGLTextures(brieflycase);
 
 	// start mainloop
 
