@@ -34,6 +34,11 @@ GLuint window = 0;
 
 // remove for non-debug build
 int debugmode = 0;
+// jump to demo position; 0 for whole demo
+int jump_to = 0;
+// some debugging flags
+bool load_video = true;
+bool load_textures = true;
 
 // midi sync
 
@@ -1368,6 +1373,8 @@ void ParseMIDITimeline(const char* mappingFile)
 
 GLuint LoadTexture(const char* pFilename, int invert)
 {
+    if(!load_textures) return;
+
 	if (strcmp(pFilename,"") == 0) return 99999;
 	printf(" - LoadTexture(\"%s\")", pFilename);
 	GLuint tex_2d;
@@ -2150,7 +2157,7 @@ void Loader()
     //glClearColor (phase,phase,phase,1.0);
     glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    float mymillis = phase*5000;
+    float mymillis = phase*4020;
     glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fb); // default
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -2203,7 +2210,7 @@ void Loader()
 
     glLoadIdentity();
 
-    glRotatef(180.0f*phase,0.0,0.0,1.0);
+    glRotatef(180.0f*phase*0.974,0.0,0.0,1.0);
     glTranslatef(0.0f, 0.0f, zoom);
     /*if (jormymillis > 0) {
         glRotatef(jormymillis*0.0026,-1.0,0.0,0.0);
@@ -2240,16 +2247,21 @@ void Loader()
     } else {
         // format bilotrip terminal 1.6.2.0
 
-    	if(phase > 0.975f) {
+    	/*if(phase > 0.975f) {
     		phase = 1.0f-phase;
-    	}
-        glClearColor (phase/1.5,phase/1.5,phase/1.5,1.0);
+    	}*/
+        glClearColor ((1.0f-phase)*0.86,(1.0f-phase)*0.86,(1.0f-phase)*0.86,1.0);
         glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glFlush();
         glutSwapBuffers();
     }
 
     //printf("n:%i\n",(int)((float)((float)(assets_index) / (float)(assets_total)) * 3.0f));
+    /*glBegin(GL_TRIANGLES);
+        glVertex3f(-25.0f,-25.0f,-50.0f);
+        glVertex3f(-25.0f,25.0f,-50.0f);
+        glVertex3f(25.0f,25.0f,-50.0f);
+    glEnd();*/
     for(int n = 0; n < ((int)(phase*3.0) + 1); n++) {
     	glRotatef(120.0f,0.0,0.0,(float)(n));
 	    recursive_render(loaderscene, loaderscene->mRootNode, 2.0+jormymillis*0.001);
@@ -3223,7 +3235,7 @@ void logic()
             printf("--- MIDISYS-ENGINE: total loading time: %f\n", loading_time);
             printf("--- MIDISYS-ENGINE: demo startup\n");
             BASS_ChannelPlay(music_channel,FALSE); music_started = 1;
-            BASS_ChannelSetPosition(music_channel, 60000000, BASS_POS_BYTE);
+            if(jump_to) { BASS_ChannelSetPosition(music_channel, jump_to, BASS_POS_BYTE); }
         } 
 
 	    QWORD bytepos = BASS_ChannelGetPosition(music_channel, BASS_POS_BYTE);
@@ -3508,16 +3520,16 @@ int main(int argc, char* argv[])
 
 	printf("--- nu laddar vi en videofilmen, det aer jaetteroligt att fuska poe Assembly\n");	
 
-	OggPlayer ogg("data/video/video.ogg",AF_S16,2,44100,VF_BGRA);
-	if(ogg.fail()) {
-		printf("could not open video file \"%s\"\n", "data/video/video.ogg\n");
-		return -2;
-	}
-	
-	YUVFrame yuv_frame(ogg);
 
-	myVideoFrame = &yuv_frame;
-
+    if(load_video) {
+    	OggPlayer ogg("data/video/video.ogg",AF_S16,2,44100,VF_BGRA);
+	   if(ogg.fail()) {
+	       printf("could not open video file \"%s\"\n", "data/video/video.ogg\n");
+	       return -2;
+	    }
+        YUVFrame yuv_frame(ogg);
+        myVideoFrame = &yuv_frame;
+    } else { myVideoFrame = NULL; }
 
 	// init MIDI sync and audio
 
