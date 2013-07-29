@@ -86,7 +86,7 @@ float vhsbeat_start = 0;
 #include "assimp/DefaultLogger.hpp"
 #include "assimp/LogStream.hpp"
 
-#include "SOIL.h"
+#include "stb_image.c"
 
 #include "bass.h"
 
@@ -662,12 +662,12 @@ GLuint depth_rb3 = 0;
 // textures
 
 int textures[65] = {-1};
-const char* texturess[] = {"data/gfx/scene.jpg",
-                    "data/gfx/dude1.jpg",
-                    "data/gfx/dude2.jpg",
-                    "data/gfx/mask.jpg",
-                    "data/gfx/note.jpg",
-                    "data/gfx/exit.jpg",
+const char* texturess[] = {"data/gfx/scene.png",
+                    "data/gfx/dude1.png",
+                    "data/gfx/dude2.png",
+                    "data/gfx/mask.png",
+                    "data/gfx/note.png",
+                    "data/gfx/exit.png",
                     "data/gfx/v0.png",
                     "data/gfx/v1.png",
                     "data/gfx/v2.png",
@@ -681,52 +681,52 @@ const char* texturess[] = {"data/gfx/scene.jpg",
                     "data/gfx/v9a.png",
                     "data/gfx/v9b.png",
                     "data/gfx/v9c.png",
-                    "data/gfx/copkiller1.jpg",
-                    "data/gfx/prip1.jpg",
-                    "data/gfx/copkiller2.jpg",
-                    "data/gfx/prip2.jpg",
-                    "data/gfx/copkiller3.jpg",
-                    "data/gfx/prip3.jpg",
-                    "data/gfx/copkiller4.jpg",
-                    "data/gfx/prip4.jpg",
-                    "data/gfx/copkiller5.jpg",
-                    "data/gfx/prip5.jpg",
-                    "data/gfx/copkiller6.jpg",
-                    "data/gfx/prip6.jpg",
-                    "data/gfx/copkiller7.jpg",
-                    "data/gfx/prip7.jpg",
-                    "data/gfx/copkiller8.jpg",
-                    "data/gfx/prip8.jpg",
-                    "data/gfx/copkiller9.jpg",
-                    "data/gfx/prip9.jpg",
-                    "data/gfx/copkiller10.jpg",
-                    "data/gfx/prip10.jpg",
-                    "data/gfx/copkiller11.jpg",
-                    "data/gfx/prip11.jpg",
-                    "data/gfx/copkiller12.jpg",
-                    "data/gfx/prip12.jpg",
-                    "data/gfx/copkiller13.jpg",
-                    "data/gfx/prip13.jpg",
-                    "data/gfx/copkiller14.jpg",
-                    "data/gfx/prip14.jpg",
-                    "data/gfx/copkiller15.jpg",
-                    "data/gfx/prip15.jpg",
-                    "data/gfx/aegis.jpg",
+                    "data/gfx/copkiller1.png",
+                    "data/gfx/prip1.png",
+                    "data/gfx/copkiller2.png",
+                    "data/gfx/prip2.png",
+                    "data/gfx/copkiller3.png",
+                    "data/gfx/prip3.png",
+                    "data/gfx/copkiller4.png",
+                    "data/gfx/prip4.png",
+                    "data/gfx/copkiller5.png",
+                    "data/gfx/prip5.png",
+                    "data/gfx/copkiller6.png",
+                    "data/gfx/prip6.png",
+                    "data/gfx/copkiller7.png",
+                    "data/gfx/prip7.png",
+                    "data/gfx/copkiller8.png",
+                    "data/gfx/prip8.png",
+                    "data/gfx/copkiller9.png",
+                    "data/gfx/prip9.png",
+                    "data/gfx/copkiller10.png",
+                    "data/gfx/prip10.png",
+                    "data/gfx/copkiller11.png",
+                    "data/gfx/prip11.png",
+                    "data/gfx/copkiller12.png",
+                    "data/gfx/prip12.png",
+                    "data/gfx/copkiller13.png",
+                    "data/gfx/prip13.png",
+                    "data/gfx/copkiller14.png",
+                    "data/gfx/prip14.png",
+                    "data/gfx/copkiller15.png",
+                    "data/gfx/prip15.png",
+                    "data/gfx/aegis.png",
                     "data/gfx/ll1.png",
                     "data/gfx/ll2.png",
                     "data/gfx/ll3.png",
                     "data/gfx/ll4.png",
                     "data/gfx/ll5.png",
-                    "data/gfx/grayeye.jpg",
-                    "data/gfx/room1.jpg",
-                    "data/gfx/room2.jpg",
-                    "data/gfx/room3.jpg",
-                    "data/gfx/majic1.jpg",
-                    "data/gfx/majic2.jpg",
-                    "data/gfx/majic3.jpg",
-                    "data/gfx/majic4.jpg",
+                    "data/gfx/grayeye.png",
+                    "data/gfx/room1.png",
+                    "data/gfx/room2.png",
+                    "data/gfx/room3.png",
+                    "data/gfx/majic1.png",
+                    "data/gfx/majic2.png",
+                    "data/gfx/majic3.png",
+                    "data/gfx/majic4.png",
                     "data/gfx/bilogon.png",
-                    "data/gfx/noise.jpg"};
+                    "data/gfx/noise.png"};
 enum texturi { tex_scene, tex_dude, tex_dude2, tex_mask, tex_note, tex_exit,
                 tex_v0,tex_v1,tex_v2,tex_v3,tex_v4,tex_v5,tex_v6,tex_v7,tex_v8,tex_v9,tex_v9a,tex_v9b,tex_v9c,
                 tex_copkiller, tex_prip,
@@ -1370,45 +1370,77 @@ void ParseMIDITimeline(const char* mappingFile)
 	printf("--- MIDISYS ENGINE: ParseMIDITimeline() success\n");
 }
 
+
+void stbi_flip_y(int w, int h, int comp, stbi_uc *data)
+{
+   stbi_uc t;
+   size_t y;
+   size_t i;
+   size_t stride = w * comp;
+   uint8 *out = data;
+
+   for (y = 0; y < (h>>1); ++y) {
+      stbi_uc *p1 = out + y * stride;
+      stbi_uc *p2 = out + (h-1-y) * stride;
+      for (i = 0; i < stride; ++i) {
+         t = p1[i];
+         p1[i] = p2[i];
+         p2[i] = t;       
+      } 
+   }
+}
+
 GLuint LoadTexture(const char* pFilename, int invert)
 {
     if(!load_textures) return;
 
-	if (strcmp(pFilename,"") == 0) return 99999;
-	printf(" - LoadTexture(\"%s\")", pFilename);
-	GLuint tex_2d;
+    if (strcmp(pFilename,"") == 0) return 99999;
+    printf(" - LoadTexture(\"%s\")", pFilename);
+    GLuint tex_2d;
+    unsigned char *data;
+    int x, y, comp;
 
-	if (invert == 1) 
-	{
-		tex_2d = SOIL_load_OGL_texture
-		(
-			pFilename,
-			SOIL_LOAD_AUTO,
-			SOIL_CREATE_NEW_ID,
-			SOIL_FLAG_MIPMAPS | SOIL_FLAG_INVERT_Y | SOIL_FLAG_NTSC_SAFE_RGB | SOIL_FLAG_COMPRESS_TO_DXT
-		);
-	}
-	else
-	{
-		tex_2d = SOIL_load_OGL_texture
-		(
-			pFilename,
-			SOIL_LOAD_AUTO,
-			SOIL_CREATE_NEW_ID,
-			SOIL_FLAG_MIPMAPS | SOIL_FLAG_NTSC_SAFE_RGB | SOIL_FLAG_COMPRESS_TO_DXT
-		);
+    FILE *file = fopen(pFilename, "rb");
+    if (!file)
+        return 0;
 
-	}
+    data = stbi_load_from_file(file, &x, &y, &comp, 0);
+    fclose(file);
+    //gluBuild2DMipmaps( GL_TEXTURE_2D, 4, x, y, GL_RGBA, GL_UNSIGNED_BYTE, data );
 
-	if(0 == tex_2d)
-	{
-		printf(" error loading texture from file \"%s\"\n", SOIL_last_result());
-		exit(1);
-	}
+    glGenTextures( 1, &tex_2d );
+    glBindTexture( GL_TEXTURE_2D, tex_2d );
+    glPixelStorei( GL_UNPACK_ALIGNMENT, 1 );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
 
-	printf(" success\n");
 
-	return tex_2d;
+    if (invert == 1) 
+    {
+        stbi_flip_y(x, y, comp, data);
+    }
+    else
+    {
+    }
+
+    if( comp == 3 ) {
+        glTexImage2D( GL_TEXTURE_2D, 0, GL_RGB, x, y, 0, GL_RGB, GL_UNSIGNED_BYTE, data );
+    } else if( comp == 4 ) {
+        glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, x, y, 0, GL_RGBA, GL_UNSIGNED_BYTE, data );
+    }
+
+
+    if(0 == tex_2d)
+    {
+        printf(" error loading texture from file \"%s\"\n", pFilename);
+        exit(1);
+    }
+
+    printf(" success\n");
+
+    return tex_2d;
 }
 
 GLuint LoadTexture(const char* pFilename)
@@ -1750,7 +1782,7 @@ float pantime = 0;
 void BiloThreeScene()
 {
 float mymillis = (millis-scene_start_millis);
-glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fb2); // default
+glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fake_framebuffer); // default
 glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 glClearDepth(1.0f); // Depth Buffer Setup
 //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -1821,46 +1853,6 @@ glRotatef(zoom, 0.02, -0.01, -0.1*(mymillis-startti2)/100);
     if (startti > 0) recursive_render(bilothree, bilothree->mRootNode, zoomfactor-0.5);
 recursive_render(bilothree, bilothree->mRootNode, zoomfactor);
     recursive_render(bilothree, bilothree->mRootNode, 6.0-zoomfactor);
-
-
-glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0); // default
-glDisable(GL_BLEND);
-glEnable(GL_TEXTURE_2D);
-    if (jormymillis > 0) glBlendFunc(GL_SRC_COLOR,GL_ONE_MINUS_DST_COLOR);
-    else glBlendFunc(GL_SRC_COLOR,GL_DST_ALPHA);
-if (startti == mymillis) glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-glUseProgram(shaders[hex]);
-float widthLoc5 = glGetUniformLocation(shaders[hex], "width");
-float heightLoc5 = glGetUniformLocation(shaders[hex], "height");
-float timeLoc5 = glGetUniformLocation(shaders[hex], "time");
-float effuLoc5 = glGetUniformLocation(shaders[hex], "effu");
-
-glUniform1f(widthLoc5, g_Width);
-glUniform1f(heightLoc5, g_Height);
-glUniform1f(timeLoc5, mymillis/100);
-glUniform1f(effuLoc5, 0.0);
-
-glActiveTexture(GL_TEXTURE0);
-glBindTexture(GL_TEXTURE_2D, fb_tex2);
-
-float location5 = glGetUniformLocation(shaders[hex], "texture0");
-glUniform1i(location5, 0);
-
-glLoadIdentity();
-
-glTranslatef(-1.2, -1.0, -1.0);
-
-int i=0;
-int j=0;
-glBegin(GL_QUADS);
-glVertex2f(i, j);
-glVertex2f(i + 100, j);
-glVertex2f(i + 100, j + 100);
-glVertex2f(i, j + 100);
-glEnd();
-
-
 }
 
 
@@ -3271,7 +3263,7 @@ void display(void)
 {
     UpdateShaderParams();
 	scene_render[current_scene]();
-	if (current_scene != 7) VHSPost(assets_loaded && current_scene <= 4 ? 1.0 : 0.0);
+	VHSPost(assets_loaded && current_scene <= 4 ? 1.0 : 0.0);
 
 	glutSwapBuffers();
 	frame++;
