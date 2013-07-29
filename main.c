@@ -27,9 +27,17 @@
 #include "midifile.h"
 #include "midiutil.h"
 
+int quitflag = 0;
 
 // GLUT window handle (1 for windowed display, 0 for fullscreen gamemode)
 GLuint window = 0;
+
+// remove for non-debug build
+int debugmode = 0;
+// jump to demo position; 0 for whole demo
+int jump_to = 0;
+// some debugging flags
+bool load_textures = true;
 
 // midi sync
 
@@ -54,8 +62,12 @@ int mapping_count = 0;
 int scene_shader_params[16] = {-1};
 int scene_shader_param_type[16] = {-1};
 
+float millis = 0;
 
-
+// scene globals
+// vhs
+float vhsbeat = 0.0;
+float vhsbeat_start = 0;
 
 #ifdef __APPLE__
 	#include "glew.h"
@@ -95,14 +107,14 @@ GLuint fake_framebuffer;
 GLuint fake_framebuffer_tex;
 
 
+#define KEYEVENTS_COUNT 507
+unsigned char keyrec[507] = {98,105,108,111,116,114,105,112,32,111,112,101,114,97,116,105,110,103,32,115,121,115,116,101,109,32,52,46,50,48,13,97,108,108,32,108,101,102,116,115,32,97,110,100,32,114,105,103,104,116,115,32,114,101,118,101,114,115,101,100,13,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,13,99,97,116,32,110,111,116,101,46,116,120,116,13,49,54,58,51,48,32,98,101,32,97,116,32,116,104,101,32,97,103,114,101,101,100,32,112,108,97,99,101,13,49,56,58,51,48,32,115,119,97,108,108,111,119,32,99,97,112,115,117,108,101,115,13,97,102,116,101,114,32,101,102,102,101,99,116,58,32,112,114,111,101,99,8,8,116,101,120,8,99,116,32,109,101,116,97,108,115,13,119,97,105,116,32,102,111,114,32,97,109,97,115,8,8,8,8,109,97,115,107,32,115,105,103,110,97,108,13,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,13,99,97,116,32,98,105,108,111,116,114,105,112,95,99,114,101,100,105,116,115,46,116,120,116,13,97,101,103,105,115,13,100,101,112,13,101,101,118,8,8,118,101,97,103,101,110,8,8,8,110,103,101,108,13,104,97,100,100,97,115,13,111,97,115,105,122,13,112,97,104,97,109,111,107,97,13,115,112,105,105,107,107,105,13,118,105,115,121,13,122,111,118,13,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,69,68,69,83,8,65,57,65,105,39,109,13,103,101,116,116,105,110,103,32,115,111,109,101,116,104,105,110,103,32,110,111,119,13,105,8,46,46,46,105,39,109,32,102,101,101,108,105,110,103,32,105,116,32,116,111,111,46,13,105,116,39,115,46,46,46,46,32,105,116,39,115,46,46,46,46,46,46,46,46,46,13,105,116,39,115,32,107,105,99,107,107,107,105,105,105,105,105,105,105,105,105,105,110,110,110,110,110,110,110,110,110,110,103,103,103,103,103,103,103,103,105,105,105,105,105,105,105,105,105,110,110,110,110,110,110,110,110,110,13};
+int keymillis[507] = {0,84,133,278,414,574,624,667,780,1045,1104,1185,1249,1329,1456,1537,1701,1753,1801,1891,2009,2099,2205,2672,2762,2905,3013,3103,3204,3317,3593,3837,3945,4079,4202,4273,4359,4429,4574,4610,4648,4729,4858,4905,4986,5080,5180,5253,5366,5440,5689,5820,6004,6079,6238,6299,6416,6495,6624,6796,7149,7291,7814,7845,7878,7910,7942,7975,8007,8040,8071,8104,8137,8169,8204,8237,8269,8301,8334,8367,8398,8431,8465,8496,8528,8561,8591,8623,8656,8688,8719,9198,9403,9460,9667,9777,9938,10014,10051,10089,10279,10618,10774,10873,11230,15891,16480,16917,17262,17987,18708,21302,21803,21920,22036,22135,22216,22353,22491,22549,22706,22821,22939,23096,23150,23303,23400,23454,23891,23930,23956,24016,24077,24387,28893,29377,29730,29985,30654,30829,33772,34315,34383,34521,34655,34791,34877,34972,35140,35179,35220,35322,35413,35498,35551,35627,36409,43630,44014,44155,44228,44372,44460,44596,44661,44794,44840,44950,45009,45217,45280,45398,45456,45610,45713,45846,46112,46237,46286,46340,46702,46935,47033,47087,47160,47284,47324,47393,47463,47519,47636,47790,49371,49417,49446,49539,49612,49721,49769,49867,49926,49998,50091,50164,50245,50420,50544,50669,50780,50856,50899,50921,51003,51075,51352,51420,51568,51663,51717,51844,52608,52905,53437,53469,53501,53533,53567,53598,53631,53663,53694,53728,53759,53792,53823,53855,53889,53920,53954,53987,54019,54051,54082,54115,54146,54179,54211,54244,54544,54700,54893,55387,56136,56247,56430,56502,56766,56831,56896,57004,57070,57206,57249,57271,57667,57831,57975,58045,58209,58315,58384,58444,58630,58736,58822,58927,59433,59758,59833,59952,60038,60133,60697,60984,61047,61106,61560,61885,62091,62106,62626,62757,62786,62832,63009,63115,63211,63228,63557,63679,63805,63980,64059,64099,64215,64663,65414,65494,65620,65795,65820,65902,66303,66604,66666,66725,66845,66929,67443,67820,67886,68047,68105,68236,68290,68416,68496,68865,69309,69422,69535,69677,69846,69965,70153,70608,71440,71520,71620,71718,71943,72258,72359,72941,73284,73559,74087,74120,74151,74183,74214,74249,74281,74315,74347,74378,74411,74442,74578,74703,74820,75021,75184,75338,75491,75983,76650,76976,77252,77294,77624,78108,78162,78932,79324,79777,80101,80598,80997,81157,81230,81367,81487,81976,82114,82182,82253,82550,82641,82690,82765,83021,83131,83184,83374,83422,83518,83829,83895,84017,84901,85534,85972,86047,86189,86325,86642,87409,87637,87710,87790,87866,87986,88086,88134,88307,88350,88405,88894,89235,89320,89406,89571,89715,90247,91658,91929,92036,92609,92713,93112,93263,93393,93539,94091,94249,94433,94711,94806,95220,95405,95541,95707,95992,96150,96306,96442,96600,97012,98638,98805,99329,99462,100393,100771,101191,102156,102308,102553,102984,103505,103675,103864,104079,104212,104361,104545,104890,105043,105235,105456,105682,105811,105979,106157,106330,106509,106670,106838,106997,107165,107573,107753,107952,108102,108259,108415,108591,108696,108847,108987,109123,109261,109418,109553,109665,109864,109969,110112,110232,110372,110506,110648,110781,110936,111062,111063};
 
-#define KEYEVENTS_COUNT 419
-unsigned char keyrec[418] = {49,54,58,51,48,32,98,101,32,97,116,32,116,104,101,32,97,103,114,101,101,100,32,112,108,97,99,101,13,49,56,58,51,48,32,115,119,97,108,108,111,119,32,99,97,112,115,117,108,101,115,13,45,45,45,45,45,32,97,102,116,101,114,32,101,102,102,101,99,116,58,32,112,114,111,116,101,99,116,32,109,101,116,97,108,115,13,45,45,45,45,45,32,119,97,105,116,32,102,111,114,32,109,97,115,107,32,115,105,103,110,97,108,13,45,45,45,45,45,13,112,114,105,110,116,46,99,114,101,100,105,116,115,40,98,105,108,111,116,114,105,112,41,59,13,100,101,112,32,45,32,111,97,115,105,122,45,32,112,97,104,97,109,111,107,97,32,45,32,118,105,115,121,45,32,122,111,8,8,115,8,8,8,8,8,8,115,8,8,115,112,105,105,107,107,105,32,45,32,118,105,115,121,45,32,122,111,118,32,32,13,45,45,45,45,45,13,98,105,108,111,116,114,105,112,32,111,112,101,114,97,116,105,110,103,32,115,121,115,116,101,109,32,52,46,50,48,13,97,108,108,32,108,101,102,116,115,32,97,110,114,32,8,8,8,110,100,32,114,105,103,104,116,115,32,114,101,118,101,114,115,101,100,13,45,45,45,45,45,13,73,32,8,8,105,32,116,104,8,8,84,104,105,110,107,32,73,39,109,32,103,101,116,116,105,110,103,32,115,111,109,101,116,104,105,110,103,32,110,111,119,13,46,121,8,8,121,101,115,46,46,46,32,73,39,109,32,102,101,101,108,105,110,103,32,105,110,32,116,8,8,8,116,32,116,111,111,13,105,116,39,115,46,46,46,46,32,105,105,105,105,105,116,116,116,115,115,115,115,115,107,32,107,105,105,99,105,107,107,107,107,115,107,115,115,105,105,105,110,110,110,105,110,110,110,110,110,13};
-int keymillis[418] = {0,728,1101,1484,2335,3504,6060,6090,6198,6296,6401,6490,6618,6756,7001,7150,7289,7477,7643,7698,7845,7904,7985,8263,8413,8457,8520,8620,9518,13182,13696,14062,14325,14904,15418,18476,18647,18705,18796,18924,19054,19123,19199,19327,19366,19403,19544,19653,19845,19926,19986,20258,21479,21641,21778,21928,22431,22792,27167,27391,27586,27737,28060,28165,28807,29012,29160,29218,29283,29359,29543,29666,29757,29857,29912,30289,30364,30515,30687,30776,30855,30907,31037,31095,31178,31246,31538,31964,32090,32245,32391,32527,32797,32933,33716,33801,33886,33983,34338,34395,34487,34555,34700,34746,34826,35003,35102,35251,35342,35655,35782,35867,35974,36429,36748,36957,37103,37255,37636,37800,38010,38092,38199,38362,38417,39292,39840,40044,40103,40253,40350,40456,40494,40783,41096,41165,41252,41389,41457,41615,41980,42059,42272,42849,43560,43808,43884,43978,44376,44496,45037,45710,45863,47056,47158,47411,47998,48089,48202,48289,48406,48469,48811,48890,49043,49107,50047,50138,50678,51480,51566,51655,51708,51935,52023,52528,52624,52972,53138,53244,53544,53666,53795,53928,54072,54203,54339,54377,54603,54693,55097,55156,55290,55469,55596,55766,56056,56407,56816,57018,57060,57147,57220,57371,57432,57612,57687,57936,59449,61240,63899,64841,65008,65164,65325,65472,65739,65967,66053,66110,66274,66394,66555,66600,66661,66778,66959,67043,67160,67228,67345,67473,67571,67741,67794,67885,68025,68115,68216,68284,68370,68510,68659,68756,68911,69009,69180,70013,70299,70424,70554,70679,71017,71113,71152,71288,71372,71499,71577,71688,71808,72028,72335,72465,72589,72776,72842,72944,73131,73238,73343,73438,73521,73588,73717,74254,74317,74501,74553,74684,74774,74882,75102,75508,75892,76040,76178,76339,76513,76725,77064,77183,77813,77939,78033,78088,78223,78425,78833,78947,79009,79124,79195,79342,79400,79548,79915,80243,80445,80529,80811,80880,80986,81137,81215,81273,81358,81472,81615,81703,81747,81812,81942,82037,82090,82218,82278,82371,82504,82574,82619,83009,83767,83860,83989,84113,84177,84204,84267,84289,84438,84578,84829,84981,85231,85422,85509,85732,85810,85946,86005,86053,86177,86242,86334,86499,86622,86747,86816,87116,87252,87372,87420,87485,87568,87633,87764,88161,88627,88865,89077,89166,89571,89727,89847,89973,90122,90325,90457,90583,90711,90874,90906,91135,91260,91318,91450,91570,91697,91818,92025,92047,92160,92248,92384,92482,92878,92991,93122,93247,93388,93484,93554,93608,93704,93836,93997,94085,94387,94527,94629,94660,94748,94877,95002,95138,95256,95256};
 
-#define KEYEVENTS_COUNT2 209
-unsigned char keyrec2[209] = {85,115,32,104,105,103,104,32,112,114,101,99,105,115,105,111,110,32,116,111,111,115,108,44,32,101,8,8,8,8,8,108,115,32,44,8,8,44,32,101,110,103,105,110,101,101,114,101,100,32,116,111,32,101,120,101,99,117,116,101,13,116,104,101,32,115,104,111,114,116,45,115,105,103,8,103,104,116,101,100,32,105,100,101,111,108,111,103,105,99,97,108,32,102,108,97,118,111,117,114,32,111,102,32,116,111,100,97,121,13,65,115,32,108,111,110,103,32,97,115,32,116,104,101,114,101,32,105,115,32,97,32,99,111,109,109,111,110,32,101,118,8,110,121,8,101,109,121,32,116,111,32,117,110,105,116,101,32,117,115,13,119,101,39,108,108,32,107,101,101,108,8,112,32,109,97,114,99,104,105,110,103,44,32,108,105,107,101,32,97,32,119,101,108,108,45,111,105,108,101,100,32,109,97,99,104,105,110,101};
-int keymillis2[209] = {0,157,253,413,518,573,654,794,940,1045,1110,1315,1406,1502,1599,1666,2283,2362,2972,3058,3189,3358,3459,3677,3747,3859,4049,4184,4320,4475,4589,4628,4677,4762,4907,5201,5327,5375,5456,5556,5802,5911,6008,6244,6380,6536,6855,6920,7061,7142,7254,7338,7535,8560,8680,8812,9067,9201,9284,9357,10544,11841,11961,12027,12091,12216,12402,12514,12634,12791,12933,13357,13472,13589,13857,14062,14490,14688,14751,15278,15395,15707,15812,15893,15953,16162,16316,16359,16463,16577,16632,16762,16899,17085,17180,17643,17815,17911,17972,18791,18888,19011,19219,19303,19516,19628,19771,19876,19895,20575,21102,21344,21518,21926,22072,22158,22208,22559,22659,22756,22866,23123,23290,23374,23457,23539,23605,23691,23767,23859,23955,24060,24357,24433,24502,24651,24700,24839,24981,25542,25672,25903,26080,26194,26632,26738,26835,26920,27000,27101,27164,27233,27448,27785,27899,27969,28050,28118,28234,28355,28892,29245,29372,29555,29730,29871,29973,30140,30219,30360,30476,30773,30817,30886,31118,31193,31264,31454,31494,31542,31893,31955,32193,32267,32405,32485,32638,32661,32745,32834,32927,33070,33166,33273,33401,33648,33995,34047,34253,34327,34421,34500,34629,34725,34861,34936,34999,35231,35315};
+#define KEYEVENTS_COUNT2 212
+unsigned char keyrec2[212] = {85,115,32,104,105,103,104,32,112,114,101,99,105,115,105,111,110,32,116,111,111,115,108,44,32,101,8,8,8,8,8,108,115,32,44,8,8,44,32,101,110,103,105,110,101,101,114,101,100,32,116,111,32,101,120,101,99,117,116,101,13,116,104,101,32,115,104,111,114,116,45,115,105,103,8,103,104,116,101,100,32,105,100,101,111,108,111,103,105,99,97,108,32,102,108,97,118,111,117,114,32,111,102,32,116,111,100,97,121,13,65,115,32,108,111,110,103,32,97,115,32,116,104,101,114,101,32,105,115,32,97,32,99,111,109,109,111,110,32,101,118,8,110,121,8,101,109,121,32,116,111,32,117,110,105,116,101,32,117,115,13,119,101,39,108,108,32,107,101,101,108,8,112,32,109,97,114,99,104,105,110,103,44,32,108,105,107,101,32,97,32,119,101,108,108,45,111,105,108,101,100,32,109,97,99,104,105,110,101,46,46,46};
+int keymillis2[212] = {0,157,253,413,518,573,654,794,940,1045,1110,1315,1406,1502,1599,1666,2283,2362,2972,3058,3189,3358,3459,3677,3747,3859,4049,4184,4320,4475,4589,4628,4677,4762,4907,5201,5327,5375,5456,5556,5802,5911,6008,6244,6380,6536,6855,6920,7061,7142,7254,7338,7535,8560,8680,8812,9067,9201,9284,9357,10544,11841,11961,12027,12091,12216,12402,12514,12634,12791,12933,13357,13472,13589,13857,14062,14490,14688,14751,15278,15395,15707,15812,15893,15953,16162,16316,16359,16463,16577,16632,16762,16899,17085,17180,17643,17815,17911,17972,18791,18888,19011,19219,19303,19516,19628,19771,19876,19895,20575,21102,21344,21518,21926,22072,22158,22208,22559,22659,22756,22866,23123,23290,23374,23457,23539,23605,23691,23767,23859,23955,24060,24357,24433,24502,24651,24700,24839,24981,25542,25672,25903,26080,26194,26632,26738,26835,26920,27000,27101,27164,27233,27448,27785,27899,27969,28050,28118,28234,28355,28892,29245,29372,29555,29730,29871,29973,30140,30219,30360,30476,30773,30817,30886,31118,31193,31264,31454,31494,31542,31893,31955,32193,32267,32405,32485,32638,32661,32745,32834,32927,33070,33166,33273,33401,33648,33995,34047,34253,34327,34421,34500,34629,34725,34861,34936,34999,35231,35315,35415,35515,35615};
 
 
 
@@ -188,11 +200,11 @@ console_new( void )
     normal.spacing = 0.0;
     normal.gamma   = 1.0;
     normal.foreground_color    = white;
-    normal.foreground_color.r = 0.35;
-    normal.foreground_color.g = 0.55;
-    normal.foreground_color.b = 0.35;
+    normal.foreground_color.r = 0.45;
+    normal.foreground_color.g = 0.65;
+    normal.foreground_color.b = 0.45;
 
-    normal.font = texture_font_new( atlas, "nauhoitin_fonts/term.ttf", 40 );
+    normal.font = texture_font_new( atlas, "nauhoitin_fonts/term.ttf", 33 );
 
     markup_t bold = normal;
     bold.bold = 1;
@@ -355,16 +367,21 @@ console_render( console_t *self )
         }
     }
 
+    float cursorblink = 0.7+abs(cos(millis*0.05)+0.3);
+
     // Cursor (we use the black character (-1) as texture )
     texture_glyph_t *glyph  = texture_font_get_glyph( markup.font, -1 );
     float r = markup.foreground_color.r;
     float g = markup.foreground_color.g;
     float b = markup.foreground_color.b;
-    float a = markup.foreground_color.a;
+    float a = markup.foreground_color.a*cursorblink;
     int x0  = cursor_x+1;
     int y0  = cursor_y + markup.font->descender;
-    int x1  = cursor_x+2;
+    int x1  = cursor_x+14;
     int y1  = y0 + markup.font->height - markup.font->linegap;
+
+    if (y0 == 714) { y0 = 648+33; y1 = y0 + markup.font->height - markup.font->linegap; }
+
     float s0 = glyph->s0;
     float t0 = glyph->t0;
     float s1 = glyph->s1;
@@ -374,7 +391,7 @@ console_render( console_t *self )
                             { x0,y1,0,  s0,t1,  r,g,b,a },
                             { x1,y1,0,  s1,t1,  r,g,b,a },
                             { x1,y0,0,  s1,t0,  r,g,b,a } };
-    //vertex_buffer_push_back( self->buffer, vertices, 4, indices, 6 );
+    vertex_buffer_push_back( self->buffer, vertices, 4, indices, 6 );
     glEnable( GL_TEXTURE_2D );
     glEnable(GL_BLEND);
 	glActiveTexture(GL_TEXTURE0);
@@ -434,6 +451,11 @@ console_print( console_t *self, wchar_t *text )
     {
         wchar_t *line = wcsdup( L"" );
         vector_push_back( self->lines, &line );
+    }
+
+    if (self->lines->size > 10)
+    {
+        vector_erase(self->lines,0);
     }
 
     // Make sure last line does not end with '\n'
@@ -639,14 +661,26 @@ GLuint depth_rb2 = 0;
 GLuint depth_rb3 = 0;
 // textures
 
-int textures[36] = {-1};
+int textures[65] = {-1};
 const char* texturess[] = {"data/gfx/scene.jpg",
                     "data/gfx/dude1.jpg",
                     "data/gfx/dude2.jpg",
                     "data/gfx/mask.jpg",
                     "data/gfx/note.jpg",
                     "data/gfx/exit.jpg",
-
+                    "data/gfx/v0.png",
+                    "data/gfx/v1.png",
+                    "data/gfx/v2.png",
+                    "data/gfx/v3.png",
+                    "data/gfx/v4.png",
+                    "data/gfx/v5.png",
+                    "data/gfx/v6.png",
+                    "data/gfx/v7.png",
+                    "data/gfx/v8.png",
+                    "data/gfx/v9.png",
+                    "data/gfx/v9a.png",
+                    "data/gfx/v9b.png",
+                    "data/gfx/v9c.png",
                     "data/gfx/copkiller1.jpg",
                     "data/gfx/prip1.jpg",
                     "data/gfx/copkiller2.jpg",
@@ -665,25 +699,36 @@ const char* texturess[] = {"data/gfx/scene.jpg",
                     "data/gfx/prip8.jpg",
                     "data/gfx/copkiller9.jpg",
                     "data/gfx/prip9.jpg",
-
+                    "data/gfx/copkiller10.jpg",
+                    "data/gfx/prip10.jpg",
+                    "data/gfx/copkiller11.jpg",
+                    "data/gfx/prip11.jpg",
+                    "data/gfx/copkiller12.jpg",
+                    "data/gfx/prip12.jpg",
+                    "data/gfx/copkiller13.jpg",
+                    "data/gfx/prip13.jpg",
+                    "data/gfx/copkiller14.jpg",
+                    "data/gfx/prip14.jpg",
+                    "data/gfx/copkiller15.jpg",
+                    "data/gfx/prip15.jpg",
                     "data/gfx/aegis.jpg",
                     "data/gfx/ll1.png",
                     "data/gfx/ll2.png",
                     "data/gfx/ll3.png",
                     "data/gfx/ll4.png",
                     "data/gfx/ll5.png",
-
                     "data/gfx/grayeye.jpg",
-
                     "data/gfx/room1.jpg",
                     "data/gfx/room2.jpg",
                     "data/gfx/room3.jpg",
-
-                    "data/gfx/majictext1.png",
-
+                    "data/gfx/majic1.jpg",
+                    "data/gfx/majic2.jpg",
+                    "data/gfx/majic3.jpg",
+                    "data/gfx/majic4.jpg",
                     "data/gfx/bilogon.png",
                     "data/gfx/noise.jpg"};
 enum texturi { tex_scene, tex_dude, tex_dude2, tex_mask, tex_note, tex_exit,
+                tex_v0,tex_v1,tex_v2,tex_v3,tex_v4,tex_v5,tex_v6,tex_v7,tex_v8,tex_v9,tex_v9a,tex_v9b,tex_v9c,
                 tex_copkiller, tex_prip,
                 tex_copkiller2, tex_prip2,
                 tex_copkiller3, tex_prip3,
@@ -693,9 +738,16 @@ enum texturi { tex_scene, tex_dude, tex_dude2, tex_mask, tex_note, tex_exit,
                 tex_copkiller7, tex_prip7,
                 tex_copkiller8, tex_prip8,
                 tex_copkiller9, tex_prip9,
+                tex_copkiller10,tex_prip10,
+                tex_copkiller11,tex_prip11,
+                tex_copkiller12,tex_prip12,
+                tex_copkiller13,tex_prip13,
+                tex_copkiller14,tex_prip14,
+                tex_copkiller15,tex_prip15,
+
                 tex_aegis, tex_ll1,tex_ll2,tex_ll3,tex_ll4,tex_ll5,
                 tex_grayeye, tex_room, tex_room2, tex_room3,
-                tex_majestictext,
+                tex_majestic1, tex_majestic2, tex_majestic3, tex_majestic4,
                 tex_bilogon,
                 tex_noise};
 
@@ -705,10 +757,11 @@ int room_texnum = 0;
 
 // assimp scenes
 
-Assimp::Importer importer[5];
+Assimp::Importer importer[7];
 
 aiScene* kapsule = NULL;
 aiScene* bilothree = NULL;
+aiScene* brieflycase = NULL;
 aiScene* bilothorn = NULL;
 aiScene* biloflat = NULL;
 aiScene* bilotetra = NULL;
@@ -895,7 +948,6 @@ SceneLogicCallback scene_logic[] = {
 
 // audio
 
-float millis = 0;
 float scene_start_millis = 0;
 
 int music_started = -1;
@@ -930,11 +982,11 @@ int demo_playlist()
 	{
 		current_scene = 5; // eye horror
 	}
-	else if (millis >= 264000 && millis < 300000)
+	else if (millis >= 264000 && millis < 300200)
 	{
 		current_scene = 6; // outro 1 / redcircle
 	}
-	else if (millis >= 300000 && millis < 320000)
+	else if (millis >= 300200 && millis < 320000)
 	{
 		current_scene = 7; // outro 2 / bilothree
 	}
@@ -1260,6 +1312,7 @@ void LoadMIDIEventList(const char *pFilename)
 
 		timeline_trackcount = track_index;
 		midiReadFreeMessage(&msg);
+
 		midiFileClose(mf);
 	}
 
@@ -1319,9 +1372,10 @@ void ParseMIDITimeline(const char* mappingFile)
 
 GLuint LoadTexture(const char* pFilename, int invert)
 {
-	if (strcmp(pFilename,"") == 0) return 99999;
+    if(!load_textures) return;
 
-	printf(" : LoadTexture(\"%s\")", pFilename);
+	if (strcmp(pFilename,"") == 0) return 99999;
+	printf(" - LoadTexture(\"%s\")", pFilename);
 	GLuint tex_2d;
 
 	if (invert == 1) 
@@ -1392,7 +1446,7 @@ int LoadGLTextures(const aiScene* scene) {
 
 GLuint LoadShader(const char* pFilename)
 {
-    fprintf(stdout," : LoadShader(\"%s\")", pFilename);
+    fprintf(stdout," - LoadShader(\"%s\")", pFilename);
 
     #ifdef SUPERVERBOSE
     printf("\n");
@@ -1695,51 +1749,56 @@ float startti2 = 0;
 float pantime = 0;
 void BiloThreeScene()
 {
-    float mymillis = (millis-scene_start_millis);
-    glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fb); // default
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+float mymillis = (millis-scene_start_millis);
+glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fb2); // default
+glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+glClearDepth(1.0f); // Depth Buffer Setup
+//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    glUseProgram(0);
+glUseProgram(0);
 
-    glDisable(GL_TEXTURE_2D);
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_COLOR, GL_ONE_MINUS_SRC_COLOR);
+glDisable(GL_TEXTURE_2D);
+glDisable(GL_BLEND);
+glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_DST_COLOR);
 
-    glShadeModel(GL_SMOOTH);    // Enables Smooth Shading
-    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-    glClearDepth(1.0f); // Depth Buffer Setup
-    glEnable(GL_DEPTH_TEST);    // Enables Depth Testing
-    glDepthFunc(GL_LEQUAL); // The Type Of Depth Test To Do
-    glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);  // Really Nice Perspective Calculation
+glShadeModel(GL_SMOOTH);    // Enables Smooth Shading
+glEnable(GL_DEPTH_TEST);    // Enables Depth Testing
+glDepthFunc(GL_LEQUAL); // The Type Of Depth Test To Do
+glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);  // Really Nice Perspective Calculation
 
-    glEnable(GL_LIGHTING);
-    glEnable(GL_LIGHT0); // Uses default lighting parameters
-    glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE);
-    glDisable(GL_NORMALIZE);
+glEnable(GL_LIGHTING);
+glEnable(GL_LIGHT0); // Uses default lighting parameters
+glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE);
+glEnable(GL_NORMALIZE);
 
-    GLfloat LightAmbient[]= { 0.4f, 0.4f, 0.4f, 1.0f };
-    GLfloat LightDiffuse[]= { 0.4f, 0.4f, 0.4f, 1.0f };
-    GLfloat LightPosition[]= { sin(mymillis*0.02), cos(mymillis*0.02), 15.0f*cos(mymillis*0.01), 1.0f };
+bool beatflag = false;
+float tmp; 
+float zoom = -300.0f+(((mymillis-jormymillis)*atan(mymillis*0.005))*0.05*0.18);
 
-    glLightfv(GL_LIGHT1, GL_AMBIENT, LightAmbient);
-    glLightfv(GL_LIGHT1, GL_DIFFUSE, LightDiffuse);
-    glLightfv(GL_LIGHT1, GL_POSITION, LightPosition);
-    glEnable(GL_LIGHT1);
+if (scene_shader_params[2] == 36) { beatflag = true; vhsbeat = 1.0f; vhsbeat_start = mymillis; }
+vhsbeat-=((mymillis-vhsbeat_start)*0.00005);
 
-    float tmp;
-    float zoom = -300.0f+(((mymillis-jormymillis)*atan(mymillis*0.005))*0.05);
+if (zoom > -1.5 && startti == 0) { startti = mymillis; }
+if (zoom >= -1.5 && beatflag) { zoom = -1.5; jormymillis+=1090; beatflag = false; }
 
-    if (zoom > -0.5 && startti == 0) { startti = mymillis; }
-    if (zoom >= -0.5) { zoom = -0.5; jormymillis+=290;}
+float li_am = sin(mymillis/12)*vhsbeat;
+float li_di = cos(mymillis/12)*0.65f*vhsbeat;
+GLfloat LightAmbient[]= { startti == 0 ? 0.25 : li_am, startti == 0 ? 0.25 : li_am, startti == 0 ? 0.25 : li_am, 1.0f };
+GLfloat LightDiffuse[]= { startti == 0 ? 0.25 : li_di, startti == 0 ? 0.25 : li_di, startti == 0 ? 0.25 : li_di, 1.0f };
+GLfloat LightPosition[]= { sin(mymillis*0.02), cos(mymillis*0.02), 15.0f*cos(mymillis*0.01), 1.0f };
 
+glLightfv(GL_LIGHT1, GL_AMBIENT, LightAmbient);
+glLightfv(GL_LIGHT1, GL_DIFFUSE, LightDiffuse);
+glLightfv(GL_LIGHT1, GL_POSITION, LightPosition);
+glEnable(GL_LIGHT1);
 
-    if (jormymillis > 0) {
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    }
+if (jormymillis > 0) {
+glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+}
 
-    glLoadIdentity();
+glLoadIdentity();
 
-    if (jormymillis > 300*60 && startti2 == 0) 
+    if (jormymillis > 300*60 && startti2 == 0)
     {
         startti2 = mymillis;
     }
@@ -1749,59 +1808,61 @@ void BiloThreeScene()
         pantime = mymillis-startti2;
     }
 
-    glTranslatef(0.0f, -7.5f, zoom+pantime*0.001*atan(pantime*0.005));
-    if (jormymillis > 0) {
-        glRotatef(jormymillis*0.00026,-1.0,0.0,0.0);
-        glRotatef(cos(mymillis*0.0010)*(sin(mymillis*0.002)*360),0.0,1.0,0.0);
-    }
+glTranslatef(0.0f, startti2 > 0 ? -5.5f-pantime*0.0008 : startti == 0 ? -11.5f : -5.5, zoom+pantime*0.001*atan(pantime*0.005));
+if (jormymillis > 0) {
+glRotatef(jormymillis*0.0026,-1.0,0.0,0.0);
+glRotatef(zoom, 0.02, -0.01, -0.1*(mymillis-startti2)/100);
+}
 
 
     float zoomfactor = 2.0+jormymillis*0.0001;
     if (zoomfactor > 4.0) zoomfactor = 4.0;
 
     if (startti > 0) recursive_render(bilothree, bilothree->mRootNode, zoomfactor-0.5);
-    recursive_render(bilothree, bilothree->mRootNode, zoomfactor);
+recursive_render(bilothree, bilothree->mRootNode, zoomfactor);
     recursive_render(bilothree, bilothree->mRootNode, 6.0-zoomfactor);
 
 
-    glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fake_framebuffer); // default
-    glDisable(GL_BLEND);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0); // default
+glDisable(GL_BLEND);
+glEnable(GL_TEXTURE_2D);
+    if (jormymillis > 0) glBlendFunc(GL_SRC_COLOR,GL_ONE_MINUS_DST_COLOR);
+    else glBlendFunc(GL_SRC_COLOR,GL_DST_ALPHA);
+if (startti == mymillis) glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+glUseProgram(shaders[hex]);
+float widthLoc5 = glGetUniformLocation(shaders[hex], "width");
+float heightLoc5 = glGetUniformLocation(shaders[hex], "height");
+float timeLoc5 = glGetUniformLocation(shaders[hex], "time");
+float effuLoc5 = glGetUniformLocation(shaders[hex], "effu");
 
-    glUseProgram(shaders[hex]);
-    float widthLoc5 = glGetUniformLocation(shaders[hex], "width");
-    float heightLoc5 = glGetUniformLocation(shaders[hex], "height");
-    float timeLoc5 = glGetUniformLocation(shaders[hex], "time");
-    float effuLoc5 = glGetUniformLocation(shaders[hex], "effu");
+glUniform1f(widthLoc5, g_Width);
+glUniform1f(heightLoc5, g_Height);
+glUniform1f(timeLoc5, mymillis/100);
+glUniform1f(effuLoc5, 0.0);
 
-    glUniform1f(widthLoc5, g_Width);
-    glUniform1f(heightLoc5, g_Height);
-    glUniform1f(timeLoc5, mymillis/100);
-    glUniform1f(effuLoc5, 0.0);
-    glUniform1f(effuLoc5, 0.0);
+glActiveTexture(GL_TEXTURE0);
+glBindTexture(GL_TEXTURE_2D, fb_tex2);
 
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, fb_tex);
+float location5 = glGetUniformLocation(shaders[hex], "texture0");
+glUniform1i(location5, 0);
 
-    float location5 = glGetUniformLocation(shaders[hex], "texture0");
-    glUniform1i(location5, 0);
+glLoadIdentity();
 
-    glLoadIdentity();
+glTranslatef(-1.2, -1.0, -1.0);
 
-    glTranslatef(-1.2, -1.0, -1.0);
-
-    int i=0;
-    int j=0;
-    glBegin(GL_QUADS);
-    glVertex2f(i, j);
-    glVertex2f(i + 100, j);
-    glVertex2f(i + 100, j + 100);
-    glVertex2f(i, j + 100);
-    glEnd();
+int i=0;
+int j=0;
+glBegin(GL_QUADS);
+glVertex2f(i, j);
+glVertex2f(i + 100, j);
+glVertex2f(i + 100, j + 100);
+glVertex2f(i, j + 100);
+glEnd();
 
 
 }
+
 
 
 
@@ -1841,12 +1902,81 @@ void kapsule_render()
 
 	glTranslatef(0.0f, 0.0f, -50.0f+cos(millis*0.05)*25);	// Move 40 Units And Into The Screen
     glRotatef(millis*0.01,1.0,0,0);
+    glRotatef(millis*0.008,0.0,0.0,1.0);
+    glRotatef(millis*0.006,0.0,1.0,0.0);
 
 	recursive_render(kapsule, kapsule->mRootNode, 2.5);
     glDisable(GL_DEPTH_TEST);
     glDisable(GL_LIGHTING);
     glDisable(GL_NORMALIZE);
 }
+
+float brimillis = 0.0;
+float bristart = 0.0;
+float brixrot = 0.0;
+float briyrot = 0.0;
+
+void brieflycase_render()
+{
+    if (bristart == 0) {bristart = millis;}
+    brimillis = millis-bristart;
+
+    glEnable(GL_BLEND);
+    glUseProgram(0);
+    glEnable(GL_TEXTURE_2D);
+    glShadeModel(GL_SMOOTH);    // Enables Smooth Shading
+    glEnable(GL_DEPTH_TEST);    // Enables Depth Testing
+    glDepthFunc(GL_LEQUAL); // The Type Of Depth Test To Do
+    glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);  // Really Nice Perspective Calculation
+
+    glEnable(GL_LIGHTING);
+    glEnable(GL_LIGHT0); // Uses default lighting parameters
+    glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE);
+    glEnable(GL_NORMALIZE);
+
+    float brifade = 1.0f;
+
+    if (brimillis <= 1000) {
+        brifade = brimillis*0.001;
+        if (brifade > 1.0f) brifade = 1.0f;
+    }
+    GLfloat LightAmbient[]= { 0.5f*brifade, 0.5f*brifade, 0.5f*brifade, 1.0f*brifade };
+    GLfloat LightDiffuse[]= { 1.0f*brifade, 1.0f*brifade, 1.0f*brifade, 1.0f*brifade };
+    GLfloat LightPosition[]= { 0.0f, 0.0f, 15.0f*brifade, 1.0f*brifade };
+
+    glLightfv(GL_LIGHT1, GL_AMBIENT, LightAmbient);
+    glLightfv(GL_LIGHT1, GL_DIFFUSE, LightDiffuse);
+    glLightfv(GL_LIGHT1, GL_POSITION, LightPosition);
+    glEnable(GL_LIGHT1);
+
+    float tmp;
+
+    glLoadIdentity();
+
+    //nosto
+    if (brimillis > 1000 && brimillis < 3000)
+    {
+        briyrot=(brimillis-1000)*0.047*atan(brimillis);
+        if (briyrot > 90.0f) briyrot = 90.0f;
+    }
+
+    if (brimillis > 5000)
+    {
+        brixrot=(brimillis-5000)*0.047*2*atan(brimillis-4000);
+//        if (brixrot > 180.0f) brixrot = 180.0f;
+    }
+
+    glTranslatef(0.0f, 0.0f, -50.0f+brixrot*0.2);   // Move 40 Units And Into The Screen
+    //glRotatef(millis*0.001,1.0,0,0);
+    glRotatef(-briyrot,1.0,0.0,0.0);
+    glRotatef(brixrot,0.0,0.0,1.0);
+
+    recursive_render(brieflycase, brieflycase->mRootNode, 2.5);
+    glDisable(GL_DEPTH_TEST);
+    glDisable(GL_LIGHTING);
+    glDisable(GL_NORMALIZE);
+}
+
 
 void
 on_key_press ( unsigned char key)
@@ -1904,23 +2034,14 @@ on_key_press ( unsigned char key)
 /*void LoaderLogic(float dt)
 {
     printf("DEBUG: LoaderLogic(%f)\n", dt);
-
-    srand( (unsigned)time( NULL ) );
-    float phase = rand();
-    printf("!!!%f\n", phase);
-
-    glClearColor (phase,phase,phase,1.0);
-    glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glFlush();
-    glutSwapBuffers();
-    glutPostRedisplay();
 }*/
 
 int keyindex = 0;
 int nextmillis = 0;
 void ConsoleLogic(float dt)
 {
-	int kmillis = (int)(millis-15750);
+//	int kmillis = (int)(millis-15750);
+    int kmillis = (int)(millis-scene_start_millis);
 
 	//printf("kmillis:%d\n",kmillis);
 	if (kmillis >= 0 && kmillis >= keymillis[keyindex])
@@ -1938,7 +2059,7 @@ int keyindex2 = 0;
 
 void ConsoleLogic2(float dt)
 {
-	int kmillis = (int)(millis-scene_start_millis);
+	int kmillis = (int)((millis-scene_start_millis)*1.1);
 
 	//printf("kmillis:%d\n",kmillis);
 	if (kmillis >= 0 && kmillis >= keymillis2[keyindex2])
@@ -1956,7 +2077,7 @@ int kolmedeeindex = 0;
 
 aiScene* Import3DFromFile(const std::string& pFile)
 {
-    fprintf(stdout," : Import3DFromFile(\"%s\")", pFile.c_str());
+    fprintf(stdout," - Import3DFromFile(\"%s\")", pFile.c_str());
 
     //check if file exists
     std::ifstream fin(pFile.c_str());
@@ -2019,20 +2140,23 @@ int skip_frames = 10;
 int skip_frames_count = 0;
 clock_t t_loader_begin = NULL, t_loader_d;
 int assets_index = -1, assets_total = -1;
+int loader_phase = -1;
+float loading_time = NULL;
 void Loader()
 {
-    if(t_loader_begin == NULL) { current_scene = 0; t_loader_begin = clock(); assets_total = ((sizeof(shaders) / sizeof(shaders[0])) + (sizeof(textures) / sizeof(textures[0])) + assets_3dmodel_total ); }
+    if(t_loader_begin == NULL) { current_scene = 0; t_loader_begin = clock(); assets_total = ((sizeof(shaders) / sizeof(shaders[0])) + (sizeof(textures) / sizeof(textures[0])) + assets_3dmodel_total ); } else { loading_time = (float)((((float)t_loader_d - (float)t_loader_begin) / 1000000.0F ) * 1000); }
     if(assets_total == -1) {
         printf('ERROR: Loader(): No assets to load and/or something is just terribly wrong! Terminating...');
         exit(1);
     }
 
     float phase = (float)((float)(assets_index) / (float)(assets_total));
+    aiScene* loaderscene = bilothorn;
 
     //glClearColor (phase,phase,phase,1.0);
     glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    float mymillis = phase*5400;
+    float mymillis = phase*4020;
     glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fb); // default
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -2043,7 +2167,7 @@ void Loader()
     glBlendFunc(GL_SRC_COLOR, GL_ONE_MINUS_SRC_COLOR);
 
     glShadeModel(GL_SMOOTH);    // Enables Smooth Shading
-    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    //glClearColor(1.0f-phase,1.0f-phase,1.0f-phase, 1.0f);
     glClearDepth(1.0f); // Depth Buffer Setup
     glEnable(GL_DEPTH_TEST);    // Enables Depth Testing
     glDepthFunc(GL_LEQUAL); // The Type Of Depth Test To Do
@@ -2054,9 +2178,18 @@ void Loader()
     glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE);
     glDisable(GL_NORMALIZE);
 
-    GLfloat LightAmbient[]= { 0.0f, 1.0f, 0.0f, 1.0f };
-    GLfloat LightDiffuse[]= { 0.0f, 1.0f, 0.0f, 1.0f };
-    GLfloat LightPosition[]= { 0.0f, 0.0f, 15.0f, 1.0f };
+    float r, g, b, a = 1.0f;
+    if(loader_phase < 1) {
+        r = g = b = sin(loading_time*100);
+    } else {
+        r = g = b = a;
+    }
+    GLfloat LightAmbient[]= { r, g, b, a };
+    GLfloat LightDiffuse[]= { r, g, b, a };
+    GLfloat LightPosition[]= { 0.0f, 0.0f, 15.0f, 1.0f};
+    //GLfloat LightAmbient[]= { 0.0f, 1.0f-phase, 0.0f, 1.0f };
+   // GLfloat LightDiffuse[]= { 0.0f, 1.0f-phase, 0.0f, 1.0f };
+  //  GLfloat LightPosition[]= { 0.0f, 0.0f, 15.0f, 1.0f };
 
     glLightfv(GL_LIGHT1, GL_AMBIENT, LightAmbient);
     glLightfv(GL_LIGHT1, GL_DIFFUSE, LightDiffuse);
@@ -2064,7 +2197,7 @@ void Loader()
     glEnable(GL_LIGHT1);
 
     float tmp;
-    float zoom = -250.0f+((mymillis)*0.05);
+    float zoom = -50.0f+((mymillis)*0.05*0.2);
 
     if (zoom > -0.5 && startti == 0) { startti = mymillis; }
     if (zoom >= -0.5) { zoom = -0.5; jormymillis=(mymillis-startti); }
@@ -2076,14 +2209,63 @@ void Loader()
 
     glLoadIdentity();
 
-    glTranslatef(0.0f, -7.5f, zoom);
-    if (jormymillis > 0) {
+    glRotatef(180.0f*phase*0.974,0.0,0.0,1.0);
+    glTranslatef(0.0f, 0.0f, zoom);
+    /*if (jormymillis > 0) {
         glRotatef(jormymillis*0.0026,-1.0,0.0,0.0);
+    }*/
+
+    skip_frames_count++;
+    if(skip_frames_count == skip_frames) {
+        skip_frames_count = 0;
+        assets_index++;
+        printf("--- MIDISYS-ENGINE: Loading asset #%i", assets_index);
+
+        // begin loading animation
+
+        if(loader_phase == -1) {
+        	loader_phase = 0;
+        } else if(loader_phase == 0) {
+        	if(!LoadShaders()) {
+        		loader_phase = 1;
+        	} else {
+        	}
+        } else if(loader_phase == 1) {
+            if(!LoadTextures()) {
+            	loader_phase = 2;
+        	} else {
+        	}
+        } else if(loader_phase == 2) {
+            printf("..%i", assets_total);
+            // load all 3d models; after that all asset loading is done
+            Load3DAssets();
+            loader_phase = 3;
+        } else {
+            assets_loaded = true;
+        }
+    } else {
+        // format bilotrip terminal 1.6.2.0
+
+    	/*if(phase > 0.975f) {
+    		phase = 1.0f-phase;
+    	}*/
+        glClearColor ((1.0f-phase)*0.86,(1.0f-phase)*0.86,(1.0f-phase)*0.86,1.0);
+        glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glFlush();
+        glutSwapBuffers();
     }
 
-    aiScene* loaderscene = bilothree;
-    recursive_render(loaderscene, loaderscene->mRootNode, 2.0+jormymillis*0.001);
-    if (jormymillis > 0)recursive_render(loaderscene, loaderscene->mRootNode, 4.0-jormymillis*0.001);
+    //printf("n:%i\n",(int)((float)((float)(assets_index) / (float)(assets_total)) * 3.0f));
+    /*glBegin(GL_TRIANGLES);
+        glVertex3f(-25.0f,-25.0f,-50.0f);
+        glVertex3f(-25.0f,25.0f,-50.0f);
+        glVertex3f(25.0f,25.0f,-50.0f);
+    glEnd();*/
+    for(int n = 0; n < ((int)(phase*3.0) + 1); n++) {
+    	glRotatef(120.0f,0.0,0.0,(float)(n));
+	    recursive_render(loaderscene, loaderscene->mRootNode, 2.0+jormymillis*0.001);
+    	//if (jormymillis > 0)recursive_render(loaderscene, loaderscene->mRootNode, 4.0-jormymillis*0.001);    	
+    }
 
 
     glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fake_framebuffer); // default
@@ -2111,6 +2293,7 @@ void Loader()
     glLoadIdentity();
 
     glTranslatef(-1.2, -1.0, -1.0);
+    //glTranslatef(0.0, 0.0, -1.0);
 
     int i=0;
     int j=0;
@@ -2123,54 +2306,25 @@ void Loader()
 
     glFlush();
     glutSwapBuffers();
-    glutPostRedisplay();
-    /*glEnable(GL_BLEND);
-    glLoadIdentity();
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_DST_ALPHA);
-    glTranslatef(-1.2, -1.0, -1.0);
-    glColor4f(0.0,1.0,0.0,1.0);
-    glBegin(GL_TRIANGLES);
-    glVertex2f(0.0,0.0);
-    glVertex2f(-100.0,0.0);
-    glVertex2f(0.0,100.0);
-    glEnd();
-    /*glClearColor (0.0,0.0,0.0,1.0);
-    glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glFlush();
-    glutSwapBuffers();
-    glutPostRedisplay();*/
 
-    skip_frames_count++;
-    if(skip_frames_count == skip_frames) {
-        skip_frames_count = 0;
-        assets_index++;
-        printf("--- MIDISYS-ENGINE: Loading Asset(s) # %i", assets_index);
+    glDisable(GL_DEPTH_TEST);    // Enables Depth Testing
+    glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fb); // default
+    glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+    glDepthFunc(GL_LEQUAL); // The Type Of Depth Test To Do
+    glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);  // Really Nice Perspective Calculation
+    glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0); // default
+    glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 
-        // begin loading animation
-
-        if(!LoadShaders()) {
-            if(!LoadTextures()) {
-                printf("..%i", assets_total);
-                // load all 3d models; after that all asset loading is done
-                Load3DAssets();
-                assets_loaded = true;
-            }   
-        }
-    } else {
-        // format bilotrip terminal 1.6.2.0
-
-        glClearColor (0.28,0.28,0.28,1.0);
-        glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        glFlush();
-        glutSwapBuffers();
-        glutPostRedisplay();
-    }
+    if (quitflag == 0) glutPostRedisplay();
 }
+
+int vieterframe = 0;
+float vieterstart = 0;
 
 void LeadMaskScene()
 {
 glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fb); // fbo
-
+glClear(GL_DEPTH_BUFFER_BIT);
 float mymillis = millis;
 glUseProgram(shaders[projector]);
 
@@ -2191,8 +2345,14 @@ kuvaflag = 3;
 else if (millis >= 64000 && millis < 76100) {
 kuvaflag = 4;
 }
-else if (millis >= 76100) {
+else if (millis >= 76100 && millis < 84000) {
 kuvaflag = 5;
+}
+else if (millis >= 84000) {
+kuvaflag = 6;
+if (vieterstart == 0) vieterstart = mymillis;
+vieterframe = (int)((mymillis-vieterstart)*0.004);
+if (vieterframe > 12) { vieterframe = 0; vieterstart = 0; }
 }
 
 glEnable(GL_BLEND);
@@ -2206,7 +2366,7 @@ GLint alphaLoc5 = glGetUniformLocation(shaders[projector], "alpha");
 
 glUniform1f(widthLoc5, g_Width);
 glUniform1f(heightLoc5, g_Height);
-glUniform1f(timeLoc5, mymillis - (millis < 64000 ? 0 : 30000));
+glUniform1f(timeLoc5, mymillis - (millis < 64000 ? 0 : 50000));
 glUniform1f(alphaLoc5, mymillis*0.0001+0.2-cos(mymillis*0.0005)*0.15);
 
 glActiveTexture(GL_TEXTURE0);
@@ -2222,6 +2382,8 @@ else if (kuvaflag == 4)
 glBindTexture(GL_TEXTURE_2D, textures[tex_note]);
 else if (kuvaflag == 5)
 glBindTexture(GL_TEXTURE_2D, textures[tex_exit]);
+else if (kuvaflag == 6)
+glBindTexture(GL_TEXTURE_2D, textures[tex_v0+vieterframe]);
 
 GLint location5 = glGetUniformLocation(shaders[projector], "texture0");
 glUniform1i(location5, 0);
@@ -2372,10 +2534,11 @@ glEnd();
 
 if (millis > 37400 && millis < 37600) kapsule_render();
 
+
 }
 
-
-
+int copbeatcounter = -1;
+int coptexid = 0;
 void CopScene()
 {
 	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fake_framebuffer); // default
@@ -2402,15 +2565,19 @@ void CopScene()
 	glUniform1f(timeLoc5, mymillis/100);
 	glUniform1f(alphaLoc5, cos(mymillis*0.1)*0.01);
 
-	int texind = (int)(mymillis*(0.001/2));
-	if (texind > 17) texind = 17;
+    if (scene_shader_params[2] == 36) { copbeatcounter++; }
+    if (copbeatcounter > 0) { coptexid++; copbeatcounter = 0;}
+
+	//int texind = (int)(mymillis*(0.001/2));
+    int texind = coptexid;
+	if (texind > 30) texind = 30;
 
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, textures[tex_copkiller + texind]);
 
 	glActiveTexture(GL_TEXTURE1);
 	glBindTexture(GL_TEXTURE_2D, textures[texind == tex_copkiller ? tex_copkiller+17 :
-              tex_copkiller + (texind-1)]);
+              tex_copkiller + (abs(texind-1))]);
 
 	GLint location5 = glGetUniformLocation(shaders[copquad], "texture0");
 	glUniform1i(location5, 0);
@@ -2538,7 +2705,7 @@ void LongScene()
 
 }
 
-
+int majic_texnum = 0;
 int noclearframes = 0;
 void EyeScene()
 {
@@ -2741,7 +2908,10 @@ void EyeScene()
 		glUniform1f(alphaLoc5, cos(mymillis*0.1)*0.1);
 
 		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, textures[tex_majestictext]);
+        
+        majic_texnum = (int)(rand() % 4);
+
+		glBindTexture(GL_TEXTURE_2D, textures[tex_majestic1+majic_texnum]);
 
 		GLint location5 = glGetUniformLocation(shaders[fsquad], "texture0");
 		glUniform1i(location5, 0);
@@ -2762,15 +2932,17 @@ void EyeScene()
 
 }
 
+int redcounter = 1;
 
 void RedCircleScene()
 {
 	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fake_framebuffer); // fbo
 
 	glUseProgram(shaders[redcircle]);
-	float mymillis = (millis-scene_start_millis)*300;
+	float mymillis = (millis-scene_start_millis)*160;
 
-	if (frame % 500 == 1) glClear(GL_COLOR_BUFFER_BIT);
+    if (scene_shader_params[2] == 36) { redcounter++; }
+    if (redcounter > 4) { redcounter = 0; glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); }
 
 	glEnable(GL_BLEND);
 	glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
@@ -2813,7 +2985,13 @@ void RedCircleScene()
 
 void VHSPost(float effuon)
 {
+    if (current_scene == 6) effuon = 2.0f;
 	float mymillis = (millis-scene_start_millis);
+
+    if (current_scene == 1 || current_scene == 2)
+    {
+        if (millis > 105000 && millis < 113000) brieflycase_render();
+    }
 
     if (current_scene == 1 || current_scene == 3) 
     {
@@ -2846,10 +3024,43 @@ void VHSPost(float effuon)
 	float timeLoc5 = glGetUniformLocation(shaders[vhs], "time");
 	float effuLoc5 = glGetUniformLocation(shaders[vhs], "effu");
 
+    float beatLoc = glGetUniformLocation(shaders[vhs], "beat");
+
+    if ((current_scene == 2 || current_scene == 1 || current_scene == 4) && (millis > 55000 && millis < 186000))
+    {
+        if (scene_shader_params[2] == 36) { vhsbeat = 1.0f; vhsbeat_start = mymillis; }
+        vhsbeat-=((mymillis-vhsbeat_start)*0.00005);
+        if (vhsbeat <= (current_scene == 2 ? 0.2 : 0.1)) vhsbeat = (current_scene == 2 ? 0.2 : 0.1);
+    }
+    else if (current_scene == 3) {
+        if (millis >= 182500 && vhsbeat_start < 182500) { 
+            vhsbeat_start = millis;
+            //printf("START!\n");
+        }
+
+        if (vhsbeat_start >= 182500)
+        {
+            vhsbeat = (millis-vhsbeat_start)*(0.02/30);
+            //printf("vhsbeat:%f\n", vhsbeat);
+        }
+    }
+    else if (current_scene == 6)
+    {
+       if (scene_shader_params[2] == 36) { vhsbeat = 1.0f; vhsbeat_start = mymillis; }
+        vhsbeat-=((mymillis-vhsbeat_start)*0.0005);
+        if (vhsbeat < 0.0) vhsbeat = 0.0;
+
+    }
+    else{
+        vhsbeat = 0.0;
+    }
+
+
 	glUniform1f(widthLoc5, g_Width);
 	glUniform1f(heightLoc5, g_Height);
 	glUniform1f(timeLoc5, mymillis/100);
 	glUniform1f(effuLoc5, effuon);
+    glUniform1f(beatLoc, vhsbeat);
 
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, fake_framebuffer_tex);
@@ -2901,19 +3112,34 @@ void UpdateShaderParams()
 		int dw = (int)currentMsg.dwAbsPos;
 		int tarkistus = (int)(dw)*1.212;
 
-		//if (intmillis+155520 < tarkistus*1.212) break;
-		if (intmillis < tarkistus) break;
+        // flush midi to correct position if debugging
+        if (debugmode == 1)
+        {
+            while (tarkistus < intmillis)
+            {
+                timeline_trackindex[tracknum]++;
+                trackidx = timeline_trackindex[tracknum];
+                MIDI_MSG currentMsg2 = timeline[tracknum][trackidx];
+                dw = (int)currentMsg2.dwAbsPos;
+                tarkistus = (int)(dw)*1.212;
+            }
+            printf("DEBUG: midi track %d flushed to position: %d\n", tracknum, tarkistus);
+        }
 
-		// reset trigs
-		if (scene_shader_param_type[mapping_paramnum[i]] == 0) scene_shader_params[mapping_paramnum[i]] = -1;
+        // reset trigs
+        if (scene_shader_param_type[mapping_paramnum[i]] == 0) scene_shader_params[mapping_paramnum[i]] = -1;
+
+		//if (intmillis+155520 < tarkistus*1.212) break;
+		if (intmillis < tarkistus) continue;
 
 		timeline_trackindex[tracknum]++;
-
 
 		int ev = 0;
 
 		if (currentMsg.bImpliedMsg) { ev = currentMsg.iImpliedMsg; }
 		else { ev = currentMsg.iType; }
+
+//        DebugPrintEvent(ev, currentMsg);
 
 		int trigVal = -1;
 		int paramVal = -1;
@@ -2927,7 +3153,8 @@ void UpdateShaderParams()
 				if (ev == msgNoteOn)
 				{
 					trigVal = currentMsg.MsgData.NoteOn.iNote;
-					printf("track #%d, len %d, pos %d: dwAbsPos: %d (millis: %d) -> noteon: %d\n", tracknum, timeline_tracklength[tracknum], timeline_trackindex[tracknum], currentMsg.dwAbsPos, intmillis, trigVal);
+//					printf("track #%d (%s), len %d, pos %d: dwAbsPos: %d (millis: %d) -> noteon: %d (shadermap num %d)\n", tracknum, timeline_trackname[tracknum], timeline_tracklength[tracknum], timeline_trackindex[tracknum], currentMsg.dwAbsPos, intmillis, trigVal, mapping_paramnum[i]);
+//                    printf("shader param %d trig: %d\n", mapping_paramnum[i], trigVal);
 				}
 				else if (ev == msgNoteOff)
 				{
@@ -2936,7 +3163,7 @@ void UpdateShaderParams()
 
 				scene_shader_params[mapping_paramnum[i]] = trigVal;
 				scene_shader_param_type[mapping_paramnum[i]] = 0;
-				//printf("sync: trig #%d to: %d\n", mapping_paramnum[i], trigVal);
+				if (ev == msgNoteOn) printf("sync (%s): %d: trig %d to: %d\n", timeline_trackname[tracknum], intmillis, mapping_paramnum[i], trigVal);
 				break;
 			}
 
@@ -2952,15 +3179,28 @@ void UpdateShaderParams()
 				scene_shader_params[mapping_paramnum[i]] = paramVal;
 				scene_shader_param_type[mapping_paramnum[i]] = 1;
 
-				//printf("sync: param #%d to: %d\n", mapping_paramnum[i], trigVal);
+				printf("sync (%s): %d: param %d to: %d\n", timeline_trackname[tracknum], intmillis, mapping_paramnum[i], paramVal);
 				break;
 			}
 		}
 	}
-
+    debugmode = 0;
 
 }
 ///////////////////////////////////////////////////////////////// MAIN LOGIC
+
+void quit()
+{
+    quitflag = 1;
+    printf("--- MIDISYS ENGINE: time to quit()\n");
+    if(!window) {
+        glutLeaveGameMode();
+        glutLeaveMainLoop();
+    } else {
+        glutDestroyWindow(window);
+        glutLeaveMainLoop();
+    }
+}
 
 double min(double a, double b)
 {
@@ -2991,17 +3231,20 @@ void logic()
 { 	
     if (assets_loaded) {
         if (music_started == -1) {
-            printf("--- MIDISYS-ENGINE: Total Loading Time: %f\n", (float)((((float)t_loader_d - (float)t_loader_begin) / 1000000.0F ) * 1000));
+            printf("--- MIDISYS-ENGINE: total loading time: %f\n", loading_time);
+            printf("--- MIDISYS-ENGINE: demo startup\n");
             BASS_ChannelPlay(music_channel,FALSE); music_started = 1;
-        } // BASS_ChannelSetPosition(music_channel, 31000000, BASS_POS_BYTE); }
+            if(jump_to) { BASS_ChannelSetPosition(music_channel, jump_to, BASS_POS_BYTE); }
+        } 
 
 	    QWORD bytepos = BASS_ChannelGetPosition(music_channel, BASS_POS_BYTE);
 	    double pos = BASS_ChannelBytes2Seconds(music_channel, bytepos);
 	    millis = (float)pos*1000;
 
+        if (millis > 367000) quit();
+
 	    demo_playlist();
 	    scene_logic[current_scene](0.0f);
-	    UpdateShaderParams();
     } else {
         t_loader_d = clock();
         //scene_logic[current_scene]((float)((float)(assets_index) / (float)(assets_total)));
@@ -3018,7 +3261,7 @@ void timer(int value)
   logic();
 
   FPS(); //only call once per frame loop to measure FPS 
-  glutPostRedisplay();
+  if (quitflag == 0) glutPostRedisplay();
 }
 
 
@@ -3026,8 +3269,9 @@ void timer(int value)
 
 void display(void)
 {
+    UpdateShaderParams();
 	scene_render[current_scene]();
-	VHSPost(assets_loaded && current_scene < 4 ? 1.0 : 0.0);
+	if (current_scene != 7) VHSPost(assets_loaded && current_scene <= 4 ? 1.0 : 0.0);
 
 	glutSwapBuffers();
 	frame++;
@@ -3068,20 +3312,9 @@ void reshape(GLint width, GLint height)
 // ----------------------------------------------------------------------------
 // ----------------------------------------------------------------------------
 
-void quit()
-{
-	printf("--- MIDISYS ENGINE: time to quit()\n");
-    if(!window) {
-    	glutLeaveGameMode();
-	    glutLeaveMainLoop();
-    } else {
-        glutDestroyWindow(window);
-    }
-}
-
 void keyPress(unsigned char key, int x, int y)
 {
-	quit();
+	if (key == 27) quit();
 }
 
 void mouseMotion(int button, int state, int x, int y)
@@ -3227,7 +3460,7 @@ void InitGraphics(int argc, char* argv[])
         // start fullscreen game mode
         glutEnterGameMode();
     } else {
-        window = glutCreateWindow("MIDISYS window");   
+        window = glutCreateWindow("majestic twelve by bilotrip");   
         glutReshapeWindow(c_Width, c_Height);
     }
 
@@ -3286,33 +3519,32 @@ int main(int argc, char* argv[])
 
 	printf("--- nu laddar vi en videofilmen, det aer jaetteroligt att fuska poe Assembly\n");	
 
-	OggPlayer ogg("data/video/video.ogg",AF_S16,2,44100,VF_BGRA);
+    OggPlayer ogg("data/video/video.ogg",AF_S16,2,44100,VF_BGRA);
 	if(ogg.fail()) {
-		printf("could not open video file \"%s\"\n", "data/video/video.ogg\n");
-		return -2;
+	   printf("could not open video file \"%s\"\n", "data/video/video.ogg\n");
+	   return -2;
 	}
-	
-	YUVFrame yuv_frame(ogg);
-
-	myVideoFrame = &yuv_frame;
-
+    YUVFrame yuv_frame(ogg);
+    myVideoFrame = &yuv_frame;
 
 	// init MIDI sync and audio
 
-	LoadMIDIEventList("data/music/music.mid");
+	LoadMIDIEventList("data/music/testi.mid");
 	ParseMIDITimeline("data/music/mapping.txt");
 	InitAudio("data/music/EhkaValmisMC3.mp3");
 
     // Loader assets
 
-    /*bilothorn = Import3DFromFile("data/models/bilotrip_logo_thorn.3ds");
-    LoadGLTextures(bilothorn);*/
+    bilothorn = Import3DFromFile("data/models/bilotrip_logo_thorn.3ds");
+    LoadGLTextures(bilothorn);
     biloflat = Import3DFromFile("data/models/bilotrip_logo_flat.3ds");
     LoadGLTextures(biloflat);
     bilothree = Import3DFromFile("data/models/bilotrip.3ds");
     LoadGLTextures(bilothree);
     bilotetra = Import3DFromFile("data/models/bilotrip_logo_tetra.3ds");
     LoadGLTextures(bilotetra);
+    brieflycase = Import3DFromFile("data/models/brieflycase.obj");
+    LoadGLTextures(brieflycase);
 
 	// start mainloop
 
