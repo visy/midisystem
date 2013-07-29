@@ -2133,6 +2133,7 @@ int skip_frames = 10;
 int skip_frames_count = 0;
 clock_t t_loader_begin = NULL, t_loader_d;
 int assets_index = -1, assets_total = -1;
+int loader_phase = -1;
 void Loader()
 {
     if(t_loader_begin == NULL) { current_scene = 0; t_loader_begin = clock(); assets_total = ((sizeof(shaders) / sizeof(shaders[0])) + (sizeof(textures) / sizeof(textures[0])) + assets_3dmodel_total ); }
@@ -2142,11 +2143,12 @@ void Loader()
     }
 
     float phase = (float)((float)(assets_index) / (float)(assets_total));
+    aiScene* loaderscene = bilothorn;
 
     //glClearColor (phase,phase,phase,1.0);
     glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    float mymillis = phase*5400;
+    float mymillis = phase*5000;
     glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fb); // default
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -2157,7 +2159,7 @@ void Loader()
     glBlendFunc(GL_SRC_COLOR, GL_ONE_MINUS_SRC_COLOR);
 
     glShadeModel(GL_SMOOTH);    // Enables Smooth Shading
-    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    //glClearColor(1.0f-phase,1.0f-phase,1.0f-phase, 1.0f);
     glClearDepth(1.0f); // Depth Buffer Setup
     glEnable(GL_DEPTH_TEST);    // Enables Depth Testing
     glDepthFunc(GL_LEQUAL); // The Type Of Depth Test To Do
@@ -2168,8 +2170,8 @@ void Loader()
     glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE);
     glDisable(GL_NORMALIZE);
 
-    GLfloat LightAmbient[]= { 0.0f, 1.0f, 0.0f, 1.0f };
-    GLfloat LightDiffuse[]= { 0.0f, 1.0f, 0.0f, 1.0f };
+    GLfloat LightAmbient[]= { 0.0f, 1.0f-phase, 0.0f, 1.0f };
+    GLfloat LightDiffuse[]= { 0.0f, 1.0f-phase, 0.0f, 1.0f };
     GLfloat LightPosition[]= { 0.0f, 0.0f, 15.0f, 1.0f };
 
     glLightfv(GL_LIGHT1, GL_AMBIENT, LightAmbient);
@@ -2178,7 +2180,7 @@ void Loader()
     glEnable(GL_LIGHT1);
 
     float tmp;
-    float zoom = -250.0f+((mymillis)*0.05);
+    float zoom = -50.0f+((mymillis)*0.05*0.2);
 
     if (zoom > -0.5 && startti == 0) { startti = mymillis; }
     if (zoom >= -0.5) { zoom = -0.5; jormymillis=(mymillis-startti); }
@@ -2190,14 +2192,58 @@ void Loader()
 
     glLoadIdentity();
 
-    glTranslatef(0.0f, -7.5f, zoom);
-    if (jormymillis > 0) {
+    glRotatef(180.0f*phase,0.0,0.0,1.0);
+    glTranslatef(0.0f, 0.0f, zoom);
+    /*if (jormymillis > 0) {
         glRotatef(jormymillis*0.0026,-1.0,0.0,0.0);
+    }*/
+
+    skip_frames_count++;
+    if(skip_frames_count == skip_frames) {
+        skip_frames_count = 0;
+        assets_index++;
+        printf("--- MIDISYS-ENGINE: Loading asset #%i", assets_index);
+
+        // begin loading animation
+
+        if(loader_phase == -1) {
+        	loader_phase = 0;
+        } else if(loader_phase == 0) {
+        	if(!LoadShaders()) {
+        		loader_phase = 1;
+        	} else {
+        	}
+        } else if(loader_phase == 1) {
+            if(!LoadTextures()) {
+            	loader_phase = 2;
+        	} else {
+        	}
+        } else if(loader_phase == 2) {
+            printf("..%i", assets_total);
+            // load all 3d models; after that all asset loading is done
+            Load3DAssets();
+            loader_phase = 3;
+        } else {
+            assets_loaded = true;
+        }
+    } else {
+        // format bilotrip terminal 1.6.2.0
+
+    	if(phase > 0.975f) {
+    		phase = 1.0f-phase;
+    	}
+        glClearColor (phase/1.5,phase/1.5,phase/1.5,1.0);
+        glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glFlush();
+        glutSwapBuffers();
     }
 
-    aiScene* loaderscene = bilothree;
-    recursive_render(loaderscene, loaderscene->mRootNode, 2.0+jormymillis*0.001);
-    if (jormymillis > 0)recursive_render(loaderscene, loaderscene->mRootNode, 4.0-jormymillis*0.001);
+    //printf("n:%i\n",(int)((float)((float)(assets_index) / (float)(assets_total)) * 3.0f));
+    for(int n = 0; n < ((int)(phase*3.0) + 1); n++) {
+    	glRotatef(120.0f,0.0,0.0,(float)(n));
+	    recursive_render(loaderscene, loaderscene->mRootNode, 2.0+jormymillis*0.001);
+    	//if (jormymillis > 0)recursive_render(loaderscene, loaderscene->mRootNode, 4.0-jormymillis*0.001);    	
+    }
 
 
     glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fake_framebuffer); // default
@@ -2225,6 +2271,7 @@ void Loader()
     glLoadIdentity();
 
     glTranslatef(-1.2, -1.0, -1.0);
+    //glTranslatef(0.0, 0.0, -1.0);
 
     int i=0;
     int j=0;
@@ -2237,49 +2284,6 @@ void Loader()
 
     glFlush();
     glutSwapBuffers();
-    if (quitflag == 0) glutPostRedisplay();
-    /*glEnable(GL_BLEND);
-    glLoadIdentity();
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_DST_ALPHA);
-    glTranslatef(-1.2, -1.0, -1.0);
-    glColor4f(0.0,1.0,0.0,1.0);
-    glBegin(GL_TRIANGLES);
-    glVertex2f(0.0,0.0);
-    glVertex2f(-100.0,0.0);
-    glVertex2f(0.0,100.0);
-    glEnd();
-    /*glClearColor (0.0,0.0,0.0,1.0);
-    glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glFlush();
-    glutSwapBuffers();
-    glutPostRedisplay();*/
-
-
-    skip_frames_count++;
-    if(skip_frames_count == skip_frames) {
-        skip_frames_count = 0;
-        assets_index++;
-        printf("--- MIDISYS-ENGINE: Loading asset #%i", assets_index);
-
-        // begin loading animation
-
-        if(!LoadShaders()) {
-            if(!LoadTextures()) {
-                printf("..%i", assets_total);
-                // load all 3d models; after that all asset loading is done
-                Load3DAssets();
-                assets_loaded = true;
-            }   
-        }
-    } else {
-        // format bilotrip terminal 1.6.2.0
-
-        glClearColor (0.28,0.28,0.28,1.0);
-        glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        glFlush();
-        glutSwapBuffers();
-        if (quitflag == 0) glutPostRedisplay();
-    }
 
     glDisable(GL_DEPTH_TEST);    // Enables Depth Testing
     glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fb); // default
@@ -2289,6 +2293,7 @@ void Loader()
     glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0); // default
     glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 
+    if (quitflag == 0) glutPostRedisplay();
 }
 
 int vieterframe = 0;
@@ -3514,8 +3519,8 @@ int main(int argc, char* argv[])
 
     // Loader assets
 
-    /*bilothorn = Import3DFromFile("data/models/bilotrip_logo_thorn.3ds");
-    LoadGLTextures(bilothorn);*/
+    bilothorn = Import3DFromFile("data/models/bilotrip_logo_thorn.3ds");
+    LoadGLTextures(bilothorn);
     biloflat = Import3DFromFile("data/models/bilotrip_logo_flat.3ds");
     LoadGLTextures(biloflat);
     bilothree = Import3DFromFile("data/models/bilotrip.3ds");
