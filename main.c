@@ -60,6 +60,11 @@ int scene_shader_param_type[16] = {-1};
 
 float millis = 0;
 
+// scene globals
+// vhs
+float vhsbeat = 0.0;
+float vhsbeat_start = 0;
+
 #ifdef __APPLE__
 	#include "glew.h"
 	#include <OpenGL/OpenGL.h>
@@ -1760,9 +1765,19 @@ glEnable(GL_LIGHT0); // Uses default lighting parameters
 glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE);
 glEnable(GL_NORMALIZE);
 
-float li_am = sin(mymillis/12);
-float li_di = cos(mymillis/12)*0.65f;
-GLfloat LightAmbient[]= { startti == 0 ? 0.25 : 0.0f, startti == 0 ? 0.25 : li_am, startti == 0 ? 0.25 : 0.0f, 1.0f };
+bool beatflag = false;
+float tmp; 
+float zoom = -300.0f+(((mymillis-jormymillis)*atan(mymillis*0.005))*0.05*0.18);
+
+if (scene_shader_params[2] == 36) { beatflag = true; vhsbeat = 1.0f; vhsbeat_start = mymillis; }
+vhsbeat-=((mymillis-vhsbeat_start)*0.00005);
+
+if (zoom > -1.5 && startti == 0) { startti = mymillis; }
+if (zoom >= -1.5 && beatflag) { zoom = -1.5; jormymillis+=1090; beatflag = false; }
+
+float li_am = sin(mymillis/12)*vhsbeat;
+float li_di = cos(mymillis/12)*0.65f*vhsbeat;
+GLfloat LightAmbient[]= { startti == 0 ? 0.25 : li_am, startti == 0 ? 0.25 : li_am, startti == 0 ? 0.25 : li_am, 1.0f };
 GLfloat LightDiffuse[]= { startti == 0 ? 0.25 : li_di, startti == 0 ? 0.25 : li_di, startti == 0 ? 0.25 : li_di, 1.0f };
 GLfloat LightPosition[]= { sin(mymillis*0.02), cos(mymillis*0.02), 15.0f*cos(mymillis*0.01), 1.0f };
 
@@ -1770,14 +1785,6 @@ glLightfv(GL_LIGHT1, GL_AMBIENT, LightAmbient);
 glLightfv(GL_LIGHT1, GL_DIFFUSE, LightDiffuse);
 glLightfv(GL_LIGHT1, GL_POSITION, LightPosition);
 glEnable(GL_LIGHT1);
-
-float tmp;
-float zoom = -300.0f+(((mymillis-jormymillis)*atan(mymillis*0.005))*0.05*0.18);
-glRotatef(zoom, zoom/18, zoom/3, zoom/60);
-
-if (zoom > -0.5 && startti == 0) { startti = mymillis; }
-if (zoom >= -0.5) { zoom = -0.5; jormymillis+=290;}
-
 
 if (jormymillis > 0) {
 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -1798,6 +1805,7 @@ glLoadIdentity();
 glTranslatef(0.0f, startti2 > 0 ? -5.5f-pantime*0.0008 : startti == 0 ? -11.5f : -5.5, zoom+pantime*0.001*atan(pantime*0.005));
 if (jormymillis > 0) {
 glRotatef(jormymillis*0.0026,-1.0,0.0,0.0);
+glRotatef(zoom, 0.02, -0.01, -0.1*(mymillis-startti2)/100);
 }
 
 
@@ -2127,9 +2135,10 @@ int skip_frames_count = 0;
 clock_t t_loader_begin = NULL, t_loader_d;
 int assets_index = -1, assets_total = -1;
 int loader_phase = -1;
+float loading_time = NULL;
 void Loader()
 {
-    if(t_loader_begin == NULL) { current_scene = 0; t_loader_begin = clock(); assets_total = ((sizeof(shaders) / sizeof(shaders[0])) + (sizeof(textures) / sizeof(textures[0])) + assets_3dmodel_total ); }
+    if(t_loader_begin == NULL) { current_scene = 0; t_loader_begin = clock(); assets_total = ((sizeof(shaders) / sizeof(shaders[0])) + (sizeof(textures) / sizeof(textures[0])) + assets_3dmodel_total ); } else { loading_time = (float)((((float)t_loader_d - (float)t_loader_begin) / 1000000.0F ) * 1000); }
     if(assets_total == -1) {
         printf('ERROR: Loader(): No assets to load and/or something is just terribly wrong! Terminating...');
         exit(1);
@@ -2163,9 +2172,15 @@ void Loader()
     glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE);
     glDisable(GL_NORMALIZE);
 
-    GLfloat LightAmbient[]= { 1.0f, 1.0f, 1.0f, 1.0f };
-    GLfloat LightDiffuse[]= { 1.0f, 1.0f, 1.0f, 1.0f };
-    GLfloat LightPosition[]= { 0.0f, 0.0f, 15.0f, 1.0f };
+    float r, g, b, a = 1.0f;
+    if(loader_phase < 1) {
+        r = g = b = sin(loading_time*100);
+    } else {
+        r = g = b = a;
+    }
+    GLfloat LightAmbient[]= { r, g, b, a };
+    GLfloat LightDiffuse[]= { r, g, b, a };
+    GLfloat LightPosition[]= { 0.0f, 0.0f, 15.0f, 1.0f};
     //GLfloat LightAmbient[]= { 0.0f, 1.0f-phase, 0.0f, 1.0f };
    // GLfloat LightDiffuse[]= { 0.0f, 1.0f-phase, 0.0f, 1.0f };
   //  GLfloat LightPosition[]= { 0.0f, 0.0f, 15.0f, 1.0f };
@@ -2957,9 +2972,6 @@ void RedCircleScene()
 
 }
 
-float vhsbeat = 0.0;
-float vhsbeat_start = 0;
-
 void VHSPost(float effuon)
 {
     if (current_scene == 6) effuon = 2.0f;
@@ -3208,7 +3220,7 @@ void logic()
 { 	
     if (assets_loaded) {
         if (music_started == -1) {
-            printf("--- MIDISYS-ENGINE: total loading time: %f\n", (float)((((float)t_loader_d - (float)t_loader_begin) / 1000000.0F ) * 1000));
+            printf("--- MIDISYS-ENGINE: total loading time: %f\n", loading_time);
             printf("--- MIDISYS-ENGINE: demo startup\n");
             BASS_ChannelPlay(music_channel,FALSE); music_started = 1;
             BASS_ChannelSetPosition(music_channel, 60000000, BASS_POS_BYTE);
