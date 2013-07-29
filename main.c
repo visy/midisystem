@@ -1760,8 +1760,10 @@ glEnable(GL_LIGHT0); // Uses default lighting parameters
 glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE);
 glEnable(GL_NORMALIZE);
 
-GLfloat LightAmbient[]= { startti == 0 ? 0.25 : 0.6f, startti == 0 ? 0.25 : 0.6f, startti == 0 ? 0.25 : 0.6f, 1.0f };
-GLfloat LightDiffuse[]= { startti == 0 ? 0.25 : 0.6f, startti == 0 ? 0.25 : 0.6f, startti == 0 ? 0.25 : 0.6f, 1.0f };
+float li_am = sin(mymillis/12);
+float li_di = cos(mymillis/12)*0.65f;
+GLfloat LightAmbient[]= { startti == 0 ? 0.25 : 0.0f, startti == 0 ? 0.25 : li_am, startti == 0 ? 0.25 : 0.0f, 1.0f };
+GLfloat LightDiffuse[]= { startti == 0 ? 0.25 : li_di, startti == 0 ? 0.25 : li_di, startti == 0 ? 0.25 : li_di, 1.0f };
 GLfloat LightPosition[]= { sin(mymillis*0.02), cos(mymillis*0.02), 15.0f*cos(mymillis*0.01), 1.0f };
 
 glLightfv(GL_LIGHT1, GL_AMBIENT, LightAmbient);
@@ -1770,7 +1772,8 @@ glLightfv(GL_LIGHT1, GL_POSITION, LightPosition);
 glEnable(GL_LIGHT1);
 
 float tmp;
-float zoom = -300.0f+(((mymillis-jormymillis)*atan(mymillis*0.005))*0.05);
+float zoom = -300.0f+(((mymillis-jormymillis)*atan(mymillis*0.005))*0.05*0.18);
+glRotatef(zoom, zoom/18, zoom/3, zoom/60);
 
 if (zoom > -0.5 && startti == 0) { startti = mymillis; }
 if (zoom >= -0.5) { zoom = -0.5; jormymillis+=290;}
@@ -2017,16 +2020,6 @@ on_key_press ( unsigned char key)
 /*void LoaderLogic(float dt)
 {
     printf("DEBUG: LoaderLogic(%f)\n", dt);
-
-    srand( (unsigned)time( NULL ) );
-    float phase = rand();
-    printf("!!!%f\n", phase);
-
-    glClearColor (phase,phase,phase,1.0);
-    glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glFlush();
-    glutSwapBuffers();
-    glutPostRedisplay();
 }*/
 
 int keyindex = 0;
@@ -2170,9 +2163,12 @@ void Loader()
     glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE);
     glDisable(GL_NORMALIZE);
 
-    GLfloat LightAmbient[]= { 0.0f, 1.0f-phase, 0.0f, 1.0f };
-    GLfloat LightDiffuse[]= { 0.0f, 1.0f-phase, 0.0f, 1.0f };
+    GLfloat LightAmbient[]= { 1.0f, 1.0f, 1.0f, 1.0f };
+    GLfloat LightDiffuse[]= { 1.0f, 1.0f, 1.0f, 1.0f };
     GLfloat LightPosition[]= { 0.0f, 0.0f, 15.0f, 1.0f };
+    //GLfloat LightAmbient[]= { 0.0f, 1.0f-phase, 0.0f, 1.0f };
+   // GLfloat LightDiffuse[]= { 0.0f, 1.0f-phase, 0.0f, 1.0f };
+  //  GLfloat LightPosition[]= { 0.0f, 0.0f, 15.0f, 1.0f };
 
     glLightfv(GL_LIGHT1, GL_AMBIENT, LightAmbient);
     glLightfv(GL_LIGHT1, GL_DIFFUSE, LightDiffuse);
@@ -3215,7 +3211,7 @@ void logic()
             printf("--- MIDISYS-ENGINE: total loading time: %f\n", (float)((((float)t_loader_d - (float)t_loader_begin) / 1000000.0F ) * 1000));
             printf("--- MIDISYS-ENGINE: demo startup\n");
             BASS_ChannelPlay(music_channel,FALSE); music_started = 1;
-            //BASS_ChannelSetPosition(music_channel, 37000000, BASS_POS_BYTE);
+            BASS_ChannelSetPosition(music_channel, 60000000, BASS_POS_BYTE);
         } 
 
 	    QWORD bytepos = BASS_ChannelGetPosition(music_channel, BASS_POS_BYTE);
