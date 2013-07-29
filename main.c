@@ -37,7 +37,6 @@ int debugmode = 0;
 // jump to demo position; 0 for whole demo
 int jump_to = 0;
 // some debugging flags
-bool load_video = true;
 bool load_textures = true;
 
 // midi sync
@@ -3520,16 +3519,13 @@ int main(int argc, char* argv[])
 
 	printf("--- nu laddar vi en videofilmen, det aer jaetteroligt att fuska poe Assembly\n");	
 
-
-    if(load_video) {
-    	OggPlayer ogg("data/video/video.ogg",AF_S16,2,44100,VF_BGRA);
-	   if(ogg.fail()) {
-	       printf("could not open video file \"%s\"\n", "data/video/video.ogg\n");
-	       return -2;
-	    }
-        YUVFrame yuv_frame(ogg);
-        myVideoFrame = &yuv_frame;
-    } else { myVideoFrame = NULL; }
+    OggPlayer ogg("data/video/video.ogg",AF_S16,2,44100,VF_BGRA);
+	if(ogg.fail()) {
+	   printf("could not open video file \"%s\"\n", "data/video/video.ogg\n");
+	   return -2;
+	}
+    YUVFrame yuv_frame(ogg);
+    myVideoFrame = &yuv_frame;
 
 	// init MIDI sync and audio
 
