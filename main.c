@@ -37,9 +37,9 @@ float demo_speed_x = 1.0f;
 // remove for non-debug build
 int debugmode = 0;
 // jump to demo position; 0 for whole demo
-int jump_to = 0;
+int jump_to = 18000000;
 // some debugging flags
-bool load_textures = true;
+bool load_textures = false;
 
 // midi sync
 
@@ -1971,13 +1971,13 @@ void brieflycase_render()
     //nosto
     if (brimillis > 1000 && brimillis < 3000)
     {
-        briyrot=(brimillis-1000)*0.047*atan(brimillis);
+        briyrot=(brimillis-1000)*0.047*(1.0-(cos(brimillis*0.001)));
         if (briyrot > 90.0f) briyrot = 90.0f;
     }
 
     if (brimillis > 5000)
     {
-        brixrot=(brimillis-5000)*0.047*2*atan(brimillis-4000);
+        brixrot=(brimillis-5000)*0.047*2* 1.0-(cos((brimillis-4000)*0.0005));
 //        if (brixrot > 180.0f) brixrot = 180.0f;
     }
 
