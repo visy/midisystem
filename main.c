@@ -30,7 +30,7 @@
 int quitflag = 0;
 
 // GLUT window handle (1 for windowed display, 0 for fullscreen gamemode)
-GLuint window = 0;
+GLuint window = 1;
 
 // remove for non-debug build
 int debugmode = 0;
@@ -790,7 +790,6 @@ class YUVFrame {
 public:
 	YUVFrame(OggPlayer oggstream):ogg(oggstream) {
 		width = ogg.width(); height = ogg.height();
-		printf("yuvframe: ogg reports: %dx%d\n",width,height);
 		// The textures are created when rendering the first frame
 		y_tex = u_tex = v_tex = -1 ;
 	}
@@ -800,10 +799,12 @@ public:
 		glDeleteTextures(1,&v_tex);
 	}
 	void play() {
-		printf("render(): ogg.play()\n");
 		ogg.play();
-		printf("render(): ogg.play() done\n");
 	}
+    void close()
+    {
+        ogg.close();
+    }
 	void render() {
 		update();
 		if(-1==y_tex) return; // not ready yet
@@ -858,11 +859,9 @@ private:
 		// assummes uv_width=y_width/2 , uv_height=y_height/2
 		// but I'm not sure whether that is always true
 		if(-1==y_tex){
-		printf("update(): gen texture\n");
 			y_tex = gen_texture(yuv.y_width,yuv.y_height);
 			u_tex = gen_texture(yuv.uv_width,yuv.uv_height);
 			v_tex = gen_texture(yuv.uv_width,yuv.uv_height);
-		printf("update(): gen texture done\n");
 		}
 		int y_offset = ogg.offset_x() + yuv.y_stride * ogg.offset_y();
 		int uv_offset = ogg.offset_x()/(yuv.y_width/yuv.uv_width)+
@@ -993,6 +992,9 @@ int demo_playlist()
 
 	if (sc != current_scene)
 	{
+        if (current_scene == 4) {
+            myVideoFrame->close();
+        }
         /*if(current_scene == 1) 
         {
             //printf("xx XX xxxxxxxRESHAPING HAXXXXxxxxx xxx XX xx");
@@ -1820,17 +1822,16 @@ void BiloThreeScene()
 {
     float mymillis = (millis-scene_start_millis);
     glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fb); // default
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
     glUseProgram(0);
+    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+    glClearDepth(1.0f); // Depth Buffer Setup
+//    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     glDisable(GL_TEXTURE_2D);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_COLOR, GL_ONE_MINUS_SRC_COLOR);
 
     glShadeModel(GL_SMOOTH);    // Enables Smooth Shading
-    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-    glClearDepth(1.0f); // Depth Buffer Setup
     glEnable(GL_DEPTH_TEST);    // Enables Depth Testing
     glDepthFunc(GL_LEQUAL); // The Type Of Depth Test To Do
     glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);  // Really Nice Perspective Calculation
@@ -1889,8 +1890,7 @@ void BiloThreeScene()
 
     glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fake_framebuffer); // default
     glDisable(GL_BLEND);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
+//    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     glUseProgram(shaders[hex]);
     float widthLoc5 = glGetUniformLocation(shaders[hex], "width");
@@ -1902,7 +1902,7 @@ void BiloThreeScene()
     glUniform1f(heightLoc5, g_Height);
     glUniform1f(timeLoc5, mymillis/100);
     glUniform1f(effuLoc5, 0.0);
-    glUniform1f(effuLoc5, jormymillis > 0 ? 1.0 : 0.0);
+    glUniform1f(effuLoc5, 0.0);
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, fb_tex);
@@ -2122,7 +2122,7 @@ int keyindex2 = 0;
 
 void ConsoleLogic2(float dt)
 {
-	int kmillis = (int)((millis-scene_start_millis)*1.1);
+	int kmillis = -1000+(int)((millis-scene_start_millis)*1.3);
 
 	//printf("kmillis:%d\n",kmillis);
 	if (kmillis >= 0 && kmillis >= keymillis2[keyindex2])
@@ -3096,12 +3096,12 @@ void VHSPost(float effuon)
         if (vhsbeat <= (current_scene == 2 ? 0.2 : 0.1)) vhsbeat = (current_scene == 2 ? 0.2 : 0.1);
     }
     else if (current_scene == 3) {
-        if (millis >= 182500 && vhsbeat_start < 182500) { 
+        if (millis >= 181500 && vhsbeat_start < 181500) { 
             vhsbeat_start = millis;
             //printf("START!\n");
         }
 
-        if (vhsbeat_start >= 182500)
+        if (vhsbeat_start >= 181500)
         {
             vhsbeat = (millis-vhsbeat_start)*(0.02/30);
             //printf("vhsbeat:%f\n", vhsbeat);
@@ -3226,7 +3226,7 @@ void UpdateShaderParams()
 
 				scene_shader_params[mapping_paramnum[i]] = trigVal;
 				scene_shader_param_type[mapping_paramnum[i]] = 0;
-				if (ev == msgNoteOn) printf("sync (%s): %d: trig %d to: %d\n", timeline_trackname[tracknum], intmillis, mapping_paramnum[i], trigVal);
+				//if (ev == msgNoteOn) printf("sync (%s): %d: trig %d to: %d\n", timeline_trackname[tracknum], intmillis, mapping_paramnum[i], trigVal);
 				break;
 			}
 
@@ -3242,7 +3242,7 @@ void UpdateShaderParams()
 				scene_shader_params[mapping_paramnum[i]] = paramVal;
 				scene_shader_param_type[mapping_paramnum[i]] = 1;
 
-				printf("sync (%s): %d: param %d to: %d\n", timeline_trackname[tracknum], intmillis, mapping_paramnum[i], paramVal);
+				//printf("sync (%s): %d: param %d to: %d\n", timeline_trackname[tracknum], intmillis, mapping_paramnum[i], paramVal);
 				break;
 			}
 		}
@@ -3302,7 +3302,7 @@ void logic()
 
 	    QWORD bytepos = BASS_ChannelGetPosition(music_channel, BASS_POS_BYTE);
 	    double pos = BASS_ChannelBytes2Seconds(music_channel, bytepos);
-	    millis = (float)pos*1000;
+	    millis = (float)pos*3000;
 
         if (millis > 367000) quit();
 
@@ -3336,6 +3336,7 @@ void display(void)
 	scene_render[current_scene]();
 	VHSPost(assets_loaded && current_scene <= 4 ? 1.0 : 0.0);
 
+    glFlush();
 	glutSwapBuffers();
 	frame++;
 	logic();
@@ -3598,13 +3599,13 @@ int main(int argc, char* argv[])
 
     // Loader assets
 
-    bilothorn = Import3DFromFile("data/models/bilotrip_logo_thorn.3ds");
+    bilothorn = Import3DFromFile("data/models/bilotrip_logo_thorn.obj");
     LoadGLTextures(bilothorn);
-    biloflat = Import3DFromFile("data/models/bilotrip_logo_flat.3ds");
+    biloflat = Import3DFromFile("data/models/bilotrip_logo_flat.obj");
     LoadGLTextures(biloflat);
-    bilothree = Import3DFromFile("data/models/bilotrip.3ds");
+    bilothree = Import3DFromFile("data/models/bilotrip.obj");
     LoadGLTextures(bilothree);
-    bilotetra = Import3DFromFile("data/models/bilotrip_logo_tetra.3ds");
+    bilotetra = Import3DFromFile("data/models/bilotrip_logo_tetra.obj");
     LoadGLTextures(bilotetra);
     brieflycase = Import3DFromFile("data/models/brieflycase.obj");
     LoadGLTextures(brieflycase);
