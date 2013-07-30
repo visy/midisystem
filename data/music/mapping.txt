@@ -2,3 +2,5 @@
 1,modctrll,param
 2,basariaa,trig
 3,metrowat,trig
+4,breatctr,param
+5,noisetin,param

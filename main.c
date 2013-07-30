@@ -3038,6 +3038,7 @@ void VHSPost(float effuon)
     float effuLoc5 = glGetUniformLocation(shaders[vhs], "effu");
 
     float beatLoc = glGetUniformLocation(shaders[vhs], "beat");
+    float noiseLoc = glGetUniformLocation(shaders[vhs], "noisetin");
 
     if ((current_scene == 2 || current_scene == 1 || current_scene == 4) && (millis > 55000 && millis < 186000))
     {
@@ -3068,12 +3069,17 @@ void VHSPost(float effuon)
         vhsbeat = 0.2;
     }
 
+    vhsbeat+=((scene_shader_params[4]/127));
+    float vhsnoise = ((scene_shader_params[5])/127);
+
+    if (!assets_loaded) vhsnoise=1.0;
 
     glUniform1f(widthLoc5, g_Width);
     glUniform1f(heightLoc5, g_Height);
     glUniform1f(timeLoc5, mymillis/100);
     glUniform1f(effuLoc5, effuon);
     glUniform1f(beatLoc, vhsbeat);
+    glUniform1f(noiseLoc, vhsnoise);
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, fake_framebuffer_tex);
@@ -3176,7 +3182,7 @@ void UpdateShaderParams()
 
                 scene_shader_params[mapping_paramnum[i]] = trigVal;
                 scene_shader_param_type[mapping_paramnum[i]] = 0;
-                //if (ev == msgNoteOn) printf("sync (%s): %d: trig %d to: %d\n", timeline_trackname[tracknum], intmillis, mapping_paramnum[i], trigVal);
+                if (ev == msgNoteOn) printf("sync (%s): %d: trig %d to: %d\n", timeline_trackname[tracknum], intmillis, mapping_paramnum[i], trigVal);
                 break;
             }
 
@@ -3192,7 +3198,7 @@ void UpdateShaderParams()
                 scene_shader_params[mapping_paramnum[i]] = paramVal;
                 scene_shader_param_type[mapping_paramnum[i]] = 1;
 
-                //printf("sync (%s): %d: param %d to: %d\n", timeline_trackname[tracknum], intmillis, mapping_paramnum[i], paramVal);
+                printf("sync (%s): %d: param %d to: %d\n", timeline_trackname[tracknum], intmillis, mapping_paramnum[i], paramVal);
                 break;
             }
         }

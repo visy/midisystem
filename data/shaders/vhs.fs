@@ -12,6 +12,7 @@ vec2 offset[9];
 
 uniform float effu;
 uniform float beat;
+uniform float noisetin;
 
 float hash(float x)
 {
@@ -184,9 +185,18 @@ void main()
     pos = uv = (gl_FragCoord.xy - vec2(0.0, 0.5)) / vec2(width,height);
     uv.y = floor(uv.y * linecount) / linecount;
 
-    if (effu == 1.0) gl_FragColor = vignette(gradient(scanline(0.2, 1.5-atan(beat)*6.0))) + vec4(displace.rgb+color.rgb,color.a);
-    else if (effu == 2.0) gl_FragColor = vec4(color.r-beat*0.2,color.g-beat*0.2,color.b-beat*0.2,color.a-beat*0.2)-vignette(gradient(scanline(1.2*beat, 1.0*beat)));
-    else gl_FragColor = vec4(displace.rgb+color.rgb,color.a);
+    vec4 noi = vec4(1.0,1.0,1.0,1.0);
+
+    if (noisetin > 0.0) {
+        noi.r = hash(tan(noisetin+pos.x+pos.y+time)*100.0)*noisetin;
+        noi.g = hash(sin(noisetin+pos.x+pos.y+time)*100.0)*noisetin;
+        noi.b = hash(cos(noisetin+pos.x+pos.y+time)*100.0)*noisetin;
+        noi.a = hash(cos(noisetin+pos.x+pos.y+time)*100.0)*noisetin;        
+    }
+
+    if (effu == 1.0) gl_FragColor = (vignette(gradient(scanline(0.2, 1.5-atan(beat)*6.0))) + vec4(displace.rgb+color.rgb*noi,color.a))/noi;
+    else if (effu == 2.0) gl_FragColor = (vec4(color.r-beat*0.2,color.g-beat*0.2,color.b-beat*0.2,color.a-beat*0.2)-vignette(gradient(scanline(1.2*beat, 1.0*beat))))/noi;
+    else gl_FragColor = vec4(displace.rgb+color.rgb,color.a)/noi;
 
     //gl_FragColor = color;
 }
