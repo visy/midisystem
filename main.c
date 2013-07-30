@@ -37,9 +37,9 @@ float demo_speed_x = 1.0f;
 // remove for non-debug build
 int debugmode = 0;
 // jump to demo position; 0 for whole demo
-int jump_to = 18000000;
+int jump_to = 0;
 // some debugging flags
-bool load_textures = false;
+bool load_textures = true;
 
 // midi sync
 
@@ -1977,7 +1977,7 @@ void brieflycase_render()
 
     if (brimillis > 5000)
     {
-        brixrot=(brimillis-5000)*0.047*2* 1.0-(cos((brimillis-4000)*0.0005));
+        brixrot=(brimillis-5000)*0.047*2* 1.0-(cos((brimillis-4000)*0.0001));
 //        if (brixrot > 180.0f) brixrot = 180.0f;
     }
 
@@ -3011,7 +3011,7 @@ void VHSPost(float effuon)
 
     if (current_scene == 1 || current_scene == 2)
     {
-        if (millis > 105000 && millis < 113000) brieflycase_render();
+        if (millis > 105000 && millis < 112000) brieflycase_render();
     }
 
     if (current_scene == 1 || current_scene == 3) 
@@ -3077,8 +3077,8 @@ void VHSPost(float effuon)
         vhsbeat = 0.2;
     }
 
-    vhsbeat+=((scene_shader_params[4]/127));
-    float vhsnoise = ((scene_shader_params[5])/127);
+    vhsbeat+=((float)(scene_shader_params[4]))/127.0f;
+    float vhsnoise = ((float)(scene_shader_params[5]))/127.0f;
 
     if (!assets_loaded) vhsnoise=1.0;
 
@@ -3190,7 +3190,7 @@ void UpdateShaderParams()
 
                 scene_shader_params[mapping_paramnum[i]] = trigVal;
                 scene_shader_param_type[mapping_paramnum[i]] = 0;
-                if (ev == msgNoteOn) printf("sync (%s): %d: trig %d to: %d\n", timeline_trackname[tracknum], intmillis, mapping_paramnum[i], trigVal);
+                if (ev == msgNoteOn) printf("sync (%s): %d: trig %d to: %f\n", timeline_trackname[tracknum], intmillis, mapping_paramnum[i], scene_shader_params[mapping_paramnum[i]]);
                 break;
             }
 
@@ -3200,13 +3200,11 @@ void UpdateShaderParams()
                 if (ev == msgSetParameter)
                 {
                     paramVal = currentMsg.MsgData.NoteParameter.iParam;
-                    //printf("setparam track #%d, len %d, pos %d: time: %d -> %d\n", tracknum, timeline_tracklength[tracknum], timeline_trackindex[tracknum], currentMsg.dwAbsPos, paramVal);
+                    scene_shader_params[mapping_paramnum[i]] = paramVal;
+                    scene_shader_param_type[mapping_paramnum[i]] = 1;
+                    printf("sync (%s): %d: param %d to: %d\n", timeline_trackname[tracknum], intmillis, mapping_paramnum[i], scene_shader_params[mapping_paramnum[i]]);
                 }
 
-                scene_shader_params[mapping_paramnum[i]] = paramVal;
-                scene_shader_param_type[mapping_paramnum[i]] = 1;
-
-                printf("sync (%s): %d: param %d to: %d\n", timeline_trackname[tracknum], intmillis, mapping_paramnum[i], paramVal);
                 break;
             }
         }
