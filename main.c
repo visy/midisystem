@@ -31,6 +31,8 @@ int quitflag = 0;
 
 // GLUT window handle (1 for windowed display, 0 for fullscreen gamemode)
 GLuint window = 0;
+// demo running speed multiplier
+float demo_speed_x = 1.0f;
 
 // remove for non-debug build
 int debugmode = 0;
@@ -2169,7 +2171,7 @@ void Loader()
     //glClearColor (phase,phase,phase,1.0);
     glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    float mymillis = phase*4020;
+    float mymillis = phase*6020;
     glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fb); // default
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -2210,7 +2212,7 @@ void Loader()
     glEnable(GL_LIGHT1);
 
     float tmp;
-    float zoom = -50.0f+((mymillis)*0.05*0.2);
+    float zoom = -50.0f+((mymillis)*0.05*0.2)*((phase+0.5f)*(phase+0.5f)*(phase+0.5f));
 
     if (zoom > -0.5 && startti == 0) { startti = mymillis; }
     if (zoom >= -0.5) { zoom = -0.5; jormymillis=(mymillis-startti); }
@@ -2274,8 +2276,12 @@ void Loader()
         glVertex3f(-25.0f,25.0f,-50.0f);
         glVertex3f(25.0f,25.0f,-50.0f);
     glEnd();*/
-    for(int n = 0; n < ((int)(phase*3.0) + 1); n++) {
-        glRotatef(120.0f,0.0,0.0,(float)(n));
+    glTranslatef(0.0,1.0,0.0);
+    for(int n = 0; n < (int)(phase*6.9f); n++) {
+        int t = floor(n/3);
+        float tf = (float)(t)*120.0f;
+        if(n!=0&&n%3==0) glTranslatef(0.0,0.0,tf);
+        glRotatef(120.0f,0.0,0.0,((float)(n)*phase));
         recursive_render(loaderscene, loaderscene->mRootNode, 2.0+jormymillis*0.001);
         //if (jormymillis > 0)recursive_render(loaderscene, loaderscene->mRootNode, 4.0-jormymillis*0.001);     
     }
@@ -3258,7 +3264,7 @@ void logic()
 
         QWORD bytepos = BASS_ChannelGetPosition(music_channel, BASS_POS_BYTE);
         double pos = BASS_ChannelBytes2Seconds(music_channel, bytepos);
-        millis = (float)pos*1000;
+        millis = (float)pos*1000*demo_speed_x;
 
         if (millis > 367000) quit();
 
