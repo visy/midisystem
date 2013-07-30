@@ -2276,7 +2276,7 @@ void Loader()
         glVertex3f(-25.0f,25.0f,-50.0f);
         glVertex3f(25.0f,25.0f,-50.0f);
     glEnd();*/
-    glTranslatef(0.0,1.0,0.0);
+    glTranslatef(0.0,floor(phase+0.25f),0.0);
     for(int n = 0; n < (int)(phase*6.9f); n++) {
         int t = floor(n/3);
         float tf = (float)(t)*120.0f;
