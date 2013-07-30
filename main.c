@@ -2171,7 +2171,7 @@ void Loader()
     //glClearColor (phase,phase,phase,1.0);
     glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    float mymillis = phase*6020;
+    float mymillis = phase*1750;
     glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fb); // default
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -2276,13 +2276,15 @@ void Loader()
         glVertex3f(-25.0f,25.0f,-50.0f);
         glVertex3f(25.0f,25.0f,-50.0f);
     glEnd();*/
-    glTranslatef(0.0,floor(phase+0.25f),0.0);
+    //glTranslatef(0.0,floor(phase+0.25f),0.0);
     for(int n = 0; n < (int)(phase*6.9f); n++) {
-        int t = floor(n/3);
-        float tf = (float)(t)*120.0f;
-        if(n!=0&&n%3==0) glTranslatef(0.0,0.0,tf);
-        glRotatef(120.0f,0.0,0.0,((float)(n)*phase));
-        recursive_render(loaderscene, loaderscene->mRootNode, 2.0+jormymillis*0.001);
+        if(n<3) {
+            int t = floor(n/3);
+            float tf = (float)(t)*120.0f;
+            if(n!=0&&n%3==0) glTranslatef(0.0,0.0,tf);
+            glRotatef(120.0f,0.0,0.0,((float)(n)*phase));
+            recursive_render(loaderscene, loaderscene->mRootNode, 2.0+jormymillis*0.001);
+        }
         //if (jormymillis > 0)recursive_render(loaderscene, loaderscene->mRootNode, 4.0-jormymillis*0.001);     
     }
 
