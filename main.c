@@ -2074,7 +2074,7 @@ int keyindex2 = 0;
 
 void ConsoleLogic2(float dt)
 {
-    int kmillis = -1000+(int)((millis-scene_start_millis)*1.3);
+    int kmillis = -2000+(int)((millis-scene_start_millis)*1.3);
 
     //printf("kmillis:%d\n",kmillis);
     if (kmillis >= 0 && kmillis >= keymillis2[keyindex2])
@@ -3077,16 +3077,18 @@ void VHSPost(float effuon)
         vhsbeat = 0.2;
     }
 
-    vhsbeat+=((float)(scene_shader_params[4]))/127.0f;
-    float vhsnoise = ((float)(scene_shader_params[5]))/127.0f;
+    float vhsnoise = ((float)(scene_shader_params[5]))/255.0f;
+    float adder = (((float)(scene_shader_params[4]))/255.0f)-(current_scene == 2 ? 0.2 : 0.5f);
 
-    if (!assets_loaded) vhsnoise=1.0;
+    if (current_scene == 4) adder = 0;
+
+    if (!assets_loaded) vhsnoise=sin(loading_time*0.1);
 
     glUniform1f(widthLoc5, g_Width);
     glUniform1f(heightLoc5, g_Height);
     glUniform1f(timeLoc5, mymillis/100);
     glUniform1f(effuLoc5, effuon);
-    glUniform1f(beatLoc, vhsbeat);
+    glUniform1f(beatLoc, vhsbeat+adder);
     glUniform1f(noiseLoc, vhsnoise);
 
     glActiveTexture(GL_TEXTURE0);
@@ -3555,9 +3557,9 @@ int main(int argc, char* argv[])
 
     // init MIDI sync and audio
 
-    LoadMIDIEventList("data/music/testi.mid");
+    LoadMIDIEventList("data/music/midicontrols_final.mid");
     ParseMIDITimeline("data/music/mapping.txt");
-    InitAudio("data/music/EhkaValmisMC3.mp3");
+    InitAudio("data/music/UusiArtistiNimi_-_The_March_compoVersion.mp3");
 
     // Loader assets
 
