@@ -3047,6 +3047,7 @@ void RedCircleScene()
 void VHSPost(float effuon)
 {
     if (current_scene == 6) effuon = 2.0f;
+    if (current_scene == 7) effuon = 3.0f;
     float mymillis = (millis-scene_start_millis);
 
     if (current_scene == 1 || current_scene == 2)
@@ -3122,7 +3123,7 @@ void VHSPost(float effuon)
 
     if (current_scene == 4) adder = 0.0;
 
-    if (current_scene == 7) adder = cos(millis);
+    if (current_scene == 7) vhsnoise = 1.0+cos(millis*0.001);
 
     if (!assets_loaded) vhsnoise=sin(loading_time*0.1);
 

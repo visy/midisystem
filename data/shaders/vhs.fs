@@ -198,9 +198,14 @@ void main()
 
     if (effu == 1.0) finalcolor = (vignette(gradient(scanline(0.2, 1.5-atan(beat)*6.0))) + vec4(displace.rgb+color.rgb,color.a));
     else if (effu == 2.0) finalcolor = (vec4(abs(color.r-beat*0.2),abs(color.g-beat*0.2),abs(color.b-beat*0.2),color.a));
+    else if (effu == 3.0) finalcolor = vec4((displace.rgb+color.rgb),color.a);
     else finalcolor = vec4(displace.rgb+color.rgb,color.a);
 
-    if (effu != 2.0) gl_FragColor = finalcolor-noi;
+    if (effu != 2.0 && effu != 3.0) gl_FragColor = finalcolor-noi;
+    else if (effu == 3.0) {
+        if (finalcolor.r > 0.3) gl_FragColor = finalcolor;
+        else gl_FragColor = finalcolor/vec4(hash(tan(time+tan(pos.x+time)+tan(pos.y-time))),1.0,1.0,1.0);
+    }
     else {
         if (finalcolor.r > 0.5)
             gl_FragColor = finalcolor+(noi*0.5);
