@@ -194,10 +194,18 @@ void main()
         noi.a = hash(sin(noisetin+pos.x+pos.y+time)*100.0)*noisetin;        
     }
 
-    if (effu == 1.0) gl_FragColor = (vignette(gradient(scanline(0.2, 1.5-atan(beat)*6.0))) + vec4(displace.rgb+color.rgb,color.a))-noi;
-    else if (effu == 2.0) gl_FragColor = (vec4(color.r-beat*0.2,color.g-beat*0.2,color.b-beat*0.2,color.a-beat*0.2)-vignette(gradient(scanline(1.2*beat, 1.0*beat))))-noi;
-    else gl_FragColor = vec4(displace.rgb+color.rgb,color.a)-noi;
+    vec4 finalcolor;
 
-    //gl_FragColor = color;
+    if (effu == 1.0) finalcolor = (vignette(gradient(scanline(0.2, 1.5-atan(beat)*6.0))) + vec4(displace.rgb+color.rgb,color.a));
+    else if (effu == 2.0) finalcolor = (vec4(abs(color.r-beat*0.2),abs(color.g-beat*0.2),abs(color.b-beat*0.2),color.a));
+    else finalcolor = vec4(displace.rgb+color.rgb,color.a);
+
+    if (effu != 2.0) gl_FragColor = finalcolor-noi;
+    else {
+        if (finalcolor.r > 0.5)
+            gl_FragColor = finalcolor+(noi*0.5);
+        else
+            gl_FragColor = displace;
+    }
 }
 

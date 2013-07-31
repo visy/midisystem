@@ -960,6 +960,38 @@ DWORD music_channel = 0;
 //////////////////////// PLAYLIST ////////////////////////
 ///////////////////////////////////////////////////////////
 
+void reshape(GLint width, GLint height)
+{
+    g_Width = width;
+    g_Height = height;
+
+    printf("--- MIDISYS ENGINE: reshape event: %dx%d\n", (int)width, (int)height);
+
+    glViewport(0, 0, g_Width, g_Height);
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    gluPerspective(65.0, (float)g_Width / g_Height, g_nearPlane, g_farPlane);
+    glMatrixMode(GL_MODELVIEW);
+
+    glDeleteTextures(1, &fb_tex);
+    glDeleteRenderbuffersEXT(1, &depth_rb);
+    glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+    glDeleteFramebuffersEXT(1, &fb);
+
+    glDeleteTextures(1, &fb_tex2);
+    glDeleteRenderbuffersEXT(1, &depth_rb2);
+    glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+    glDeleteFramebuffersEXT(1, &fb2);
+
+    glDeleteTextures(1, &fake_framebuffer_tex);
+    glDeleteRenderbuffersEXT(1, &depth_rb3);
+    glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+    glDeleteFramebuffersEXT(1, &fake_framebuffer);
+
+    InitFBO();
+}
+
+
 int demo_playlist()
 {
     int sc = current_scene;
@@ -996,6 +1028,11 @@ int demo_playlist()
     {
         if (current_scene == 4) {
             myVideoFrame->close();
+        }
+
+        if (current_scene == 6)
+        {
+            reshape(g_Width, g_Height);
         }
         /*if(current_scene == 1) 
         {
@@ -1823,11 +1860,13 @@ float pantime = 0;
 void BiloThreeScene()
 {
     float mymillis = (millis-scene_start_millis);
-    glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0); // default
+    glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fake_framebuffer); // default
     glUseProgram(0);
 
     float colmy = mymillis*0.0001;
     if (colmy > 0.5) colmy = 0.5;
+
+    if (millis > 302800) colmy-=((millis-302800)*0.00001);
 
     glClearColor(colmy, 0.0f, 0.0f, 0.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -2962,6 +3001,7 @@ void RedCircleScene()
     glUseProgram(shaders[redcircle]);
     float mymillis = (millis-scene_start_millis)*160;
 
+    glClearColor(0,0,0,0);
     if (scene_shader_params[2] == 36) { redcounter++; }
     if (redcounter > 4) { redcounter = 0; glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); }
 
@@ -3080,7 +3120,9 @@ void VHSPost(float effuon)
     float vhsnoise = ((float)(scene_shader_params[5]))/255.0f;
     float adder = (((float)(scene_shader_params[4]))/255.0f)-(current_scene == 2 ? 0.2 : 0.5f);
 
-    if (current_scene == 4) adder = 0;
+    if (current_scene == 4) adder = 0.0;
+
+    if (current_scene == 7) adder = cos(millis);
 
     if (!assets_loaded) vhsnoise=sin(loading_time*0.1);
 
@@ -3298,7 +3340,7 @@ void display(void)
 {
     UpdateShaderParams();
     scene_render[current_scene]();
-    if (current_scene != 7) VHSPost(assets_loaded && current_scene <= 4 ? 1.0 : 0.0);
+    VHSPost(assets_loaded && current_scene <= 4 ? 1.0 : 0.0);
 
     glFlush();
     glutSwapBuffers();
@@ -3306,36 +3348,6 @@ void display(void)
     logic();
 }
 
-void reshape(GLint width, GLint height)
-{
-    g_Width = width;
-    g_Height = height;
-
-    printf("--- MIDISYS ENGINE: reshape event: %dx%d\n", (int)width, (int)height);
-
-    glViewport(0, 0, g_Width, g_Height);
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    gluPerspective(65.0, (float)g_Width / g_Height, g_nearPlane, g_farPlane);
-    glMatrixMode(GL_MODELVIEW);
-
-    glDeleteTextures(1, &fb_tex);
-    glDeleteRenderbuffersEXT(1, &depth_rb);
-    glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
-    glDeleteFramebuffersEXT(1, &fb);
-
-    glDeleteTextures(1, &fb_tex2);
-    glDeleteRenderbuffersEXT(1, &depth_rb2);
-    glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
-    glDeleteFramebuffersEXT(1, &fb2);
-
-    glDeleteTextures(1, &fake_framebuffer_tex);
-    glDeleteRenderbuffersEXT(1, &depth_rb3);
-    glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
-    glDeleteFramebuffersEXT(1, &fake_framebuffer);
-
-    InitFBO();
-}
 
 // ----------------------------------------------------------------------------
 // ----------------------------------------------------------------------------
