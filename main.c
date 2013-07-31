@@ -3234,7 +3234,7 @@ void UpdateShaderParams()
 
                 scene_shader_params[mapping_paramnum[i]] = trigVal;
                 scene_shader_param_type[mapping_paramnum[i]] = 0;
-                if (ev == msgNoteOn) printf("sync (%s): %d: trig %d to: %f\n", timeline_trackname[tracknum], intmillis, mapping_paramnum[i], scene_shader_params[mapping_paramnum[i]]);
+                //if (ev == msgNoteOn) printf("sync (%s): %d: trig %d to: %f\n", timeline_trackname[tracknum], intmillis, mapping_paramnum[i], scene_shader_params[mapping_paramnum[i]]);
                 break;
             }
 
@@ -3246,7 +3246,7 @@ void UpdateShaderParams()
                     paramVal = currentMsg.MsgData.NoteParameter.iParam;
                     scene_shader_params[mapping_paramnum[i]] = paramVal;
                     scene_shader_param_type[mapping_paramnum[i]] = 1;
-                    printf("sync (%s): %d: param %d to: %d\n", timeline_trackname[tracknum], intmillis, mapping_paramnum[i], scene_shader_params[mapping_paramnum[i]]);
+                    //printf("sync (%s): %d: param %d to: %d\n", timeline_trackname[tracknum], intmillis, mapping_paramnum[i], scene_shader_params[mapping_paramnum[i]]);
                 }
 
                 break;
@@ -3543,7 +3543,7 @@ void StartMainLoop()
 
 int main(int argc, char* argv[])
 {
-    printf("--- MIDISYS ENGINE: bilotrip foundation MIDISYS ENGINE 0.1 - dosing, please wait\n");
+    printf("--- MIDISYS ENGINE: bilotrip foundation MIDISYS ENGINE 4.20 - dosing, please wait\n");
     
     // init graphics
 
