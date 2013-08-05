@@ -1,1 +1,0 @@
-g++ -g -w -fpermissive vertex-attribute.c vertex-buffer.c texture-atlas.c texture-font.c mat4.c shader.c vector.c midifile.c midiutil.c main.c -o midisys.exe -m32 -Wall -Wno-unused-variable c:\mingw\lib\bass.lib libassimp.dll.a -lglew32 -lfreeglut -lglu32 -lopengl32 -loggplayer -ltheora -logg -lboost_system-mgw46-s-1_54 -lboost_thread-mgw46-mt-s-1_54 -lfreetype 
