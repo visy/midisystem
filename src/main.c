@@ -3345,6 +3345,7 @@ void mouseMotion(int button, int state, int x, int y)
 
 void InitFBO()
 {
+    glClearColor(0,0,0,0);
     glGenTextures(1, &fb_tex);
     glBindTexture(GL_TEXTURE_2D, fb_tex);
 
@@ -3379,6 +3380,8 @@ void InitFBO()
             exit(1);
             break;
     }
+
+    glClear(GL_DEPTH_BUFFER_BIT|GL_COLOR_BUFFER_BIT);
 
     glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
     glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, 0);
@@ -3418,6 +3421,8 @@ void InitFBO()
             break;
     }
 
+    glClear(GL_DEPTH_BUFFER_BIT|GL_COLOR_BUFFER_BIT);
+
     glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
     glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, 0);
 
@@ -3444,9 +3449,6 @@ void InitFBO()
 
     glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_RENDERBUFFER_EXT, depth_rb3);
 
-    glClearColor(0.0,0.0,0.0,1.0);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
     status = glCheckFramebufferStatusEXT(GL_FRAMEBUFFER_EXT);
     switch(status)
     {
@@ -3458,12 +3460,11 @@ void InitFBO()
             exit(1);
             break;
     }
+    
+    glClear(GL_DEPTH_BUFFER_BIT|GL_COLOR_BUFFER_BIT);
 
     glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
     glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, 0);
-
-
-
 }
 
 void InitGraphics(int argc, char* argv[])
