@@ -201,7 +201,7 @@ console_new( void )
     normal.foreground_color.g = 0.65;
     normal.foreground_color.b = 0.45;
 
-    normal.font = texture_font_new( atlas, "data/fonts/term.ttf", 33 );
+    normal.font = texture_font_new( atlas, "data/fonts/term.TTF", 33 );
 
     markup_t bold = normal;
     bold.bold = 1;

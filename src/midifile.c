@@ -110,11 +110,7 @@ static void midiError(_MIDI_FILE *pMF, const char *fmt, ...)
 static int midiStrNCmp(_MIDI_FILE *pMF, const char *str, const size_t n)
 {
     if (pMF->curr + n < pMF->end)
-    {
-        int res = strncmp((char *) pMF->curr, str, n);
-        pMF->curr += n;
-        return res;
-    }
+        return memcmp(pMF->curr, str, n);
     else
         return 1;
 }
@@ -500,6 +496,8 @@ MIDI_FILE *midiFileOpen(const char *pFilename)
         goto error;
     }
 
+    pMF->end = pMF->ptr + pMF->file_size;
+
     fseek(fp, 0L, SEEK_SET);
     if (fread(pMF->ptr, sizeof(Uint8), pMF->file_size, fp) != pMF->file_size)
     {
@@ -525,7 +523,7 @@ MIDI_FILE *midiFileOpen(const char *pFilename)
         goto error;
     }
 
-    midiSkip(pMF, pMF->Header.iHeaderSize + 8);
+    midiSkip(pMF, pMF->Header.iHeaderSize - 3 * sizeof(Uint16));
 
     /*
      **      Get all tracks
@@ -545,17 +543,15 @@ MIDI_FILE *midiFileOpen(const char *pFilename)
         }
         
         pMF->Track[i].pBase = pMF->curr;
-        pMF->Track[i].ptr = pMF->curr + 8;
-        
-        midiSkip(pMF, 4);
-        if (!midiGetBE32(pMF, &pMF->Track[i].sz))
+
+        if (!midiSkip(pMF, 4) ||
+            !midiGetBE32(pMF, &pMF->Track[i].sz))
         {
             midiError(pMF, "Could not read MTrk size.\n");
             goto error;
         }
 
-        midiSkip(pMF, 4);
-
+        pMF->Track[i].ptr = pMF->curr;
         pMF->Track[i].pEnd = pMF->curr + pMF->Track[i].sz;
 
         midiSkip(pMF, pMF->Track[i].sz);
@@ -594,8 +590,7 @@ static int qs_cmp_pEndPoints(const void *e1, const void *e2)
     return p1->iEndPos - p2->iEndPos;
 }
 
-BOOL midiFileFlushTrack(MIDI_FILE *_pMF, int iTrack, BOOL bFlushToEnd,
-                        Uint32 dwEndTimePos)
+BOOL midiFileFlushTrack(MIDI_FILE *_pMF, int iTrack, BOOL bFlushToEnd, Uint32 dwEndTimePos)
 {
     size_t sz, index;
     Uint8 *ptr;
@@ -794,8 +789,7 @@ BOOL midiSongAddSMPTEOffset(MIDI_FILE *_pMF, int iTrack, int iHours,
 }
 
 
-BOOL midiSongAddSimpleTimeSig(MIDI_FILE *_pMF, int iTrack, int iNom,
-                              int iDenom)
+BOOL midiSongAddSimpleTimeSig(MIDI_FILE *_pMF, int iTrack, int iNom, int iDenom)
 {
     return midiSongAddTimeSig(_pMF, iTrack, iNom, iDenom, 24, 8);
 }
@@ -914,8 +908,7 @@ BOOL midiTrackAddRaw(MIDI_FILE *_pMF, int iTrack, int data_sz,
 }
 
 
-BOOL midiTrackIncTime(MIDI_FILE *_pMF, int iTrack, int iDeltaTime,
-                      BOOL bOverridePPQN)
+BOOL midiTrackIncTime(MIDI_FILE *_pMF, int iTrack, int iDeltaTime, BOOL bOverridePPQN)
 {
     Uint32 will_end_at;
 
@@ -933,8 +926,7 @@ BOOL midiTrackIncTime(MIDI_FILE *_pMF, int iTrack, int iDeltaTime,
     return TRUE;
 }
 
-BOOL midiTrackAddText(MIDI_FILE *_pMF, int iTrack, tMIDI_TEXT iType,
-                      const char *pTxt)
+BOOL midiTrackAddText(MIDI_FILE *_pMF, int iTrack, tMIDI_TEXT iType, const char *pTxt)
 {
     Uint8 *ptr;
     int sz;
@@ -1163,8 +1155,7 @@ int midiReadGetNumTracks(const MIDI_FILE *_pMF)
     return pMF->Header.iNumTracks;
 }
 
-BOOL midiReadGetNextMessage(const MIDI_FILE *_pMF, int iTrack,
-                            MIDI_MSG * pMsg)
+BOOL midiReadGetNextMessage(const MIDI_FILE *_pMF, int iTrack, MIDI_MSG * pMsg)
 {
     MIDI_FILE_TRACK *pTrack;
     Uint8 *bptr, *pMsgDataPtr;
@@ -1290,9 +1281,7 @@ BOOL midiReadGetNextMessage(const MIDI_FILE *_pMF, int iTrack,
             break;
         case metaSetTempo:
             {
-                Uint32 us =
-                    ((*(pTrack->ptr + 0)) << 16) | ((*(pTrack->ptr + 1)) << 8)
-                    | (*(pTrack->ptr + 2));
+                Uint32 us = ((*(pTrack->ptr + 0)) << 16) | ((*(pTrack->ptr + 1)) << 8) | (*(pTrack->ptr + 2));
                 pMsg->MsgData.MetaEvent.Data.Tempo.iBPM = 60000000L / us;
             }
             break;
