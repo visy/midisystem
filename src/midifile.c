@@ -21,15 +21,10 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+#include "midifile.h"
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
-#ifndef  __APPLE__
-#include <malloc.h>
-#endif
-#include "midifile.h"
-#include "mendian.h"
 
 
 /*
@@ -96,6 +91,7 @@ typedef struct
 
 static void midiErrorV(_MIDI_FILE *pMF, const char *fmt, va_list ap)
 {
+    (void) pMF;
     printf("MIDI: ");
     vprintf(fmt, ap);
 }
@@ -601,11 +597,11 @@ static int qs_cmp_pEndPoints(const void *e1, const void *e2)
 BOOL midiFileFlushTrack(MIDI_FILE *_pMF, int iTrack, BOOL bFlushToEnd,
                         Uint32 dwEndTimePos)
 {
-    size_t sz, i;
+    size_t sz, index;
     Uint8 *ptr;
     MIDI_END_POINT *pEndPoints;
     int num, mx_pts;
-    BOOL bNoChanges = TRUE;
+    //BOOL bNoChanges = TRUE;
 
     _VAR_CAST;
     if (!IsFilePtrValid(pMF))
@@ -619,14 +615,15 @@ BOOL midiFileFlushTrack(MIDI_FILE *_pMF, int iTrack, BOOL bFlushToEnd,
      */
     pEndPoints = (MIDI_END_POINT *) malloc(sz * sizeof(MIDI_END_POINT));
     mx_pts = 0;
-    for (i = 0; i < sz; ++i)
-        if (pMF->Track[iTrack].LastNote[i].valid)
+    for (index = 0; index < sz; index++)
+    {
+        if (pMF->Track[iTrack].LastNote[index].valid)
         {
-            pEndPoints[mx_pts].iIdx = i;
-            pEndPoints[mx_pts].iEndPos =
-                pMF->Track[iTrack].LastNote[i].end_pos;
+            pEndPoints[mx_pts].iIdx = index;
+            pEndPoints[mx_pts].iEndPos = pMF->Track[iTrack].LastNote[index].end_pos;
             mx_pts++;
         }
+    }
 
     if (bFlushToEnd)
     {
@@ -641,33 +638,30 @@ BOOL midiFileFlushTrack(MIDI_FILE *_pMF, int iTrack, BOOL bFlushToEnd,
         /* Sort, smallest first, and add the note off msgs */
         qsort(pEndPoints, mx_pts, sizeof(MIDI_END_POINT), qs_cmp_pEndPoints);
 
-        i = 0;
-        while ((dwEndTimePos >= (Uint32) pEndPoints[i].iEndPos || bFlushToEnd)
-               && i < mx_pts)
+        int n = 0;
+        while ((dwEndTimePos >= (Uint32) pEndPoints[n].iEndPos || bFlushToEnd) && n < mx_pts)
         {
             ptr = _midiGetPtr(pMF, iTrack, DT_DEF);
-            if (!ptr)
+            if (ptr == NULL)
                 return FALSE;
 
-            num = pEndPoints[i].iIdx;   /* get 'LastNote' index */
+            num = pEndPoints[n].iIdx;   /* get 'LastNote' index */
 
-            ptr =
-                _midiWriteVarLen(ptr,
-                                 pMF->Track[iTrack].LastNote[num].end_pos -
-                                 pMF->Track[iTrack].pos);
+            ptr = _midiWriteVarLen(ptr,
+                pMF->Track[iTrack].LastNote[num].end_pos -
+                pMF->Track[iTrack].pos);
+
             /* msgNoteOn  msgNoteOff */
-            *ptr++ =
-                (Uint8) (msgNoteOff | pMF->Track[iTrack].LastNote[num].chn);
+            *ptr++ = (Uint8) (msgNoteOff | pMF->Track[iTrack].LastNote[num].chn);
             *ptr++ = pMF->Track[iTrack].LastNote[num].note;
             *ptr++ = 0;
 
             pMF->Track[iTrack].LastNote[num].valid = FALSE;
             pMF->Track[iTrack].pos = pMF->Track[iTrack].LastNote[num].end_pos;
-
             pMF->Track[iTrack].ptr = ptr;
 
-            ++i;
-            bNoChanges = FALSE;
+            //bNoChanges = FALSE;
+            n++;
         }
     }
 
@@ -1050,7 +1044,8 @@ BOOL midiTrackAddNote(MIDI_FILE *_pMF, int iTrack, int iNote, int iLength,
     MIDI_FILE_TRACK *pTrk;
     Uint8 *ptr;
     BOOL bSuccess = FALSE;
-    int i, chn;
+    int chn;
+    size_t i;
 
     _VAR_CAST;
     if (!IsFilePtrValid(pMF))
@@ -1318,17 +1313,14 @@ BOOL midiReadGetNextMessage(const MIDI_FILE *_pMF, int iTrack,
             if (*pTrack->ptr & 0x80)
             {
                 /* Do some trendy sign extending in reverse :) */
-                pMsg->MsgData.MetaEvent.Data.KeySig.iKey =
-                    ((256 - *pTrack->ptr) & keyMaskKey);
-                pMsg->MsgData.MetaEvent.Data.KeySig.iKey |= keyMaskNeg;
+                pMsg->MsgData.MetaEvent.Data.KeySig.iKey = (tMIDI_KEYSIG) (((256 - *pTrack->ptr) & keyMaskKey) | keyMaskNeg);
             }
             else
             {
-                pMsg->MsgData.MetaEvent.Data.KeySig.iKey =
-                    (tMIDI_KEYSIG) (*pTrack->ptr & keyMaskKey);
+                pMsg->MsgData.MetaEvent.Data.KeySig.iKey = (tMIDI_KEYSIG) (*pTrack->ptr & keyMaskKey);
             }
             if (*(pTrack->ptr + 1))
-                pMsg->MsgData.MetaEvent.Data.KeySig.iKey |= keyMaskMin;
+                pMsg->MsgData.MetaEvent.Data.KeySig.iKey = (tMIDI_KEYSIG) (pMsg->MsgData.MetaEvent.Data.KeySig.iKey | keyMaskMin);
             break;
         case metaSequencerSpecific:
             pMsg->MsgData.MetaEvent.Data.Sequencer.iSize = pMsg->iMsgSize;

@@ -31,7 +31,9 @@ how to build:
 	libboost-thread1.54-dev libfreetype6-dev \
 	freeglut3-dev libtheora-dev
 
+
 	1) optionally edit Makefile
+
 
 	2) then
 
@@ -44,9 +46,14 @@ how to build:
 	correct build, for 32 or 64-bit respectively
 	due to the libbass binary blob dependency.
 
-	3) $ make
+
+	2b) $ make
 	attempts to build the demo only (for debugging)
 
+
+	3) run the wrapper script to run the demo:
+
+	$ ./demo
 
 have a nice torment,
 ccr signing off

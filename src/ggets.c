@@ -43,14 +43,14 @@ int fggets(char* *ln, FILE *f)
    char   *buffer, *temp;
 
    *ln = NULL; /* default */
-   if (NULL == (buffer = malloc(INITSIZE))) return NOMEM;
+   if ((buffer = (char *) malloc(INITSIZE)) == NULL) return NOMEM;
    cursize = INITSIZE;
 
    ix = 0;
-   while ((EOF != (ch = getc(f))) && ('\n' != ch)) {
+   while ((ch = getc(f)) != EOF && ch != '\n') {
       if (ix >= (cursize - 1)) { /* extend buffer */
          cursize += DELTASIZE;
-         if (NULL == (temp = realloc(buffer, (size_t)cursize))) {
+         if ((temp = (char *) realloc(buffer, (size_t)cursize)) == NULL) {
             /* ran out of memory, return partial line */
             buffer[ix] = '\0';
             *ln = buffer;
@@ -60,13 +60,14 @@ int fggets(char* *ln, FILE *f)
       }
       buffer[ix++] = ch;
    }
-   if ((EOF == ch) && (0 == ix)) {
+
+   if (ch == EOF && ix == 0) {
       free(buffer);
       return EOF;
    }
 
    buffer[ix] = '\0';
-   if (NULL == (temp = realloc(buffer, (size_t)ix + 1))) {
+   if ((temp = (char *) realloc(buffer, (size_t)ix + 1)) == NULL) {
       *ln = buffer;  /* without reducing it */
    }
    else *ln = temp;

@@ -78,12 +78,7 @@ vertex_attribute_delete( vertex_attribute_t * self )
     free( self );
 }
 
-#include "ansidecl.h"
 #include <stddef.h>
-
-extern size_t   strlen (const char*);
-extern PTR  malloc (size_t);
-extern PTR  memcpy (PTR, const PTR, size_t);
 
 char *
 strndup (const char *s, size_t n)

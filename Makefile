@@ -67,10 +67,9 @@ DEMO_LDFLAGS = $(BASS_LDFLAGS) $(ASSIMP_LDFLAGS) \
 TARGETS=demo.bin
 
 
-DEMO_OBJS=vertex-attribute.o vertex-buffer.o \
+DEMO_OBJS=platform.o vertex-attribute.o vertex-buffer.o \
 	texture-atlas.o texture-font.o mat4.o \
-	shader.o vector.o midifile.o \
-	midiutil.o main.o
+	shader.o vector.o midifile.o midiutil.o main.o
 
 LIBOGGPLAYER_OBJS= \
 	oggplayer.o open_close.o play.o \
@@ -100,6 +99,11 @@ $(OBJPATH)%.o: src/%.c
 	@$(CXX) $(CFLAGS) -c -o $@ $< $(DEMO_CFLAGS)
 
 
+$(OBJPATH)main.o: src/main.c src/stb_image.c src/ggets.c src/ggets.h
+	@echo " CXX $+"
+	@$(CXX) $(CFLAGS) -c -o $@ $< $(DEMO_CFLAGS)
+
+
 $(LIBOGGPLAYER_A): $(addprefix $(OBJPATH),$(LIBOGGPLAYER_OBJS))
 	@echo " AR $@ $+"
 	@$(AR) cru $@ $+
@@ -125,7 +129,8 @@ distclean: clean
 build-assimp:
 	unzip assimp--3.0.1270-source-only.zip && \
 	cd $(ASSIMP) && \
-	cmake . -DENABLE_BOOST_WORKAROUND=ON && make
+	cmake . -DENABLE_BOOST_WORKAROUND=ON && \
+	make -j4
 
 build-bass:
 	mkdir libbass/ && cd libbass && unzip ../bass24-linux.zip

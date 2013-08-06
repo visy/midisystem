@@ -9,25 +9,29 @@
 #include <wchar.h>
 #include <time.h>
 
+#include "bass.h"
+#include "platform.h"
+
 #include "freetype-gl.h"
 #include "vertex-buffer.h"
 #include "markup.h"
 #include "shader.h"
 #include "mat4.h"
 
-#if defined(_WIN32) || defined(_WIN64)
-#  define wcpncpy wcsncpy
-#  define wcpcpy  wcscpy
-#endif
-
-#ifndef  __APPLE__
-#include <malloc.h>
-#endif
-
-#define XXX 1
-#include "bass.h"
 #include "midifile.h"
 #include "midiutil.h"
+
+#ifdef __APPLE__
+    #include "glew.h"
+    #include <OpenGL/OpenGL.h>
+    #include <OpenGL/glu.h>
+    #include "freeglut.h"
+#else
+    #include <GL/glew.h>
+    #include <GL/glu.h>
+    #include <GL/freeglut.h>
+#endif
+
 
 int quitflag = 0;
 
@@ -45,26 +49,26 @@ bool load_textures = true;
 
 // midi sync
 
-MIDI_MSG timeline[64][100000] = {NULL};
-char timeline_trackname[64][512] = {-1};
-int timeline_trackindex[64] = { 0 };
-int timeline_tracklength[64] = { -1 };
+MIDI_MSG timeline[64][100000];
+char timeline_trackname[64][512];
+int timeline_trackindex[64];
+int timeline_tracklength[64];
 int timeline_trackcount = 0;
 
 // midi track number of mapping data
-int mapping_tracknum[1000] = {-1};
+int mapping_tracknum[1000];
 // midi to shader param map from mapping.txt
-int mapping_paramnum[1000] = {-1};
+int mapping_paramnum[1000];
 // track to map from
-char mapping_trackname[1000][512] = {-1};
+char mapping_trackname[1000][512];
 // map type: 0 == trig (noteon / off), 1 == param (modwheel / cc value)
-int mapping_type[1000] = {-1};
+int mapping_type[1000];
 // number of active mappings from midi to shader param
 int mapping_count = 0;
 
 // current shader param values 
-int scene_shader_params[16] = {-1};
-int scene_shader_param_type[16] = {-1};
+int scene_shader_params[16];
+int scene_shader_param_type[16];
 
 float millis = 0;
 
@@ -73,23 +77,12 @@ float millis = 0;
 float vhsbeat = 0.0;
 float vhsbeat_start = 0;
 
-#ifdef __APPLE__
-    #include "glew.h"
-    #include <OpenGL/OpenGL.h>
-    #include <OpenGL/glu.h>
-    #include "freeglut.h"
-#else
-    #include <GL/glew.h>
-    #include <GL/glu.h>
-    #include <GL/freeglut.h>
-#endif
-
 #include <assimp/Importer.hpp>
-//#include <assimp/PostProcess.h>
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
 #include <assimp/DefaultLogger.hpp>
 #include <assimp/LogStream.hpp>
+
 
 #include "stb_image.c"
 
@@ -192,8 +185,8 @@ console_new( void )
     atlas = texture_atlas_new( 512, 512, 1 );
 
     vec4 white = {{0.2,1,0.2,0.7}};
-    vec4 black = {{0,0,0,1}};
-    vec4 none = {{0,0,1,0}};
+    //vec4 black = {{0,0,0,1}};
+    //vec4 none = {{0,0,1,0}};
 
     markup_t normal;
     normal.family  = "data/fonts/VeraMono.ttf";
@@ -990,7 +983,7 @@ void reshape(GLint width, GLint height)
 }
 
 
-int demo_playlist()
+void demo_playlist()
 {
     int sc = current_scene;
     if (millis >= 0 && millis < 111844) // 55922
@@ -1330,8 +1323,8 @@ void LoadMIDIEventList(const char *pFilename)
 
                 if (ev == msgMetaEvent && msg.MsgData.MetaEvent.iType == metaTrackName) 
                 {
-                    strncpy(timeline_trackname[track_index], msg.MsgData.MetaEvent.Data.Text.pData, 8);
-                    timeline_trackname[track_index][8] == '\0';
+                    strncpy(timeline_trackname[track_index], (char *) msg.MsgData.MetaEvent.Data.Text.pData, 8);
+                    timeline_trackname[track_index][8] = 0;
                     printf("track #%d, name = \"%s\"\n", track_index, timeline_trackname[track_index]);
                 }
 
@@ -1411,7 +1404,8 @@ void ParseMIDITimeline(const char* mappingFile)
 
 void stbi_flip_y(int w, int h, int comp, stbi_uc *data)
 {
-   size_t y, i, stride = w * comp;
+   int y;
+   size_t i, stride = w * comp;
    uint8 *out = data;
 
    for (y = 0; y < (h>>1); ++y) {
@@ -1462,7 +1456,7 @@ int scale_image_RGB_to_NTSC_safe(int width, int height, int channels,stbi_uc* da
 
 GLuint LoadTexture(const char* pFilename, int invert)
 {
-    if(!load_textures) return;
+    if(!load_textures) return 0;
 
     if (strcmp(pFilename,"") == 0) return 99999;
     printf(" - LoadTexture(\"%s\")", pFilename);
@@ -1533,18 +1527,16 @@ int LoadGLTextures(const aiScene* scene) {
     {
         int texIndex = 0;
         aiReturn texFound = AI_SUCCESS;
-
         aiString path;  // filename
 
         while (texFound == AI_SUCCESS)
         {
             texFound = scene->mMaterials[m]->GetTexture(aiTextureType_DIFFUSE, texIndex, &path);
-            GLuint texnum = LoadTexture(path.data, 0);
-            textureIdMap[path.data] = texnum;
+            textureIdMap[path.data] = LoadTexture(path.data, 0);
             texIndex++;
         }
     }
-    //return success;
+
     return true;
 }
 
@@ -1707,7 +1699,7 @@ void apply_material(const aiMaterial *mtl)
     if(AI_SUCCESS == mtl->GetTexture(aiTextureType_DIFFUSE, texIndex, &texPath))
     {
     //bind texture
-    GLuint texId = textureIdMap.at(texPath.data);
+    GLuint texId = (GLuint) textureIdMap.at(texPath.data);
     if (texId != 99999) glBindTexture(GL_TEXTURE_2D, texId);
     }
 
@@ -3270,7 +3262,7 @@ GLint gFramesPerSecond = 0;
 void FPS(void) {
   static GLint Frames = 0;         // frames averaged over 1000mS
   static GLuint Clock;             // [milliSeconds]
-  static GLuint PreviousClock = 0; // [milliSeconds]
+  //static GLuint PreviousClock = 0; // [milliSeconds]
   static GLuint NextClock = 0;     // [milliSeconds]
  
   ++Frames;
@@ -3279,7 +3271,7 @@ void FPS(void) {
  
   gFramesPerSecond = Frames/1; // store the averaged number of frames per second
  
-  PreviousClock = Clock;
+  //PreviousClock = Clock;
   NextClock = Clock+1000; // 1000mS=1S in the future
   Frames=0;
 }

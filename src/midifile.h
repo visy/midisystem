@@ -2,7 +2,7 @@
 #define _MIDIFILE_H
 
 #include "midiinfo.h"           /* enumerations and constants for GM */
-#include "mtypes.h"
+#include "platform.h"
 
 
 /*
